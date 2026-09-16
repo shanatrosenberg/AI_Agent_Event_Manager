@@ -23,6 +23,7 @@ class CreateEventHandler:
         self._store = store
 
     def handle(self, command: CreateEventCommand) -> Event:
+        self._store.ensure_organizer(command.organizer_id)
         event = Event(
             id=str(uuid4()),
             organizer_id=command.organizer_id,
@@ -30,6 +31,8 @@ class CreateEventHandler:
             description=command.description,
             date=command.date,
             capacity=command.capacity,
+            seats_booked=0,
+            status="active",
         )
         self._store.append("EventCreated", event.to_dict())
         self._store.save_read_model(event)
@@ -50,6 +53,7 @@ class SubmitTalkHandler:
         self._assessor = assessor or AIAssessmentAgent()
 
     def handle(self, command: SubmitTalkCommand) -> TalkSubmission:
+        self._store.ensure_speaker(command.speaker_id)
         submission = TalkSubmission(
             id=str(uuid4()),
             speaker_id=command.speaker_id,
@@ -97,6 +101,7 @@ class RegisterAttendeeHandler:
                 status=409,
             )
 
+        self._store.ensure_attendee(command.attendee_id)
         event.seats_booked += command.seats
         self._store.save_read_model(event)
         self._store.append(

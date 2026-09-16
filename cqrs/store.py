@@ -1,57 +1,74 @@
+from models.attendee import Attendee
 from models.booking import Booking
 from models.event import Event
+from models.organizer import Organizer
+from models.speaker import Speaker
+from models.stored_event import StoredEvent
 from models.submission import TalkSubmission
+from extensions import db
 
 
 class EventStore:
-    """In-memory event store and read model (CQRS / Event Sourcing)."""
-
-    def __init__(self) -> None:
-        self._events: list[dict] = []
-        self._read_model: dict[str, Event] = {}
-        self._submission_read_model: dict[str, TalkSubmission] = {}
-        self._booking_read_model: dict[str, Booking] = {}
+    """SQLAlchemy-backed event store and read model (CQRS / Event Sourcing)."""
 
     def append(self, event_name: str, payload: dict) -> None:
-        self._events.append({"event": event_name, "payload": payload})
+        db.session.add(StoredEvent(event_name=event_name, payload=payload))
+
+    def ensure_organizer(self, organizer_id: str) -> Organizer:
+        organizer = db.session.get(Organizer, organizer_id)
+        if organizer is None:
+            organizer = Organizer(id=organizer_id)
+            db.session.add(organizer)
+            db.session.flush()
+        return organizer
+
+    def ensure_speaker(self, speaker_id: str) -> Speaker:
+        speaker = db.session.get(Speaker, speaker_id)
+        if speaker is None:
+            speaker = Speaker(id=speaker_id)
+            db.session.add(speaker)
+            db.session.flush()
+        return speaker
+
+    def ensure_attendee(self, attendee_id: str) -> Attendee:
+        attendee = db.session.get(Attendee, attendee_id)
+        if attendee is None:
+            attendee = Attendee(id=attendee_id)
+            db.session.add(attendee)
+            db.session.flush()
+        return attendee
 
     def save_read_model(self, event: Event) -> None:
-        self._read_model[event.id] = event
+        db.session.add(event)
+        db.session.commit()
 
     def list_by_organizer(self, organizer_id: str) -> list[Event]:
-        return [
-            event
-            for event in self._read_model.values()
-            if event.organizer_id == organizer_id
-        ]
+        return Event.query.filter_by(organizer_id=organizer_id).all()
 
     def save_submission(self, submission: TalkSubmission) -> None:
-        self._submission_read_model[submission.id] = submission
+        db.session.add(submission)
+        db.session.commit()
 
     def list_submissions_by_speaker(self, speaker_id: str) -> list[TalkSubmission]:
-        return [
-            submission
-            for submission in self._submission_read_model.values()
-            if submission.speaker_id == speaker_id
-        ]
+        return TalkSubmission.query.filter_by(speaker_id=speaker_id).all()
 
     def get_event(self, event_id: str) -> Event | None:
-        return self._read_model.get(event_id)
+        return db.session.get(Event, event_id)
 
     def list_active_events(self) -> list[Event]:
-        return [
-            event
-            for event in self._read_model.values()
-            if event.status == "active" and event.remaining_seats > 0
-        ]
+        events = Event.query.filter_by(status="active").all()
+        return [event for event in events if event.remaining_seats > 0]
 
     def save_booking(self, booking: Booking) -> None:
-        self._booking_read_model[booking.id] = booking
+        db.session.add(booking)
+        db.session.commit()
 
     def has_booking(self, attendee_id: str, event_id: str) -> bool:
-        return any(
-            booking.attendee_id == attendee_id
-            and booking.event_id == event_id
-            and booking.status == "confirmed"
-            for booking in self._booking_read_model.values()
+        return (
+            Booking.query.filter_by(
+                attendee_id=attendee_id,
+                event_id=event_id,
+                status="confirmed",
+            ).first()
+            is not None
         )

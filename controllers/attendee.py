@@ -7,6 +7,7 @@ from cqrs import (
     register_attendee_handler,
 )
 from cqrs.errors import DomainError
+from extensions import db
 
 attendee_bp = Blueprint("attendee", __name__, url_prefix="/api/attendee")
 
@@ -68,6 +69,7 @@ def register():
             )
         )
     except DomainError as exc:
+        db.session.rollback()
         return _validation_error(exc.message, status=exc.status)
 
     return jsonify(booking.to_dict()), 201
