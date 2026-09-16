@@ -1,5 +1,4 @@
 import pytest
-from sqlalchemy.pool import StaticPool
 
 from extensions import db
 from main import create_app
@@ -10,11 +9,8 @@ def app():
     application = create_app(
         {
             "TESTING": True,
-            "SQLALCHEMY_DATABASE_URI": "sqlite://",
-            "SQLALCHEMY_ENGINE_OPTIONS": {
-                "connect_args": {"check_same_thread": False},
-                "poolclass": StaticPool,
-            },
+            "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:",
+            "SQLALCHEMY_TRACK_MODIFICATIONS": False,
         }
     )
     with application.app_context():

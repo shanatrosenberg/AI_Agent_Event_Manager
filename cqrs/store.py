@@ -40,14 +40,14 @@ class EventStore:
 
     def save_read_model(self, event: Event) -> None:
         db.session.add(event)
-        db.session.commit()
+        self._commit()
 
     def list_by_organizer(self, organizer_id: str) -> list[Event]:
         return Event.query.filter_by(organizer_id=organizer_id).all()
 
     def save_submission(self, submission: TalkSubmission) -> None:
         db.session.add(submission)
-        db.session.commit()
+        self._commit()
 
     def list_submissions_by_speaker(self, speaker_id: str) -> list[TalkSubmission]:
         return TalkSubmission.query.filter_by(speaker_id=speaker_id).all()
@@ -61,7 +61,7 @@ class EventStore:
 
     def save_booking(self, booking: Booking) -> None:
         db.session.add(booking)
-        db.session.commit()
+        self._commit()
 
     def has_booking(self, attendee_id: str, event_id: str) -> bool:
         return (
@@ -72,3 +72,11 @@ class EventStore:
             ).first()
             is not None
         )
+
+    @staticmethod
+    def _commit() -> None:
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            raise
