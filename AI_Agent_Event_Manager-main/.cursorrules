@@ -1,0 +1,16 @@
+# Cursor Rules - Smart Event Management System (SDAD)
+
+## Tech Stack & Architecture
+- **Backend Framework:** Python Flask
+- **Architecture Pattern:** MVC / CQRS with Event Sourcing
+- **Database:** Cloud Database (Somee.com) + Vector Database for RAG
+- **AI Integration:** Autonomous Deep Agent for assessing speaker submissions, leveraging MCP tools (e.g., Tavily web search).
+
+## User Roles & Permissions
+1. **Event Organizer (Admin):** Manages events, sessions, capacity, and reviews AI assessments.
+2. **Speaker:** Submits talk proposals, abstracts, and speaker bios.
+3. **Attendee:** Searches for sessions, browses data in tables, and books/reserves seats.
+
+## Development Standards
+- Follow Specification-Driven Application Development (SDAD) principles.
+- Ensure clean code, proper separation of concerns, and descriptive commit messages.
