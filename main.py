@@ -2,7 +2,7 @@ import os
 from urllib.parse import urlparse
 
 from dotenv import load_dotenv
-from flask import Flask, jsonify
+from flask import Flask, render_template
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
 
@@ -12,25 +12,22 @@ DEFAULT_DATABASE_URL = "http://my-event-manager.somee.com"
 
 
 def _database_uri() -> str:
-    uri = os.environ.get("DATABASE_URL", DEFAULT_DATABASE_URL)
-    if uri.startswith("postgres://"):
-        return uri.replace("postgres://", "postgresql://", 1)
+    # Check if a direct connection string is provided in the environment
+    direct_url = os.environ.get("DATABASE_URL")
+    if direct_url:
+        return direct_url
 
-    parsed = urlparse(uri)
-    if parsed.scheme in {"http", "https"}:
-        host = parsed.hostname or parsed.path.strip("/")
-        database = os.environ.get("DATABASE_NAME", "my-event-manager")
-        user = os.environ.get("DATABASE_USER", parsed.username or "")
-        password = os.environ.get("DATABASE_PASSWORD", parsed.password or "")
-        userinfo = ""
-        if user:
-            userinfo = user
-            if password:
-                userinfo += f":{password}"
-            userinfo += "@"
-        return f"mssql+pymssql://{userinfo}{host}/{database}"
-
-    return uri
+    # Fallback to building the connection string for pyodbc using environment variables
+    host = os.environ.get("DATABASE_HOST", "AiEventsDB.mssql.somee.com")
+    database = os.environ.get("DATABASE_NAME", "AiEventsDB")
+    user = os.environ.get("DATABASE_USER", "Avishag10_SQLLogin_1")
+    password = os.environ.get("DATABASE_PASSWORD", "Fa388334")
+    driver = os.environ.get("DATABASE_ODBC_DRIVER", "ODBC Driver 17 for SQL Server")
+    
+    # Format the driver name with plus signs for SQLAlchemy compatibility
+    driver_encoded = driver.replace(" ", "+")
+    
+    return f"mssql+pyodbc://{user}:{password}@{host}/{database}?driver={driver_encoded}"
 
 
 @event.listens_for(Engine, "connect")
@@ -54,22 +51,24 @@ def create_app(config: dict | None = None) -> Flask:
     db.init_app(app)
     migrate.init_app(app, db)
 
-    import models  # noqa: F401  — register SQLAlchemy models with metadata
+    import models  # noqa: F401 — register SQLAlchemy models with metadata
 
     from controllers.attendee import attendee_bp
     from controllers.organizer import organizer_bp
     from controllers.speaker import speaker_bp
 
+    app.register_register_blueprint = organizer_bp  # keeping existing setup logic
     app.register_blueprint(organizer_bp)
     app.register_blueprint(speaker_bp)
     app.register_blueprint(attendee_bp)
 
     @app.route("/")
     def home():
-        return jsonify({
-            "message": "Welcome to the Smart Event Management System API",
-            "roles_supported": ["Event Organizer", "Speaker", "Attendee"],
-        })
+        return render_template("index.html")
+
+    @app.route("/organizer")
+    def organizer_dashboard():
+        return render_template("organizer_dashboard.html")
 
     return app
 

@@ -1,16 +1,15 @@
-# Cursor Rules - Smart Event Management System (SDAD)
+# Project Rules & Skills - Smart Event Management System (SDAD)
 
-## Tech Stack & Architecture
-- **Backend Framework:** Python Flask
-- **Architecture Pattern:** MVC / CQRS with Event Sourcing
-- **Database:** Cloud Database (Somee.com) + Vector Database for RAG
-- **AI Integration:** Autonomous Deep Agent for assessing speaker submissions, leveraging MCP tools (e.g., Tavily web search).
+## 1. Development Rules & Methodology
+- **Specification-Driven Application Development (SDAD):** Always rely on project markdown specifications (`requirements.md`, `architecture.md`) before writing implementation code.
+- **Architecture Pattern:** Python Flask backend structured with MVC / CQRS and Event Sourcing patterns.
+- **Database Persistence:** Cloud database (Somee.com) combined with a vector database for RAG.
 
-## User Roles & Permissions
-1. **Event Organizer (Admin):** Manages events, sessions, capacity, and reviews AI assessments.
+## 2. Integrated Skills
+- **Skill 1 (Flask & Python Best Practices):** Follow standard Flask application factory patterns, proper blueprint organization, and clean separation of concerns.
+- **Skill 2 (AI & Agent Integration):** Implement autonomous background agents leveraging MCP tools (e.g., Tavily search) and vector embeddings.
+
+## 3. User Roles & Access Control
+1. **Event Organizer (Admin):** Manages event schedules, sessions, capacity, and reviews AI assessments.
 2. **Speaker:** Submits talk proposals, abstracts, and speaker bios.
-3. **Attendee:** Searches for sessions, browses data in tables, and books/reserves seats.
-
-## Development Standards
-- Follow Specification-Driven Application Development (SDAD) principles.
-- Ensure clean code, proper separation of concerns, and descriptive commit messages.
+3. **Attendee:** Searches for sessions, browses tabular views, and books/reserves seats.
