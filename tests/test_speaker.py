@@ -53,7 +53,7 @@ def test_submit_talk_requires_identity(client, talk_payload):
     response = client.post("/api/speaker/submit", json=talk_payload)
 
     assert response.status_code == 400
-    assert "speaker_id" in response.get_json()["error"]
+    assert "Sign in as a speaker" in response.get_json()["error"]
 
 
 def test_submit_talk_requires_json_body(client, speaker_headers):
@@ -61,6 +61,16 @@ def test_submit_talk_requires_json_body(client, speaker_headers):
 
     assert response.status_code == 400
     assert response.get_json()["error"] == "JSON body is required"
+
+
+def test_submit_talk_rejects_invalid_hall(client, speaker_headers, talk_payload):
+    response = client.post(
+        "/api/speaker/submit",
+        json={**talk_payload, "capacity": 75},
+        headers=speaker_headers,
+    )
+    assert response.status_code == 400
+    assert response.get_json()["error"] == "Hall capacity must be 50, 100, or 300 seats."
 
 
 def test_submit_talk_rejects_missing_fields(client, speaker_headers):
@@ -75,6 +85,10 @@ def test_submit_talk_rejects_missing_fields(client, speaker_headers):
     assert "Missing required fields" in error
     assert "abstract" in error
     assert "category" in error
+    assert "date" in error
+    assert "start_time" in error
+    assert "end_time" in error
+    assert "capacity" in error
 
 
 def test_list_submissions_returns_speaker_talks(client, speaker_headers, speaker_id, talk_payload):

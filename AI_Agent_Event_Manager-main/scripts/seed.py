@@ -24,6 +24,8 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from sqlalchemy import inspect, text
+
 from extensions import db
 from models.attendee import Attendee
 from models.booking import Booking
@@ -32,6 +34,8 @@ from models.organizer import Organizer
 from models.speaker import Speaker
 from models.stored_event import StoredEvent
 from models.submission import TalkSubmission
+
+SEED_PASSWORD = "EventDemo!2026"
 
 # Stable IDs so API calls can reuse the same organizers / speakers / attendees.
 ORGANIZERS = [
@@ -258,6 +262,23 @@ SUBMISSION_IDS = [row["id"] for row in SUBMISSIONS]
 BOOKING_IDS = [row["id"] for row in BOOKINGS]
 
 
+def _ensure_password_hash_columns() -> None:
+    inspector = inspect(db.engine)
+    tables = set(inspector.get_table_names())
+    dialect = db.engine.dialect.name
+    for table_name in ("organizers", "speakers", "attendees"):
+        if table_name not in tables:
+            continue
+        columns = {column["name"] for column in inspector.get_columns(table_name)}
+        if "password_hash" in columns:
+            continue
+        if dialect == "sqlite":
+            db.session.execute(text(f"ALTER TABLE {table_name} ADD COLUMN password_hash VARCHAR(255)"))
+        else:
+            db.session.execute(text(f"ALTER TABLE {table_name} ADD password_hash VARCHAR(255) NULL"))
+    db.session.commit()
+
+
 def _upsert(model, record: dict[str, Any]) -> str:
     row = db.session.get(model, record["id"])
     if row is None:
@@ -267,6 +288,14 @@ def _upsert(model, record: dict[str, Any]) -> str:
         if key != "id":
             setattr(row, key, value)
     return "updated"
+
+
+def _upsert_account(model, record: dict[str, Any]) -> str:
+    status = _upsert(model, record)
+    row = db.session.get(model, record["id"])
+    if row is not None and not row.password_hash:
+        row.set_password(SEED_PASSWORD)
+    return status
 
 
 def _append_seed_event(event_name: str, payload: dict[str, Any]) -> None:
@@ -320,12 +349,13 @@ def seed_database(*, reset: bool = False) -> dict[str, int]:
     if reset:
         reset_seed_data()
 
+    _ensure_password_hash_columns()
     for record in ORGANIZERS:
-        _upsert(Organizer, record)
+        _upsert_account(Organizer, record)
     for record in SPEAKERS:
-        _upsert(Speaker, record)
+        _upsert_account(Speaker, record)
     for record in ATTENDEES:
-        _upsert(Attendee, record)
+        _upsert_account(Attendee, record)
     for record in EVENTS:
         _upsert(Event, record)
         _append_seed_event("EventCreated", record)
@@ -384,6 +414,7 @@ def main(argv: list[str] | None = None) -> int:
     print("  X-Speaker-Id:   spk-maya | spk-daniel | spk-noa | spk-omar")
     print("  X-Attendee-Id:  att-noah | att-lia | att-yonatan | att-sara | att-amir")
     print("  event_id:       a1e00000-0000-4000-8000-000000000001  (AI Agents Summit)")
+    print(f"  seed password:  {SEED_PASSWORD}")
     return 0
 
 

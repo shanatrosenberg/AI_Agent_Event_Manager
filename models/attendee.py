@@ -1,7 +1,8 @@
 from extensions import db
+from models.password import HasPassword
 
 
-class Attendee(db.Model):
+class Attendee(HasPassword, db.Model):
     __tablename__ = "attendees"
 
     id = db.Column(db.String(64), primary_key=True)

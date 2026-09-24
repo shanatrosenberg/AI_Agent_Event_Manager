@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Organizer admin · Smart Event Management System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ["Plus Jakarta Sans", "ui-sans-serif", "system-ui", "sans-serif"],
+          },
+        },
+      },
+    };
+  </script>
+</head>
+<body class="min-h-screen bg-slate-50 font-sans text-slate-900 antialiased">
+  <header class="sticky top-0 z-40 border-b border-slate-200/80 bg-white/80 backdrop-blur-md">
+    <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+      <a href="{{ url_for('home') }}" class="flex items-center gap-3">
+        <span class="flex h-10 w-10 items-center justify-center rounded-2xl bg-indigo-700 text-white shadow-md shadow-indigo-700/30">
+          <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+            <rect x="3" y="5" width="18" height="16" rx="2"></rect>
+            <path d="M3 10h18M8 3v4M16 3v4"></path>
+          </svg>
+        </span>
+        <span class="text-sm font-semibold tracking-tight text-slate-800">Smart Events</span>
+      </a>
+      <nav class="flex items-center gap-6 text-sm font-medium text-slate-600">
+        <a href="{{ url_for('home') }}" class="transition hover:text-indigo-700">Home</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="relative overflow-hidden">
+    <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(79,70,229,0.16),_transparent_55%)]"></div>
+    <div class="mx-auto grid max-w-6xl items-center gap-10 px-6 py-12 lg:grid-cols-2 lg:py-16">
+      <section class="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-slate-950 via-indigo-950 to-indigo-800 px-8 py-12 text-white shadow-2xl shadow-indigo-900/30 sm:px-10">
+        <div class="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-indigo-400/30 blur-3xl"></div>
+        <div class="pointer-events-none absolute -bottom-24 left-1/3 h-56 w-56 rounded-full bg-cyan-300/20 blur-3xl"></div>
+        <p class="relative text-xs font-semibold uppercase tracking-[0.22em] text-indigo-200">Event Organizer</p>
+        <h1 class="relative mt-4 text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl">Admin sign in</h1>
+        <p class="relative mt-4 max-w-md text-sm leading-relaxed text-indigo-100 sm:text-base">
+          This workspace has one dedicated organizer account. After you sign in, every event you create or list is stored under that admin profile automatically.
+        </p>
+        <ul class="relative mt-8 space-y-3 text-sm text-indigo-100">
+          <li class="flex items-start gap-3">
+            <span class="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-white/15 text-xs">1</span>
+            Use the organizer admin username
+          </li>
+          <li class="flex items-start gap-3">
+            <span class="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-white/15 text-xs">2</span>
+            Enter the hashed-password credential for that account
+          </li>
+          <li class="flex items-start gap-3">
+            <span class="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-white/15 text-xs">3</span>
+            Continue to the organizer dashboard
+          </li>
+        </ul>
+      </section>
+
+      <section class="relative rounded-3xl border border-slate-200 bg-white p-7 shadow-sm sm:p-8">
+        <h2 class="text-xl font-bold tracking-tight text-slate-900">Organizer admin</h2>
+        <p class="mt-1 text-sm text-slate-500">Sign in to manage events, speakers, and the program.</p>
+
+        {% if error %}
+        <div class="mt-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-800" role="alert">
+          {{ error }}
+        </div>
+        {% endif %}
+
+        <form method="post" action="{{ url_for('auth.login') }}" class="mt-6 space-y-4" novalidate>
+          <input type="hidden" name="next" value="{{ next_url or '/organizer' }}">
+          <input type="hidden" name="role" value="organizer">
+
+          <div>
+            <label for="user_id" class="block text-sm font-medium text-slate-700">Username</label>
+            <input
+              id="user_id"
+              name="user_id"
+              type="text"
+              required
+              autocomplete="username"
+              value="{{ username or admin_username }}"
+              placeholder="{{ admin_username }}"
+              class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100"
+            >
+          </div>
+
+          <div>
+            <label for="password" class="block text-sm font-medium text-slate-700">Password</label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              required
+              autocomplete="current-password"
+              placeholder="••••••••"
+              class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100"
+            >
+          </div>
+
+          <button
+            type="submit"
+            class="inline-flex w-full items-center justify-center rounded-full bg-indigo-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition duration-300 hover:-translate-y-0.5 hover:bg-indigo-800 hover:shadow-lg hover:shadow-indigo-700/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-700"
+          >
+            Sign in to dashboard
+          </button>
+        </form>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

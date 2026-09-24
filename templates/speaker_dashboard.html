@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Speaker portal · Smart Event Management System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ["Plus Jakarta Sans", "ui-sans-serif", "system-ui", "sans-serif"],
+          },
+        },
+      },
+    };
+  </script>
+</head>
+<body class="min-h-screen bg-slate-50 font-sans text-slate-900 antialiased">
+  <header class="sticky top-0 z-40 border-b border-slate-200/80 bg-white/80 backdrop-blur-md">
+    <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+      <a href="{{ url_for('home') }}" class="flex items-center gap-3">
+        <span class="flex h-10 w-10 items-center justify-center rounded-2xl bg-indigo-700 text-white shadow-md shadow-indigo-700/30">
+          <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+            <rect x="3" y="5" width="18" height="16" rx="2"></rect>
+            <path d="M3 10h18M8 3v4M16 3v4"></path>
+          </svg>
+        </span>
+        <span class="text-sm font-semibold tracking-tight text-slate-800">Smart Events</span>
+      </a>
+      <nav class="flex items-center gap-6 text-sm font-medium text-slate-600">
+        <a href="{{ url_for('home') }}" class="transition hover:text-indigo-700">Home</a>
+        <span class="hidden text-slate-400 sm:inline">{{ speaker_name }}</span>
+        <form method="post" action="{{ url_for('auth.logout') }}">
+          <button type="submit" class="transition hover:text-indigo-700">Sign out</button>
+        </form>
+      </nav>
+    </div>
+  </header>
+
+  <main class="mx-auto max-w-6xl px-6 py-10 sm:py-14" data-speaker-id="{{ speaker_id }}">
+    <p class="text-xs font-semibold uppercase tracking-[0.22em] text-indigo-700">Speaker portal</p>
+    <h1 class="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">Your talks</h1>
+    <p class="mt-3 max-w-2xl text-slate-600">
+      Submit a proposal to the event organizer, answer incoming topic requests, and track whether each talk is pending, reviewed by AI, or approved.
+    </p>
+    <div class="mt-6 inline-flex flex-wrap items-center gap-3 rounded-2xl border border-indigo-100 bg-indigo-50 px-4 py-3 text-sm text-indigo-900">
+      <span class="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-700">Signed in</span>
+      <span class="font-semibold">{{ speaker_name }}</span>
+      <span class="text-indigo-700">Talks and replies are attached to this account automatically.</span>
+    </div>
+
+    <div id="status" role="status" aria-live="polite" hidden class="mt-6 rounded-2xl border px-4 py-3 text-sm font-medium"></div>
+
+    <div class="mt-8 grid items-start gap-6 lg:grid-cols-5">
+      <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-7 lg:col-span-2">
+        <h2 class="text-lg font-bold tracking-tight">Submit a talk proposal</h2>
+        <p class="mt-1 text-sm text-slate-500">Include the proposed date, time, and hall. Your signed-in profile is attached automatically.</p>
+        <form id="submit-talk-form" class="mt-6 space-y-4" novalidate>
+          <div>
+            <label for="title" class="block text-sm font-medium text-slate-700">Title</label>
+            <input id="title" name="title" required maxlength="255" placeholder="Building CQRS with Flask" class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
+          </div>
+          <div>
+            <label for="abstract" class="block text-sm font-medium text-slate-700">Abstract</label>
+            <textarea id="abstract" name="abstract" required rows="5" placeholder="What the talk covers" class="mt-1.5 w-full resize-y rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100"></textarea>
+          </div>
+          <div>
+            <label for="category" class="block text-sm font-medium text-slate-700">Category</label>
+            <select id="category" name="category" required class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
+              <option value="architecture">Architecture</option>
+              <option value="ai">AI</option>
+              <option value="community">Community</option>
+              <option value="product">Product</option>
+            </select>
+          </div>
+          <div>
+            <label for="date" class="block text-sm font-medium text-slate-700">Date</label>
+            <input id="date" name="date" type="date" required class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
+          </div>
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label for="start_time" class="block text-sm font-medium text-slate-700">Start time</label>
+              <input id="start_time" name="start_time" type="time" required class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
+            </div>
+            <div>
+              <label for="end_time" class="block text-sm font-medium text-slate-700">End time</label>
+              <input id="end_time" name="end_time" type="time" required class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
+            </div>
+          </div>
+          <div>
+            <label for="capacity" class="block text-sm font-medium text-slate-700">Hall capacity</label>
+            <select id="capacity" name="capacity" required class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
+              <option value="">Select a hall</option>
+              {% for seats in hall_capacities %}
+              <option value="{{ seats }}">{{ hall_labels[seats] }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <button id="submit-talk-button" type="submit" class="inline-flex w-full items-center justify-center rounded-full bg-indigo-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-800">
+            Submit to organizer
+          </button>
+        </form>
+      </section>
+
+      <section class="space-y-6 lg:col-span-3">
+        <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-7">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <h2 class="text-lg font-bold tracking-tight">Organizer requests</h2>
+              <p class="mt-1 text-sm text-slate-500">Invitations asking you to present a specific topic.</p>
+            </div>
+            <button id="refresh-portal" type="button" class="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-indigo-200 hover:text-indigo-700">Refresh</button>
+          </div>
+          <p id="requests-empty" class="mt-6 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">No topic requests yet.</p>
+          <div id="requests-list" class="mt-6 space-y-3"></div>
+        </div>
+
+        <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-7">
+          <h2 class="text-lg font-bold tracking-tight">Your submissions</h2>
+          <p class="mt-1 text-sm text-slate-500">Status: pending, reviewed by AI, or approved.</p>
+          <p id="submissions-empty" class="mt-6 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">No proposals yet.</p>
+          <div id="submissions-list" class="mt-6 space-y-3"></div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const form = document.getElementById("submit-talk-form");
+    const submitButton = document.getElementById("submit-talk-button");
+    const statusEl = document.getElementById("status");
+    const requestsEmpty = document.getElementById("requests-empty");
+    const requestsList = document.getElementById("requests-list");
+    const submissionsEmpty = document.getElementById("submissions-empty");
+    const submissionsList = document.getElementById("submissions-list");
+
+    function showStatus(message, kind) {
+      const styles = {
+        success: "mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800",
+        error: "mt-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-800",
+        info: "mt-6 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm font-medium text-indigo-800",
+      };
+      statusEl.hidden = false;
+      statusEl.className = styles[kind] || styles.info;
+      statusEl.textContent = message;
+    }
+
+    function statusBadge(label) {
+      const normalized = (label || "").toLowerCase();
+      const badge = document.createElement("span");
+      badge.className = normalized.includes("approved")
+        ? "inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700"
+        : normalized.includes("review") || normalized.includes("ai")
+          ? "inline-flex rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700"
+          : normalized.includes("accept")
+            ? "inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700"
+            : normalized.includes("decline")
+              ? "inline-flex rounded-full bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-700"
+              : "inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700";
+      badge.textContent = label || "Pending";
+      return badge;
+    }
+
+    async function readBody(response) {
+      const text = await response.text();
+      if (!text) return {};
+      try { return JSON.parse(text); } catch (_error) { return { error: "Unexpected response from the server." }; }
+    }
+
+    function renderRequests(items) {
+      requestsList.replaceChildren();
+      requestsEmpty.hidden = items.length > 0;
+      items.forEach((item) => {
+        const card = document.createElement("article");
+        card.className = "rounded-2xl border border-slate-200 bg-slate-50 p-4";
+        const title = document.createElement("h3");
+        title.className = "text-sm font-semibold text-slate-900";
+        title.textContent = item.topic;
+        const meta = document.createElement("p");
+        meta.className = "mt-1 text-sm text-slate-500";
+        const schedule = [item.date, item.start_time && item.end_time ? `${item.start_time}–${item.end_time}` : "", item.hall_label || ""].filter(Boolean).join(" · ");
+        meta.textContent = [item.details || item.category || "", schedule].filter(Boolean).join(" · ");
+        const row = document.createElement("div");
+        row.className = "mt-3 flex flex-wrap items-center gap-2";
+        row.append(statusBadge(item.status));
+        if (item.status === "pending") {
+          ["accept", "decline"].forEach((action) => {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = action === "accept"
+              ? "inline-flex rounded-full bg-indigo-700 px-3 py-1.5 text-xs font-semibold text-white"
+              : "inline-flex rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700";
+            button.textContent = action === "accept" ? "Accept" : "Decline";
+            button.addEventListener("click", () => respond(item.id, action));
+            row.append(button);
+          });
+        }
+        card.append(title, meta, row);
+        requestsList.append(card);
+      });
+    }
+
+    function renderSubmissions(items) {
+      submissionsList.replaceChildren();
+      submissionsEmpty.hidden = items.length > 0;
+      items.forEach((item) => {
+        const card = document.createElement("article");
+        card.className = "rounded-2xl border border-slate-200 bg-slate-50 p-4";
+        const title = document.createElement("h3");
+        title.className = "text-sm font-semibold text-slate-900";
+        title.textContent = item.title;
+        const meta = document.createElement("p");
+        meta.className = "mt-1 text-sm text-slate-500";
+        const schedule = [item.date, item.start_time && item.end_time ? `${item.start_time}–${item.end_time}` : "", item.hall_label || ""].filter(Boolean).join(" · ");
+        meta.textContent = schedule || item.abstract || "";
+        const row = document.createElement("div");
+        row.className = "mt-3 flex flex-wrap items-center gap-2";
+        row.append(statusBadge(item.display_status || item.status));
+        const category = document.createElement("span");
+        category.className = "text-xs font-medium text-slate-500";
+        category.textContent = item.category || "";
+        row.append(category);
+        card.append(title, meta, row);
+        if (item.rejection_message || item.notification) {
+          const notice = document.createElement("p");
+          notice.className = "mt-3 rounded-xl border border-rose-100 bg-rose-50 px-3 py-2 text-sm text-rose-800";
+          notice.textContent = item.rejection_message || item.notification;
+          card.append(notice);
+        }
+        submissionsList.append(card);
+      });
+    }
+
+    async function loadPortal() {
+      const response = await fetch("/api/speaker/portal", { headers: { Accept: "application/json" } });
+      const body = await readBody(response);
+      if (!response.ok) {
+        showStatus(body.error || "Could not load your speaker portal.", "error");
+        renderRequests([]);
+        renderSubmissions([]);
+        return;
+      }
+      renderRequests(Array.isArray(body.requests) ? body.requests : []);
+      renderSubmissions(Array.isArray(body.submissions) ? body.submissions : []);
+    }
+
+    async function respond(requestId, action) {
+      const response = await fetch(`/api/speaker/requests/${requestId}/respond`, {
+        method: "POST",
+        headers: { Accept: "application/json", "Content-Type": "application/json" },
+        body: JSON.stringify({ response: action }),
+      });
+      const data = await readBody(response);
+      if (!response.ok) {
+        showStatus(data.error || "Could not update the request.", "error");
+        return;
+      }
+      showStatus(action === "accept" ? "Request accepted. The event is now on the approved program." : "Request declined.", "success");
+      await loadPortal();
+    }
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const title = document.getElementById("title").value.trim();
+      const abstract = document.getElementById("abstract").value.trim();
+      const category = document.getElementById("category").value.trim();
+      const date = document.getElementById("date").value;
+      const startTime = document.getElementById("start_time").value;
+      const endTime = document.getElementById("end_time").value;
+      const capacityValue = document.getElementById("capacity").value;
+      const capacity = Number(capacityValue);
+      if (!title || !abstract || !category || !date || !startTime || !endTime || !capacityValue) {
+        showStatus("Title, abstract, category, date, start time, end time, and hall are required.", "error");
+        return;
+      }
+      if (![50, 100, 300].includes(capacity)) {
+        showStatus("Choose a hall with 50, 100, or 300 seats.", "error");
+        return;
+      }
+      submitButton.disabled = true;
+      try {
+        const response = await fetch("/api/submit", {
+          method: "POST",
+          headers: { Accept: "application/json", "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title,
+            abstract,
+            category,
+            date,
+            start_time: startTime,
+            end_time: endTime,
+            capacity,
+          }),
+        });
+        const data = await readBody(response);
+        if (!response.ok) {
+          showStatus(data.error || "Could not submit the talk.", "error");
+          return;
+        }
+        form.reset();
+        showStatus(`Submitted "${data.title || title}" for AI review.`, "success");
+        await loadPortal();
+      } catch (_error) {
+        showStatus("Could not reach the submit API.", "error");
+      } finally {
+        submitButton.disabled = false;
+      }
+    });
+
+    document.getElementById("refresh-portal").addEventListener("click", () => loadPortal());
+    loadPortal();
+  </script>
+</body>
+</html>

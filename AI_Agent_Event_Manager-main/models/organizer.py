@@ -1,7 +1,8 @@
 from extensions import db
+from models.password import HasPassword
 
 
-class Organizer(db.Model):
+class Organizer(HasPassword, db.Model):
     __tablename__ = "organizers"
 
     id = db.Column(db.String(64), primary_key=True)

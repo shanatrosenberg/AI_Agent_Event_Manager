@@ -39,6 +39,12 @@
       <nav class="flex items-center gap-6 text-sm font-medium text-slate-600">
         <a href="#roles" class="transition hover:text-indigo-700">Roles</a>
         <a href="#platform" class="transition hover:text-indigo-700">Platform</a>
+        <a href="{{ url_for('approved_events') }}" class="transition hover:text-indigo-700">Approved events</a>
+        <a href="{{ url_for('auth.speaker_login') }}" class="transition hover:text-indigo-700">Speaker login</a>
+        <a href="{{ url_for('auth.login') }}" class="transition hover:text-indigo-700">Sign in</a>
+        <a href="{{ url_for('auth.login', next='/organizer') }}" class="inline-flex items-center justify-center rounded-full bg-indigo-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-800">
+          Organizer login
+        </a>
       </nav>
     </div>
   </header>
@@ -93,7 +99,7 @@
           </div>
           <h3 class="mt-6 text-xl font-bold tracking-tight">Event Organizer</h3>
           <p class="mt-3 flex-1 text-sm leading-relaxed text-slate-600">
-            Create events, set capacity, and review AI assessments of incoming speaker submissions.
+            Review speaker proposals, approve official events, and check AI assessments of incoming talks.
           </p>
           <div class="grid grid-rows-[0fr] transition-[grid-template-rows] duration-300 ease-out group-aria-expanded:grid-rows-[1fr]">
             <div class="overflow-hidden">
@@ -141,13 +147,13 @@
             </div>
           </div>
           <a
-            href="{{ url_for('speaker.list_submissions', speaker_id='sample') }}"
+            href="{{ url_for('auth.speaker_login') }}"
             class="mt-6 inline-flex items-center justify-center gap-2 rounded-full bg-indigo-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition duration-300 hover:-translate-y-0.5 hover:bg-indigo-800 hover:shadow-lg hover:shadow-indigo-700/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-700"
           >
-            View submissions
+            Open speaker portal
             <span aria-hidden="true">→</span>
           </a>
-          <p class="mt-3 font-mono text-xs text-slate-400">/api/speaker</p>
+          <p class="mt-3 font-mono text-xs text-slate-400">/speaker</p>
         </article>
 
         <article

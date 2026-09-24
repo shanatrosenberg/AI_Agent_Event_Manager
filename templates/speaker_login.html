@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Speaker portal · Smart Event Management System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ["Plus Jakarta Sans", "ui-sans-serif", "system-ui", "sans-serif"],
+          },
+        },
+      },
+    };
+  </script>
+</head>
+<body class="min-h-screen bg-slate-50 font-sans text-slate-900 antialiased">
+  <header class="sticky top-0 z-40 border-b border-slate-200/80 bg-white/80 backdrop-blur-md">
+    <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+      <a href="{{ url_for('home') }}" class="flex items-center gap-3">
+        <span class="flex h-10 w-10 items-center justify-center rounded-2xl bg-indigo-700 text-white shadow-md shadow-indigo-700/30">
+          <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+            <rect x="3" y="5" width="18" height="16" rx="2"></rect>
+            <path d="M3 10h18M8 3v4M16 3v4"></path>
+          </svg>
+        </span>
+        <span class="text-sm font-semibold tracking-tight text-slate-800">Smart Events</span>
+      </a>
+      <nav class="flex items-center gap-6 text-sm font-medium text-slate-600">
+        <a href="{{ url_for('home') }}" class="transition hover:text-indigo-700">Home</a>
+        <a href="{{ url_for('auth.register') }}" class="transition hover:text-indigo-700">Create speaker account</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="relative overflow-hidden">
+    <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(79,70,229,0.16),_transparent_55%)]"></div>
+    <div class="mx-auto grid max-w-6xl items-center gap-10 px-6 py-12 lg:grid-cols-2 lg:py-16">
+      <section class="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-800 px-8 py-12 text-white shadow-2xl shadow-indigo-900/30 sm:px-10">
+        <p class="relative text-xs font-semibold uppercase tracking-[0.22em] text-indigo-200">Speaker portal</p>
+        <h1 class="relative mt-4 text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl">Sign in to submit talks</h1>
+        <p class="relative mt-4 max-w-md text-sm leading-relaxed text-indigo-100 sm:text-base">
+          Each speaker has a personal account. Submit a proposal to the single event organizer, or respond when they invite you to present a topic.
+        </p>
+      </section>
+
+      <section class="relative rounded-3xl border border-slate-200 bg-white p-7 shadow-sm sm:p-8">
+        <h2 class="text-xl font-bold tracking-tight text-slate-900">Speaker sign in</h2>
+        <p class="mt-1 text-sm text-slate-500">Choose your profile and enter your password. Your speaker ID is bound to the session automatically.</p>
+
+        {% if error %}
+        <div class="mt-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-800" role="alert">
+          {{ error }}
+        </div>
+        {% endif %}
+
+        <form method="post" action="{{ url_for('auth.speaker_login') }}" class="mt-6 space-y-4" novalidate>
+          <input type="hidden" name="next" value="{{ next_url or '/speaker' }}">
+          <div>
+            <label for="user_id" class="block text-sm font-medium text-slate-700">Your profile</label>
+            {% if speakers %}
+            <select
+              id="user_id"
+              name="user_id"
+              required
+              autocomplete="username"
+              class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100"
+            >
+              <option value="">Select your name</option>
+              {% for speaker in speakers %}
+              <option value="{{ speaker.id }}" {% if username == speaker.id or username == speaker.name %}selected{% endif %}>
+                {{ speaker.name or speaker.id }}
+              </option>
+              {% endfor %}
+            </select>
+            {% else %}
+            <p class="mt-1.5 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-500">
+              No speaker profiles yet. Create an account first.
+            </p>
+            {% endif %}
+          </div>
+          <div>
+            <label for="password" class="block text-sm font-medium text-slate-700">Password</label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              required
+              autocomplete="current-password"
+              class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100"
+            >
+          </div>
+          <button type="submit" class="inline-flex w-full items-center justify-center rounded-full bg-indigo-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition duration-300 hover:-translate-y-0.5 hover:bg-indigo-800 hover:shadow-lg">
+            Sign in to speaker portal
+          </button>
+        </form>
+        <p class="mt-6 text-center text-sm text-slate-500">
+          New speaker?
+          <a href="{{ url_for('auth.register') }}" class="font-semibold text-indigo-700 hover:text-indigo-800">Create an account</a>
+        </p>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

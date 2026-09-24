@@ -2,8 +2,10 @@ from flask import Blueprint, jsonify, request
 
 from cqrs import (
     ListActiveEventsQuery,
+    ListApprovedEventsQuery,
     RegisterAttendeeCommand,
     list_active_events_handler,
+    list_approved_events_handler,
     register_attendee_handler,
 )
 from cqrs.errors import DomainError
@@ -30,6 +32,12 @@ def _validation_error(message: str, status: int = 400):
 @attendee_bp.route("/events", methods=["GET"])
 def list_events():
     events = list_active_events_handler.handle(ListActiveEventsQuery())
+    return jsonify([event.to_dict() for event in events]), 200
+
+
+@attendee_bp.route("/approved", methods=["GET"])
+def list_approved_events():
+    events = list_approved_events_handler.handle(ListApprovedEventsQuery())
     return jsonify([event.to_dict() for event in events]), 200
 
 

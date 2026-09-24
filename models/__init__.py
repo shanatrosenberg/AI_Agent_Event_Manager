@@ -5,6 +5,7 @@ from models.organizer import Organizer
 from models.speaker import Speaker
 from models.stored_event import StoredEvent
 from models.submission import TalkSubmission
+from models.talk_request import TalkRequest
 
 __all__ = [
     "Attendee",
@@ -13,5 +14,6 @@ __all__ = [
     "Organizer",
     "Speaker",
     "StoredEvent",
+    "TalkRequest",
     "TalkSubmission",
 ]

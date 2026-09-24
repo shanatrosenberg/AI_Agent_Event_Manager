@@ -37,16 +37,19 @@
           <span aria-hidden="true">←</span>
           Back to home
         </a>
-        <a href="#events" class="transition hover:text-indigo-700">Your events</a>
+        <span class="hidden text-slate-400 sm:inline">{{ organizer_name }} · {{ organizer_username }}</span>
+        <form method="post" action="{{ url_for('auth.logout') }}">
+          <button type="submit" class="transition hover:text-indigo-700">Sign out</button>
+        </form>
       </nav>
     </div>
   </header>
 
-  <main class="mx-auto max-w-6xl px-6 py-10 sm:py-14">
+  <main class="mx-auto max-w-6xl px-6 py-10 sm:py-14" data-organizer-id="{{ organizer_id }}">
     <p class="text-xs font-semibold uppercase tracking-[0.22em] text-indigo-700">Event Organizer</p>
     <h1 class="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">Manage your program</h1>
     <p class="mt-3 max-w-2xl text-slate-600">
-      Create an event and review the sessions already scheduled under your organizer id. Creating and listing both go through the organizer API.
+      Review speaker proposals to add official events. Approving a talk publishes it to My Events; rejecting it moves the proposal to trash for 7 days.
     </p>
 
     <div
@@ -57,87 +60,33 @@
       class="mt-6 rounded-2xl border px-4 py-3 text-sm font-medium"
     ></div>
 
-    <div class="mt-8 grid items-start gap-6 lg:grid-cols-5">
-      <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-7 lg:col-span-2">
-        <h2 class="text-lg font-bold tracking-tight">Create an event</h2>
-        <p class="mt-1 text-sm text-slate-500">Sends a POST request to /api/organizer/events.</p>
+    <div
+      id="organizer-tabs"
+      role="tablist"
+      aria-label="Organizer workspace"
+      class="mt-8 grid grid-cols-2 gap-1 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm lg:grid-cols-4"
+    >
+      <button type="button" role="tab" id="tab-proposals" data-tab="proposals" aria-controls="panel-proposals" aria-selected="true" class="organizer-tab inline-flex items-center justify-center rounded-xl px-3 py-2.5 text-sm font-semibold transition duration-200 ease-out bg-indigo-700 text-white shadow-sm">
+        Pending Proposals
+      </button>
+      <button type="button" role="tab" id="tab-events" data-tab="events" aria-controls="panel-events" aria-selected="false" class="organizer-tab inline-flex items-center justify-center rounded-xl px-3 py-2.5 text-sm font-semibold transition duration-200 ease-out text-slate-600 hover:bg-slate-50 hover:text-indigo-700">
+        My Events
+      </button>
+      <button type="button" role="tab" id="tab-trash" data-tab="trash" aria-controls="panel-trash" aria-selected="false" class="organizer-tab inline-flex items-center justify-center rounded-xl px-3 py-2.5 text-sm font-semibold transition duration-200 ease-out text-slate-600 hover:bg-slate-50 hover:text-indigo-700">
+        Disapproved / Trash Events
+      </button>
+      <button type="button" role="tab" id="tab-request" data-tab="request" aria-controls="panel-request" aria-selected="false" class="organizer-tab inline-flex items-center justify-center rounded-xl px-3 py-2.5 text-sm font-semibold transition duration-200 ease-out text-slate-600 hover:bg-slate-50 hover:text-indigo-700">
+        Request Speaker
+      </button>
+    </div>
 
-        <form id="create-event-form" class="mt-6 space-y-4" novalidate>
-          <div>
-            <label for="organizer_id" class="block text-sm font-medium text-slate-700">Organizer id</label>
-            <input
-              id="organizer_id"
-              name="organizer_id"
-              type="text"
-              required
-              autocomplete="username"
-              placeholder="org-1"
-              class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100"
-            >
-          </div>
-          <div>
-            <label for="title" class="block text-sm font-medium text-slate-700">Title</label>
-            <input
-              id="title"
-              name="title"
-              type="text"
-              required
-              maxlength="255"
-              placeholder="AI Summit"
-              class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100"
-            >
-          </div>
-          <div>
-            <label for="description" class="block text-sm font-medium text-slate-700">Description</label>
-            <textarea
-              id="description"
-              name="description"
-              required
-              rows="4"
-              placeholder="What this event covers"
-              class="mt-1.5 w-full resize-y rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100"
-            ></textarea>
-          </div>
-          <div class="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label for="date" class="block text-sm font-medium text-slate-700">Date</label>
-              <input
-                id="date"
-                name="date"
-                type="date"
-                required
-                class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100"
-              >
-            </div>
-            <div>
-              <label for="capacity" class="block text-sm font-medium text-slate-700">Capacity</label>
-              <input
-                id="capacity"
-                name="capacity"
-                type="number"
-                required
-                min="1"
-                step="1"
-                placeholder="50"
-                class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100"
-              >
-            </div>
-          </div>
-          <button
-            id="create-event-submit"
-            type="submit"
-            class="inline-flex w-full items-center justify-center rounded-full bg-indigo-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition duration-300 hover:-translate-y-0.5 hover:bg-indigo-800 hover:shadow-lg hover:shadow-indigo-700/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-700 disabled:translate-y-0 disabled:cursor-not-allowed disabled:bg-indigo-300 disabled:shadow-none"
-          >
-            Create event
-          </button>
-        </form>
-      </section>
-
-      <section id="events" class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-7 lg:col-span-3">
+    <div class="mt-6">
+    <section id="panel-events" role="tabpanel" aria-labelledby="tab-events" hidden class="organizer-panel space-y-6">
+      <section id="events" class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-7">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 class="text-lg font-bold tracking-tight">Your events</h2>
-            <p class="mt-1 text-sm text-slate-500">Loaded from GET /api/organizer/events.</p>
+            <h2 class="text-lg font-bold tracking-tight">My Events</h2>
+            <p class="mt-1 text-sm text-slate-500">Approved events on the official program. Attendees can book these sessions.</p>
           </div>
           <button
             id="refresh-events"
@@ -149,7 +98,7 @@
         </div>
 
         <p id="events-empty" class="mt-6 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
-          No events yet. Enter an organizer id to load this list.
+          No events yet. Approve a pending proposal to publish one.
         </p>
 
         <div id="events-table-wrap" hidden class="mt-6 hidden overflow-x-auto md:block">
@@ -158,11 +107,14 @@
             <thead>
               <tr class="text-xs font-semibold uppercase tracking-wide text-slate-400">
                 <th scope="col" class="px-3 py-2 font-semibold">Event</th>
+                <th scope="col" class="px-3 py-2 font-semibold">Speaker</th>
                 <th scope="col" class="px-3 py-2 font-semibold">Date</th>
-                <th scope="col" class="px-3 py-2 font-semibold">Capacity</th>
+                <th scope="col" class="px-3 py-2 font-semibold">Time</th>
+                <th scope="col" class="px-3 py-2 font-semibold">Hall</th>
                 <th scope="col" class="px-3 py-2 font-semibold">Booked</th>
                 <th scope="col" class="px-3 py-2 font-semibold">Open</th>
                 <th scope="col" class="px-3 py-2 font-semibold">Status</th>
+                <th scope="col" class="px-3 py-2 font-semibold"><span class="sr-only">Actions</span></th>
               </tr>
             </thead>
             <tbody id="events-body" class="divide-y divide-slate-100"></tbody>
@@ -171,28 +123,167 @@
 
         <div id="events-cards" hidden class="mt-6 space-y-3 md:hidden"></div>
       </section>
+
+    <section id="approved-events" class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-7">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 class="text-lg font-bold tracking-tight">Approved events</h2>
+          <p class="mt-1 text-sm text-slate-500">Officially scheduled sessions with a hall, date, and time.</p>
+        </div>
+        <a href="{{ url_for('approved_events') }}" class="text-sm font-semibold text-indigo-700 hover:text-indigo-800">Open public view</a>
+      </div>
+      <p id="approved-empty" class="mt-6 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">No approved events yet.</p>
+      <div id="approved-list" class="mt-6 space-y-3"></div>
+    </section>
+    </section>
+
+    <section id="panel-request" role="tabpanel" aria-labelledby="tab-request" hidden class="organizer-panel">
+    <div class="grid items-start gap-6 lg:grid-cols-5">
+      <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-7 lg:col-span-2">
+        <h2 class="text-lg font-bold tracking-tight">Invite a speaker</h2>
+        <p class="mt-1 text-sm text-slate-500">Ask a speaker to present a topic at a specific date, time, and hall.</p>
+        <form id="invite-speaker-form" class="mt-6 space-y-4" novalidate>
+          <div>
+            <label for="invite_speaker_id" class="block text-sm font-medium text-slate-700">Speaker</label>
+            <select id="invite_speaker_id" required class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
+              <option value="">Select a speaker</option>
+              {% for speaker in speakers %}
+              <option value="{{ speaker.id }}">{{ speaker.name or speaker.id }} ({{ speaker.id }})</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label for="invite_topic" class="block text-sm font-medium text-slate-700">Topic</label>
+            <input id="invite_topic" required maxlength="255" placeholder="CQRS in production" class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
+          </div>
+          <div>
+            <label for="invite_details" class="block text-sm font-medium text-slate-700">Details</label>
+            <textarea id="invite_details" rows="3" placeholder="What you want them to cover" class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100"></textarea>
+          </div>
+          <div>
+            <label for="invite_date" class="block text-sm font-medium text-slate-700">Proposed date</label>
+            <input id="invite_date" type="date" required class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
+          </div>
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label for="invite_start_time" class="block text-sm font-medium text-slate-700">Start time</label>
+              <input id="invite_start_time" type="time" required class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
+            </div>
+            <div>
+              <label for="invite_end_time" class="block text-sm font-medium text-slate-700">End time</label>
+              <input id="invite_end_time" type="time" required class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
+            </div>
+          </div>
+          <div>
+            <label for="invite_capacity" class="block text-sm font-medium text-slate-700">Hall capacity</label>
+            <select id="invite_capacity" required class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
+              <option value="">Select a hall</option>
+              {% for seats in hall_capacities %}
+              <option value="{{ seats }}">{{ hall_labels[seats] }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <button id="invite-submit" type="submit" class="inline-flex w-full items-center justify-center rounded-full bg-indigo-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-800">
+            Send topic request
+          </button>
+        </form>
+      </section>
+
+      <section class="lg:col-span-3">
+        <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-7">
+          <h2 class="text-lg font-bold tracking-tight">Sent invitations</h2>
+          <p class="mt-1 text-sm text-slate-500">Topic requests you sent to speakers, including their response.</p>
+          <p id="invites-empty" class="mt-6 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">No invitations sent yet.</p>
+          <div id="invites-list" class="mt-6 space-y-3"></div>
+        </div>
+      </section>
+    </div>
+    </section>
+
+    <section id="panel-proposals" role="tabpanel" aria-labelledby="tab-proposals" hidden class="organizer-panel">
+      <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-7">
+        <h2 class="text-lg font-bold tracking-tight">Manage Proposals</h2>
+        <p class="mt-1 text-sm text-slate-500">Pending speaker submissions waiting for review. Approve to publish as an official event, or reject to move the talk to trash for 7 days.</p>
+        <p id="submissions-empty" class="mt-6 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">No pending proposals.</p>
+        <div id="submissions-list" class="mt-6 space-y-3"></div>
+      </div>
+    </section>
+
+    <section id="panel-trash" role="tabpanel" aria-labelledby="tab-trash" hidden class="organizer-panel">
+      <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-7">
+        <h2 class="text-lg font-bold tracking-tight">Trash / Disapproved Events</h2>
+        <p class="mt-1 text-sm text-slate-500">Rejected proposals stay here for 7 days. Restore one to review it again, or delete it permanently.</p>
+        <p id="trash-empty" class="mt-6 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">Trash is empty.</p>
+        <div id="trash-list" class="mt-6 space-y-3"></div>
+      </div>
+    </section>
     </div>
   </main>
 
   <script>
-    const form = document.getElementById("create-event-form");
-    const submitButton = document.getElementById("create-event-submit");
     const refreshButton = document.getElementById("refresh-events");
     const statusEl = document.getElementById("status");
-    const organizerInput = document.getElementById("organizer_id");
     const emptyEl = document.getElementById("events-empty");
     const tableWrap = document.getElementById("events-table-wrap");
     const tableBody = document.getElementById("events-body");
     const cardList = document.getElementById("events-cards");
-    const STORAGE_KEY = "organizerId";
+    const TAB_ACTIVE = "organizer-tab inline-flex items-center justify-center rounded-xl px-3 py-2.5 text-sm font-semibold transition duration-200 ease-out bg-indigo-700 text-white shadow-sm";
+    const TAB_INACTIVE = "organizer-tab inline-flex items-center justify-center rounded-xl px-3 py-2.5 text-sm font-semibold transition duration-200 ease-out text-slate-600 hover:bg-slate-50 hover:text-indigo-700";
+    const TAB_ALIASES = { approved: "events", "approved-events": "events", "my-events": "events", mine: "events", invite: "request", submissions: "proposals", pending: "proposals", create: "proposals", disapproved: "trash" };
 
-    function organizerId() {
-      return organizerInput.value.trim();
+    function showTab(name, { updateHash = true } = {}) {
+      const tabName = TAB_ALIASES[name] || name || "proposals";
+      const tabs = [...document.querySelectorAll("#organizer-tabs [data-tab]")];
+      const selectedTab = tabs.find((tab) => tab.dataset.tab === tabName) || tabs[0];
+      const selectedName = selectedTab.dataset.tab;
+      tabs.forEach((tab) => {
+        const selected = tab === selectedTab;
+        tab.setAttribute("aria-selected", selected ? "true" : "false");
+        tab.tabIndex = selected ? 0 : -1;
+        tab.className = selected ? TAB_ACTIVE : TAB_INACTIVE;
+      });
+      document.querySelectorAll(".organizer-panel").forEach((panel) => {
+        panel.hidden = panel.id !== `panel-${selectedName}`;
+      });
+      if (updateHash) {
+        const nextHash = `#${selectedName}`;
+        if (window.location.hash !== nextHash) history.replaceState(null, "", nextHash);
+      }
     }
 
-    function rememberOrganizerId() {
-      const id = organizerId();
-      if (id) sessionStorage.setItem(STORAGE_KEY, id);
+    function tabFromHash() {
+      return (window.location.hash || "#proposals").replace("#", "");
+    }
+
+    document.getElementById("organizer-tabs").addEventListener("click", (event) => {
+      const tab = event.target.closest("[data-tab]");
+      if (tab) showTab(tab.dataset.tab);
+    });
+
+    document.getElementById("organizer-tabs").addEventListener("keydown", (event) => {
+      const tabs = [...document.querySelectorAll("#organizer-tabs [data-tab]")];
+      const current = tabs.findIndex((tab) => tab.getAttribute("aria-selected") === "true");
+      if (current < 0) return;
+      const nextIndex = event.key === "ArrowRight" || event.key === "ArrowDown"
+        ? (current + 1) % tabs.length
+        : event.key === "ArrowLeft" || event.key === "ArrowUp"
+          ? (current - 1 + tabs.length) % tabs.length
+          : event.key === "Home"
+            ? 0
+            : event.key === "End"
+              ? tabs.length - 1
+              : -1;
+      if (nextIndex < 0) return;
+      event.preventDefault();
+      showTab(tabs[nextIndex].dataset.tab);
+      tabs[nextIndex].focus();
+    });
+
+    window.addEventListener("hashchange", () => showTab(tabFromHash(), { updateHash: false }));
+    showTab(tabFromHash(), { updateHash: false });
+
+    function organizerId() {
+      return (document.querySelector("main")?.dataset.organizerId || "").trim();
     }
 
     function showStatus(message, kind) {
@@ -206,14 +297,19 @@
       statusEl.textContent = message;
     }
 
-    function statusBadge(status) {
+    function statusBadge(status, label) {
       const badge = document.createElement("span");
-      const active = status === "active";
-      badge.className = active
+      const approved = status === "approved" || status === "active";
+      badge.className = approved
         ? "inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700"
         : "inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600";
-      badge.textContent = status || "unknown";
+      badge.textContent = label || (approved ? "Approved" : (status || "unknown"));
       return badge;
+    }
+
+    function eventTime(event) {
+      if (!event.start_time || !event.end_time) return "—";
+      return `${event.start_time}–${event.end_time}`;
     }
 
     function renderEvents(events) {
@@ -224,9 +320,7 @@
       tableWrap.hidden = !hasEvents;
       cardList.hidden = !hasEvents;
       if (!hasEvents) {
-        emptyEl.textContent = organizerId()
-          ? "No events yet for this organizer. Create one to see it here."
-          : "No events yet. Enter an organizer id to load this list.";
+        emptyEl.textContent = "No approved events yet. Approve a pending proposal to publish one.";
         return;
       }
 
@@ -244,13 +338,21 @@
         description.textContent = event.description || "";
         titleCell.append(title, description);
 
+        const speakerCell = document.createElement("td");
+        speakerCell.className = "px-3 py-3 text-sm text-slate-700";
+        speakerCell.textContent = event.speaker_name || event.speaker_id || "—";
+
         const dateCell = document.createElement("td");
         dateCell.className = "px-3 py-3 text-sm text-slate-700";
         dateCell.textContent = event.date || "";
 
-        const capacityCell = document.createElement("td");
-        capacityCell.className = "px-3 py-3 text-sm text-slate-700";
-        capacityCell.textContent = String(event.capacity ?? "");
+        const timeCell = document.createElement("td");
+        timeCell.className = "px-3 py-3 text-sm text-slate-700";
+        timeCell.textContent = eventTime(event);
+
+        const hallCell = document.createElement("td");
+        hallCell.className = "px-3 py-3 text-sm text-slate-700";
+        hallCell.textContent = event.hall_label || String(event.capacity ?? "");
 
         const bookedCell = document.createElement("td");
         bookedCell.className = "px-3 py-3 text-sm text-slate-700";
@@ -262,9 +364,21 @@
 
         const statusCell = document.createElement("td");
         statusCell.className = "px-3 py-3";
-        statusCell.append(statusBadge(event.status));
+        statusCell.append(statusBadge(event.status, event.display_status));
 
-        row.append(titleCell, dateCell, capacityCell, bookedCell, openCell, statusCell);
+        const editCell = document.createElement("td");
+        editCell.className = "px-3 py-3";
+        const actions = document.createElement("div");
+        actions.className = "flex flex-wrap items-center gap-3";
+        const deleteButton = document.createElement("button");
+        deleteButton.type = "button";
+        deleteButton.className = "text-sm font-semibold text-rose-700 hover:text-rose-800";
+        deleteButton.textContent = "Delete";
+        deleteButton.addEventListener("click", () => deleteEvent(event));
+        actions.append(deleteButton);
+        editCell.append(actions);
+
+        row.append(titleCell, speakerCell, dateCell, timeCell, hallCell, bookedCell, openCell, statusCell, editCell);
         tableBody.append(row);
 
         const card = document.createElement("article");
@@ -278,8 +392,10 @@
         const meta = document.createElement("dl");
         meta.className = "mt-3 grid grid-cols-2 gap-2 text-sm text-slate-700";
         [
+          ["Speaker", event.speaker_name || event.speaker_id || "—"],
           ["Date", event.date || ""],
-          ["Capacity", String(event.capacity ?? "")],
+          ["Time", eventTime(event)],
+          ["Hall", event.hall_label || String(event.capacity ?? "")],
           ["Booked", String(event.seats_booked ?? 0)],
           ["Open seats", String(event.remaining_seats ?? "")],
         ].forEach(([label, value]) => {
@@ -295,9 +411,40 @@
         });
         const badgeRow = document.createElement("div");
         badgeRow.className = "mt-3";
-        badgeRow.append(statusBadge(event.status));
-        card.append(cardTitle, cardDescription, meta, badgeRow);
+        badgeRow.append(statusBadge(event.status, event.display_status));
+        const cardActions = document.createElement("div");
+        cardActions.className = "mt-3 flex flex-wrap items-center gap-3";
+        const cardDelete = document.createElement("button");
+        cardDelete.type = "button";
+        cardDelete.className = "text-sm font-semibold text-rose-700";
+        cardDelete.textContent = "Delete";
+        cardDelete.addEventListener("click", () => deleteEvent(event));
+        cardActions.append(cardDelete);
+        card.append(cardTitle, cardDescription, meta, badgeRow, cardActions);
         cardList.append(card);
+      });
+      renderApproved(events.filter((item) => item.status === "approved" || item.status === "active"));
+    }
+
+    function renderApproved(events) {
+      const empty = document.getElementById("approved-empty");
+      const list = document.getElementById("approved-list");
+      list.replaceChildren();
+      empty.hidden = events.length > 0;
+      events.forEach((event) => {
+        const card = document.createElement("article");
+        card.className = "rounded-2xl border border-slate-200 bg-slate-50 p-4";
+        const title = document.createElement("h3");
+        title.className = "text-sm font-semibold text-slate-900";
+        title.textContent = event.title || "";
+        const meta = document.createElement("p");
+        meta.className = "mt-1 text-sm text-slate-500";
+        meta.textContent = `${event.date || ""} · ${eventTime(event)} · ${event.hall_label || ""}`;
+        const row = document.createElement("div");
+        row.className = "mt-3";
+        row.append(statusBadge(event.status, event.display_status));
+        card.append(title, meta, row);
+        list.append(card);
       });
     }
 
@@ -311,12 +458,57 @@
       }
     }
 
+    function speakerLabel(speaker) {
+      const name = (speaker.name || "").trim();
+      const id = speaker.id || "";
+      return name && name !== id ? `${name} (${id})` : id;
+    }
+
+    function fillSpeakerSelect(select, speakers, selected) {
+      if (!select) return;
+      select.replaceChildren();
+      const placeholder = document.createElement("option");
+      placeholder.value = "";
+      placeholder.textContent = "Select a speaker";
+      select.append(placeholder);
+      speakers.forEach((speaker) => {
+        const option = document.createElement("option");
+        option.value = speaker.id;
+        option.textContent = speakerLabel(speaker);
+        select.append(option);
+      });
+      if (selected && speakers.some((speaker) => speaker.id === selected)) {
+        select.value = selected;
+      }
+    }
+
+    function renderSpeakers(speakers) {
+      const inviteSelect = document.getElementById("invite_speaker_id");
+      fillSpeakerSelect(inviteSelect, speakers, inviteSelect.value);
+    }
+
+    async function loadSpeakers() {
+      try {
+        const response = await fetch("/api/organizer/speakers", {
+          headers: { Accept: "application/json" },
+        });
+        const data = await readBody(response);
+        if (!response.ok) {
+          showStatus(data.error || "Could not load speakers.", "error");
+          return;
+        }
+        renderSpeakers(Array.isArray(data) ? data : []);
+      } catch (_error) {
+        showStatus("Could not reach the speaker list.", "error");
+      }
+    }
+
     async function loadEvents(options = {}) {
       const announce = options.announce !== false;
       const id = organizerId();
       if (!id) {
         renderEvents([]);
-        if (announce) showStatus("Enter an organizer id to load your events.", "info");
+        if (announce) showStatus("Could not determine the organizer account.", "error");
         return false;
       }
 
@@ -352,76 +544,286 @@
       }
     }
 
-    form.addEventListener("submit", async (event) => {
-      event.preventDefault();
-      const id = organizerId();
-      const title = document.getElementById("title").value.trim();
-      const description = document.getElementById("description").value.trim();
-      const date = document.getElementById("date").value;
-      const capacityValue = document.getElementById("capacity").value;
-      const capacity = Number(capacityValue);
-
-      if (!id || !title || !description || !date || !capacityValue) {
-        showStatus("Organizer id, title, description, date, and capacity are required.", "error");
-        return;
-      }
-      if (!Number.isInteger(capacity) || capacity < 1) {
-        showStatus("Capacity must be a whole number of at least 1.", "error");
-        return;
-      }
-
-      rememberOrganizerId();
-      submitButton.disabled = true;
-      submitButton.textContent = "Creating…";
-
-      try {
-        const response = await fetch("/api/organizer/events", {
-          method: "POST",
-          headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-            "X-Organizer-Id": id,
-          },
-          body: JSON.stringify({
-            organizer_id: id,
-            title,
-            description,
-            date,
-            capacity,
-          }),
-        });
-        const data = await readBody(response);
-        if (!response.ok) {
-          showStatus(data.error || "Could not create the event.", "error");
-          return;
-        }
-        form.reset();
-        organizerInput.value = id;
-        const listed = await loadEvents({ announce: false });
-        if (listed) showStatus(`Created "${data.title || title}".`, "success");
-      } catch (_error) {
-        showStatus("Could not reach the organizer API.", "error");
-      } finally {
-        submitButton.disabled = false;
-        submitButton.textContent = "Create event";
-      }
-    });
-
-    organizerInput.addEventListener("change", () => {
-      rememberOrganizerId();
-      loadEvents();
-    });
-
     refreshButton.addEventListener("click", () => {
-      rememberOrganizerId();
       loadEvents();
     });
 
-    const savedId = new URLSearchParams(window.location.search).get("organizer_id")
-      || sessionStorage.getItem(STORAGE_KEY)
-      || "";
-    if (savedId) organizerInput.value = savedId;
-    loadEvents();
+    const inviteForm = document.getElementById("invite-speaker-form");
+    const inviteSpeaker = document.getElementById("invite_speaker_id");
+    const submissionsEmpty = document.getElementById("submissions-empty");
+    const submissionsList = document.getElementById("submissions-list");
+    const invitesEmpty = document.getElementById("invites-empty");
+    const invitesList = document.getElementById("invites-list");
+    const trashEmpty = document.getElementById("trash-empty");
+    const trashList = document.getElementById("trash-list");
+
+    function talkBadge(label) {
+      const normalized = (label || "").toLowerCase();
+      const badge = document.createElement("span");
+      badge.className = normalized.includes("approved") || normalized.includes("accept")
+        ? "inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700"
+        : normalized.includes("review") || normalized.includes("ai")
+          ? "inline-flex rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700"
+          : normalized.includes("decline")
+            ? "inline-flex rounded-full bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-700"
+            : "inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700";
+      badge.textContent = label || "Pending";
+      return badge;
+    }
+
+    function proposalDetails(item) {
+      const details = document.createElement("dl");
+      details.className = "mt-3 grid gap-3 text-sm text-slate-700 sm:grid-cols-2";
+      [
+        ["Speaker", item.speaker_name || item.speaker_id || "—"],
+        ["Talk title", item.title || "—"],
+        ["Category", item.category || "—"],
+        ["Date / time", [item.date, item.start_time && item.end_time ? `${item.start_time}–${item.end_time}` : ""].filter(Boolean).join(" · ") || "—"],
+        ["Requested capacity", item.hall_label || (item.capacity != null ? `${item.capacity} seats` : "—")],
+      ].forEach(([label, value]) => {
+        const wrap = document.createElement("div");
+        const dt = document.createElement("dt");
+        dt.className = "text-xs font-medium uppercase tracking-wide text-slate-400";
+        dt.textContent = label;
+        const dd = document.createElement("dd");
+        dd.className = "mt-0.5 font-medium text-slate-800";
+        dd.textContent = value;
+        wrap.append(dt, dd);
+        details.append(wrap);
+      });
+      const abstractWrap = document.createElement("div");
+      abstractWrap.className = "sm:col-span-2";
+      const abstractLabel = document.createElement("dt");
+      abstractLabel.className = "text-xs font-medium uppercase tracking-wide text-slate-400";
+      abstractLabel.textContent = "Abstract / summary";
+      const abstractValue = document.createElement("dd");
+      abstractValue.className = "mt-0.5 text-slate-600";
+      abstractValue.textContent = item.abstract || "No abstract provided.";
+      abstractWrap.append(abstractLabel, abstractValue);
+      details.append(abstractWrap);
+      return details;
+    }
+
+    function renderSubmissions(items) {
+      submissionsList.replaceChildren();
+      submissionsEmpty.hidden = items.length > 0;
+      items.forEach((item) => {
+        const card = document.createElement("article");
+        card.className = "rounded-2xl border border-slate-200 bg-slate-50 p-4";
+        const title = document.createElement("h3");
+        title.className = "text-sm font-semibold text-slate-900";
+        title.textContent = item.title;
+        const row = document.createElement("div");
+        row.className = "mt-3 flex flex-wrap items-center gap-2";
+        row.append(talkBadge(item.display_status || item.status));
+        const approveButton = document.createElement("button");
+        approveButton.type = "button";
+        approveButton.className = "inline-flex rounded-full bg-indigo-700 px-3 py-1.5 text-xs font-semibold text-white";
+        approveButton.textContent = "Approve";
+        approveButton.addEventListener("click", () => approveSubmission(item.id));
+        const rejectButton = document.createElement("button");
+        rejectButton.type = "button";
+        rejectButton.className = "inline-flex rounded-full border border-rose-200 bg-white px-3 py-1.5 text-xs font-semibold text-rose-700";
+        rejectButton.textContent = "Reject";
+        rejectButton.addEventListener("click", () => rejectSubmission(item.id));
+        row.append(approveButton, rejectButton);
+        card.append(title, proposalDetails(item), row);
+        submissionsList.append(card);
+      });
+    }
+
+    function renderTrash(items) {
+      trashList.replaceChildren();
+      trashEmpty.hidden = items.length > 0;
+      items.forEach((item) => {
+        const card = document.createElement("article");
+        card.className = "rounded-2xl border border-slate-200 bg-slate-50 p-4";
+        const title = document.createElement("h3");
+        title.className = "text-sm font-semibold text-slate-900";
+        title.textContent = item.title;
+        const hold = document.createElement("p");
+        hold.className = "mt-1 text-sm text-slate-500";
+        const days = item.days_remaining;
+        hold.textContent = days == null
+          ? "Held in trash until restored or deleted."
+          : days === 1
+            ? "1 day left in trash before automatic removal."
+            : `${days} days left in trash before automatic removal.`;
+        const row = document.createElement("div");
+        row.className = "mt-3 flex flex-wrap items-center gap-2";
+        row.append(talkBadge(item.display_status || item.status));
+        const restoreButton = document.createElement("button");
+        restoreButton.type = "button";
+        restoreButton.className = "inline-flex rounded-full bg-indigo-700 px-3 py-1.5 text-xs font-semibold text-white";
+        restoreButton.textContent = "Restore";
+        restoreButton.addEventListener("click", () => restoreTrash(item.id));
+        const deleteButton = document.createElement("button");
+        deleteButton.type = "button";
+        deleteButton.className = "inline-flex rounded-full border border-rose-200 bg-white px-3 py-1.5 text-xs font-semibold text-rose-700";
+        deleteButton.textContent = "Delete";
+        deleteButton.addEventListener("click", () => deleteTrash(item.id, item.title));
+        row.append(restoreButton, deleteButton);
+        card.append(title, proposalDetails(item), hold, row);
+        trashList.append(card);
+      });
+    }
+
+    function renderInvites(items) {
+      invitesList.replaceChildren();
+      invitesEmpty.hidden = items.length > 0;
+      items.forEach((item) => {
+        const card = document.createElement("article");
+        card.className = "rounded-2xl border border-slate-200 bg-slate-50 p-4";
+        const title = document.createElement("h3");
+        title.className = "text-sm font-semibold text-slate-900";
+        title.textContent = item.topic;
+        const meta = document.createElement("p");
+        meta.className = "mt-1 text-sm text-slate-500";
+        const schedule = [item.date, item.start_time && item.end_time ? `${item.start_time}–${item.end_time}` : "", item.hall_label || ""].filter(Boolean).join(" · ");
+        meta.textContent = [item.speaker_name || item.speaker_id, schedule].filter(Boolean).join(" · ");
+        const row = document.createElement("div");
+        row.className = "mt-3";
+        row.append(talkBadge(item.status));
+        card.append(title, meta, row);
+        invitesList.append(card);
+      });
+    }
+
+    async function loadTalkWorkflow() {
+      const [submissionsRes, invitesRes, trashRes] = await Promise.all([
+        fetch("/api/organizer/proposals", { headers: { Accept: "application/json" } }),
+        fetch("/api/organizer/requests", { headers: { Accept: "application/json" } }),
+        fetch("/api/organizer/trash", { headers: { Accept: "application/json" } }),
+      ]);
+      const submissions = await readBody(submissionsRes);
+      const invites = await readBody(invitesRes);
+      const trash = await readBody(trashRes);
+      renderSubmissions(Array.isArray(submissions) ? submissions : []);
+      renderInvites(Array.isArray(invites) ? invites : []);
+      renderTrash(Array.isArray(trash) ? trash : []);
+    }
+
+    async function approveSubmission(id) {
+      const response = await fetch(`/api/organizer/proposals/${id}/approve`, {
+        method: "POST",
+        headers: { Accept: "application/json" },
+      });
+      const data = await readBody(response);
+      if (!response.ok) {
+        showStatus(data.error || "Could not approve the talk.", "error");
+        return;
+      }
+      showStatus(`Approved "${data.title}" and added it to My Events.`, "success");
+      await Promise.all([loadTalkWorkflow(), loadEvents({ announce: false })]);
+      showTab("events");
+    }
+
+    async function rejectSubmission(id) {
+      const response = await fetch(`/api/organizer/proposals/${id}/reject`, {
+        method: "POST",
+        headers: { Accept: "application/json", "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const data = await readBody(response);
+      if (!response.ok) {
+        showStatus(data.error || "Could not reject the talk.", "error");
+        return;
+      }
+      showStatus(`Rejected "${data.title}". The speaker was notified and the proposal is in trash for 7 days.`, "info");
+      await loadTalkWorkflow();
+      showTab("trash");
+    }
+
+    async function restoreTrash(id) {
+      const response = await fetch(`/api/organizer/trash/${id}/restore`, {
+        method: "POST",
+        headers: { Accept: "application/json" },
+      });
+      const data = await readBody(response);
+      if (!response.ok) {
+        showStatus(data.error || "Could not restore the proposal.", "error");
+        return;
+      }
+      showStatus(`Restored "${data.title}" to pending proposals.`, "success");
+      await loadTalkWorkflow();
+      showTab("proposals");
+    }
+
+    async function deleteTrash(id, title) {
+      if (!window.confirm(`Permanently delete "${title || "this proposal"}"?`)) return;
+      const response = await fetch(`/api/organizer/trash/${id}`, {
+        method: "DELETE",
+        headers: { Accept: "application/json" },
+      });
+      const data = await readBody(response);
+      if (!response.ok) {
+        showStatus(data.error || "Could not delete the proposal.", "error");
+        return;
+      }
+      showStatus(`Deleted "${data.title || title}".`, "success");
+      await loadTalkWorkflow();
+    }
+
+    async function deleteEvent(event) {
+      if (!window.confirm(`Permanently delete "${event.title || "this event"}"?`)) return;
+      const response = await fetch(`/api/organizer/events/${event.id}`, {
+        method: "DELETE",
+        headers: { Accept: "application/json" },
+      });
+      const data = await readBody(response);
+      if (!response.ok) {
+        showStatus(data.error || "Could not delete the event.", "error");
+        return;
+      }
+      showStatus(`Deleted "${data.title || event.title}".`, "success");
+      await loadEvents({ announce: false });
+    }
+
+    inviteForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const speakerId = inviteSpeaker.value.trim();
+      const topic = document.getElementById("invite_topic").value.trim();
+      const details = document.getElementById("invite_details").value.trim();
+      const date = document.getElementById("invite_date").value;
+      const startTime = document.getElementById("invite_start_time").value;
+      const endTime = document.getElementById("invite_end_time").value;
+      const capacityValue = document.getElementById("invite_capacity").value;
+      const capacity = Number(capacityValue);
+      if (!speakerId || !topic || !date || !startTime || !endTime || !capacityValue) {
+        showStatus("Choose a speaker, topic, date, times, and hall.", "error");
+        return;
+      }
+      if (![50, 100, 300].includes(capacity)) {
+        showStatus("Choose a hall with 50, 100, or 300 seats.", "error");
+        return;
+      }
+      const response = await fetch("/api/organizer/requests", {
+        method: "POST",
+        headers: { Accept: "application/json", "Content-Type": "application/json" },
+        body: JSON.stringify({
+          speaker_id: speakerId,
+          topic,
+          details,
+          category: "invitation",
+          date,
+          start_time: startTime,
+          end_time: endTime,
+          capacity,
+        }),
+      });
+      const data = await readBody(response);
+      if (!response.ok) {
+        showStatus(data.error || "Could not send the invitation.", "error");
+        return;
+      }
+      inviteForm.reset();
+      showStatus(`Invited ${data.speaker_name || speakerId} to present "${data.topic}".`, "success");
+      await loadTalkWorkflow();
+    });
+
+    loadSpeakers();
+    loadEvents({ announce: false });
+    loadTalkWorkflow();
   </script>
 </body>
 </html>
