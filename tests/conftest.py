@@ -100,7 +100,9 @@ def approve_talk_event(client, speaker_headers, event_payload, **overrides):
     assert submitted.status_code == 201, submitted.get_json()
     approved = client.post(f"/api/organizer/proposals/{submitted.get_json()['id']}/approve")
     assert approved.status_code == 200, approved.get_json()
+    assert approved.get_json()["status"] == "approved"
     event_id = approved.get_json()["event_id"]
+    assert event_id
     events = client.get(
         "/api/organizer/events",
         headers={"X-Organizer-Id": admin_organizer_id()},

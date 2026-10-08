@@ -6,51 +6,163 @@
   <title>Event Organizer · Smart Event Management System</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ["Plus Jakarta Sans", "ui-sans-serif", "system-ui", "sans-serif"],
-          },
-        },
-      },
-    };
-  </script>
+  {% include 'partials/theme.html' %}
+  <style>
+    .overlap-cloud-anchor {
+      filter: drop-shadow(0 18px 28px rgba(120, 53, 15, 0.12));
+    }
+    .overlap-cloud-anchor::before {
+      content: "";
+      position: absolute;
+      top: 2px;
+      left: 1.35rem;
+      width: 12px;
+      height: 12px;
+      background: #fff;
+      border-left: 1px solid #fde68a;
+      border-top: 1px solid #fde68a;
+      transform: rotate(45deg);
+      z-index: 1;
+    }
+    .overlap-cloud {
+      max-height: 200px;
+      overflow-x: hidden;
+      overflow-y: auto;
+      padding: 0.875rem 0.875rem 1.15rem;
+      overscroll-behavior: contain;
+      scrollbar-width: thin;
+      scrollbar-color: #d6b27a transparent;
+    }
+    .overlap-cloud::-webkit-scrollbar {
+      width: 6px;
+    }
+    .overlap-cloud::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .overlap-cloud::-webkit-scrollbar-thumb {
+      background: #e8d4b0;
+      border-radius: 999px;
+    }
+    .overlap-cloud::-webkit-scrollbar-thumb:hover {
+      background: #c9a46a;
+    }
+    .overlap-cloud [data-overlapping-talks] {
+      padding-bottom: 0.35rem;
+    }
+    .event-log-table-wrap {
+      max-height: 520px;
+      overflow: auto;
+      scrollbar-width: thin;
+      scrollbar-color: #d6b27a transparent;
+    }
+    .event-log-table-wrap::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .event-log-table-wrap::-webkit-scrollbar-thumb {
+      background: #e8d4b0;
+      border-radius: 999px;
+    }
+  </style>
 </head>
-<body class="min-h-screen bg-slate-50 font-sans text-slate-900 antialiased">
-  <header class="sticky top-0 z-40 border-b border-slate-200/80 bg-white/80 backdrop-blur-md">
+<body class="min-h-screen bg-sand-50 font-sans text-stone-900 antialiased">
+  <div class="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+    <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(251,191,36,0.18),_transparent_55%)]"></div>
+    <div class="absolute -left-24 top-20 h-72 w-72 rounded-full bg-rose-200/40 blur-3xl"></div>
+    <div class="absolute -right-16 top-72 h-80 w-80 rounded-full bg-amber-200/40 blur-3xl"></div>
+  </div>
+
+  <header class="sticky top-0 z-40 border-b border-amber-200/70 bg-sand-50/80 backdrop-blur-xl">
     <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
       <a href="{{ url_for('home') }}" class="flex items-center gap-3">
-        <span class="flex h-10 w-10 items-center justify-center rounded-2xl bg-indigo-700 text-white shadow-md shadow-indigo-700/30">
+        <span class="flex h-10 w-10 items-center justify-center rounded-2xl bg-clay-600 text-white shadow-md shadow-orange-900/20">
           <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
             <rect x="3" y="5" width="18" height="16" rx="2"></rect>
             <path d="M3 10h18M8 3v4M16 3v4"></path>
           </svg>
         </span>
-        <span class="text-sm font-semibold tracking-tight text-slate-800">Smart Events</span>
+        <span class="text-sm font-semibold tracking-tight text-stone-800">Smart Events</span>
       </a>
-      <nav class="flex items-center gap-6 text-sm font-medium text-slate-600">
-        <a href="{{ url_for('home') }}" class="inline-flex items-center gap-1.5 transition hover:text-indigo-700">
+      <nav class="flex items-center gap-6 text-sm font-medium text-stone-600">
+        <a href="{{ url_for('home') }}" class="inline-flex items-center gap-1.5 transition hover:text-clay-700">
           <span aria-hidden="true">←</span>
           Back to home
         </a>
-        <span class="hidden text-slate-400 sm:inline">{{ organizer_name }} · {{ organizer_username }}</span>
+        <span class="hidden text-stone-400 sm:inline">{{ organizer_name }} · {{ organizer_username }}</span>
         <form method="post" action="{{ url_for('auth.logout') }}">
-          <button type="submit" class="transition hover:text-indigo-700">Sign out</button>
+          <button type="submit" class="transition hover:text-clay-700">Sign out</button>
         </form>
       </nav>
     </div>
   </header>
 
   <main class="mx-auto max-w-6xl px-6 py-10 sm:py-14" data-organizer-id="{{ organizer_id }}">
-    <p class="text-xs font-semibold uppercase tracking-[0.22em] text-indigo-700">Event Organizer</p>
-    <h1 class="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">Manage your program</h1>
-    <p class="mt-3 max-w-2xl text-slate-600">
-      Review speaker proposals to add official events. Approving a talk publishes it to My Events; rejecting it moves the proposal to trash for 7 days.
+    <p class="text-xs font-semibold uppercase tracking-[0.22em] text-clay-700">Event Organizer</p>
+    <h1 class="font-display mt-3 text-3xl font-extrabold tracking-tight text-stone-900 sm:text-4xl">Manage your program</h1>
+    <p class="mt-3 max-w-2xl text-stone-600">
+      Approve a pending proposal to publish it immediately in My Events. Speaker invitations stay pending until the speaker confirms.
     </p>
+
+    <section id="kpi-bar" class="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <button type="button" data-kpi-tab="events" class="group rounded-3xl border border-amber-100 bg-white/55 p-5 text-left shadow-lg shadow-amber-900/5 backdrop-blur-xl transition duration-300 hover:scale-[1.03] hover:shadow-xl hover:shadow-amber-500/10">
+        <div class="flex items-start justify-between gap-3">
+          <span class="flex h-11 w-11 items-center justify-center rounded-2xl bg-clay-600/10 text-clay-700">
+            <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+              <rect x="3" y="5" width="18" height="16" rx="2"></rect>
+              <path d="M3 10h18M8 3v4M16 3v4"></path>
+            </svg>
+          </span>
+          <span class="text-[11px] font-semibold uppercase tracking-wider text-stone-400">Active</span>
+        </div>
+        <p class="mt-4 text-3xl font-extrabold tracking-tight text-stone-900" id="kpi-events">0</p>
+        <p class="mt-1 text-sm font-medium text-stone-500">My Events</p>
+      </button>
+      <button type="button" data-kpi-tab="proposals" class="group rounded-3xl border border-amber-100 bg-white/55 p-5 text-left shadow-lg shadow-amber-900/5 backdrop-blur-xl transition duration-300 hover:scale-[1.03] hover:shadow-xl hover:shadow-amber-500/10">
+        <div class="flex items-start justify-between gap-3">
+          <span class="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-700">
+            <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+              <path d="M8 7h8M8 12h8M8 17h5"></path>
+              <rect x="4" y="4" width="16" height="16" rx="2"></rect>
+            </svg>
+            <span id="kpi-pending-pulse" class="absolute -right-0.5 -top-0.5 hidden h-3 w-3">
+              <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75"></span>
+              <span class="relative inline-flex h-3 w-3 rounded-full bg-amber-500"></span>
+            </span>
+          </span>
+          <span class="text-[11px] font-semibold uppercase tracking-wider text-stone-400">Inbox</span>
+        </div>
+        <p class="mt-4 text-3xl font-extrabold tracking-tight text-stone-900" id="kpi-pending">0</p>
+        <p class="mt-1 text-sm font-medium text-stone-500">Pending Proposals</p>
+      </button>
+      <div class="rounded-3xl border border-amber-100 bg-white/55 p-5 shadow-lg shadow-amber-900/5 backdrop-blur-xl transition duration-300 hover:scale-[1.03] hover:shadow-xl hover:shadow-amber-500/10">
+        <div class="flex items-start justify-between gap-3">
+          <span class="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-800">
+            <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+              <circle cx="9" cy="8" r="3"></circle>
+              <path d="M4 19c.8-3 3-5 5-5s4.2 2 5 5"></path>
+              <circle cx="17" cy="9" r="2.4"></circle>
+              <path d="M16 19c.4-2 1.6-3.4 3-3.8"></path>
+            </svg>
+          </span>
+          <span class="text-[11px] font-semibold uppercase tracking-wider text-stone-400">Clients</span>
+        </div>
+        <p class="mt-4 text-3xl font-extrabold tracking-tight text-stone-900" id="kpi-attendees">{{ kpi_attendees|default(0) }}</p>
+        <p class="mt-1 text-sm font-medium text-stone-500">Registered attendees</p>
+      </div>
+      <button type="button" data-kpi-tab="events" class="group rounded-3xl border border-amber-100 bg-white/55 p-5 text-left shadow-lg shadow-amber-900/5 backdrop-blur-xl transition duration-300 hover:scale-[1.03] hover:shadow-xl hover:shadow-emerald-500/10">
+        <div class="flex items-start justify-between gap-3">
+          <span class="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-700">
+            <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+              <circle cx="12" cy="12" r="8"></circle>
+              <path d="M8.5 12.2 11 14.7 15.6 9.8"></path>
+            </svg>
+          </span>
+          <span class="text-[11px] font-semibold uppercase tracking-wider text-stone-400">Held</span>
+        </div>
+        <p class="mt-4 text-3xl font-extrabold tracking-tight text-stone-900" id="kpi-held">{{ kpi_events_held|default(0) }}</p>
+        <p class="mt-1 text-sm font-medium text-stone-500">Events held</p>
+      </button>
+    </section>
 
     <div
       id="status"
@@ -64,48 +176,55 @@
       id="organizer-tabs"
       role="tablist"
       aria-label="Organizer workspace"
-      class="mt-8 grid grid-cols-2 gap-1 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm lg:grid-cols-4"
+      class="mt-8 flex flex-wrap justify-center gap-2 rounded-full border border-amber-100 bg-white/50 p-1.5 shadow-lg shadow-amber-900/5 backdrop-blur-xl"
     >
-      <button type="button" role="tab" id="tab-proposals" data-tab="proposals" aria-controls="panel-proposals" aria-selected="true" class="organizer-tab inline-flex items-center justify-center rounded-xl px-3 py-2.5 text-sm font-semibold transition duration-200 ease-out bg-indigo-700 text-white shadow-sm">
-        Pending Proposals
-      </button>
-      <button type="button" role="tab" id="tab-events" data-tab="events" aria-controls="panel-events" aria-selected="false" class="organizer-tab inline-flex items-center justify-center rounded-xl px-3 py-2.5 text-sm font-semibold transition duration-200 ease-out text-slate-600 hover:bg-slate-50 hover:text-indigo-700">
+      <button type="button" role="tab" id="tab-events" data-tab="events" aria-controls="panel-events" aria-selected="true" class="organizer-tab inline-flex items-center justify-center rounded-full bg-gradient-to-r from-clay-600 to-amber-700 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-orange-900/20 transition duration-300">
         My Events
       </button>
-      <button type="button" role="tab" id="tab-trash" data-tab="trash" aria-controls="panel-trash" aria-selected="false" class="organizer-tab inline-flex items-center justify-center rounded-xl px-3 py-2.5 text-sm font-semibold transition duration-200 ease-out text-slate-600 hover:bg-slate-50 hover:text-indigo-700">
-        Disapproved / Trash Events
-      </button>
-      <button type="button" role="tab" id="tab-request" data-tab="request" aria-controls="panel-request" aria-selected="false" class="organizer-tab inline-flex items-center justify-center rounded-xl px-3 py-2.5 text-sm font-semibold transition duration-200 ease-out text-slate-600 hover:bg-slate-50 hover:text-indigo-700">
+      <button type="button" role="tab" id="tab-request" data-tab="request" aria-controls="panel-request" aria-selected="false" class="organizer-tab inline-flex items-center justify-center rounded-full px-4 py-2.5 text-sm font-semibold text-stone-600 transition duration-300 hover:bg-white/80 hover:text-clay-700">
         Request Speaker
+      </button>
+      <button type="button" role="tab" id="tab-proposals" data-tab="proposals" aria-controls="panel-proposals" aria-selected="false" class="organizer-tab inline-flex items-center justify-center rounded-full px-4 py-2.5 text-sm font-semibold text-stone-600 transition duration-300 hover:bg-white/80 hover:text-clay-700">
+        Pending Proposals
+        <span id="tab-proposals-count" class="ml-2 hidden h-5 min-w-5 items-center justify-center rounded-full bg-amber-400 px-1.5 text-[10px] font-bold text-amber-950">0</span>
+      </button>
+      <button type="button" role="tab" id="tab-trash" data-tab="trash" aria-controls="panel-trash" aria-selected="false" class="organizer-tab inline-flex items-center justify-center rounded-full px-4 py-2.5 text-sm font-semibold text-stone-600 transition duration-300 hover:bg-white/80 hover:text-clay-700">
+        Trash / Disapproved Events
+      </button>
+      <button type="button" role="tab" id="tab-audit" data-tab="audit" aria-controls="panel-audit" aria-selected="false" class="organizer-tab inline-flex items-center justify-center rounded-full px-4 py-2.5 text-sm font-semibold text-stone-600 transition duration-300 hover:bg-white/80 hover:text-clay-700">
+        Event Log
       </button>
     </div>
 
     <div class="mt-6">
-    <section id="panel-events" role="tabpanel" aria-labelledby="tab-events" hidden class="organizer-panel space-y-6">
-      <section id="events" class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-7">
+    <section id="panel-events" role="tabpanel" aria-labelledby="tab-events" class="organizer-panel space-y-6">
+      <section id="events" class="rounded-3xl border border-amber-100 bg-white/80 p-6 shadow-xl shadow-amber-900/5 backdrop-blur-xl sm:p-7">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 class="text-lg font-bold tracking-tight">My Events</h2>
-            <p class="mt-1 text-sm text-slate-500">Approved events on the official program. Attendees can book these sessions.</p>
+            <h2 class="font-display text-lg font-bold tracking-tight">My Events</h2>
+            <p class="mt-1 text-sm text-stone-500">Approved sessions on the official program, with hall, schedule, and booking counts. Rejecting a talk moves it to trash for 7 days.</p>
           </div>
-          <button
-            id="refresh-events"
-            type="button"
-            class="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition duration-300 hover:-translate-y-0.5 hover:border-indigo-200 hover:text-indigo-700 hover:shadow-md"
-          >
-            Refresh
-          </button>
+          <div class="flex flex-wrap items-center gap-3">
+            <a href="{{ url_for('approved_events') }}" class="text-sm font-semibold text-clay-700 hover:text-clay-700">Open public view</a>
+            <button
+              id="refresh-events"
+              type="button"
+              class="inline-flex items-center justify-center rounded-full border border-amber-200 bg-white px-4 py-2 text-sm font-semibold text-stone-700 transition duration-300 hover:-translate-y-0.5 hover:border-amber-200 hover:text-clay-700 hover:shadow-md"
+            >
+              Refresh
+            </button>
+          </div>
         </div>
 
-        <p id="events-empty" class="mt-6 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
-          No events yet. Approve a pending proposal to publish one.
+        <p id="events-empty" class="mt-6 rounded-2xl border border-dashed border-amber-200 bg-sand-50/80 px-4 py-8 text-center text-sm text-stone-500">
+          No approved events yet. Approve a pending proposal or wait for a speaker to confirm an invitation.
         </p>
 
         <div id="events-table-wrap" hidden class="mt-6 hidden overflow-x-auto md:block">
           <table class="min-w-full text-left">
             <caption class="sr-only">Events for the current organizer</caption>
             <thead>
-              <tr class="text-xs font-semibold uppercase tracking-wide text-slate-400">
+              <tr class="text-xs font-semibold uppercase tracking-wide text-stone-400">
                 <th scope="col" class="px-3 py-2 font-semibold">Event</th>
                 <th scope="col" class="px-3 py-2 font-semibold">Speaker</th>
                 <th scope="col" class="px-3 py-2 font-semibold">Date</th>
@@ -117,108 +236,180 @@
                 <th scope="col" class="px-3 py-2 font-semibold"><span class="sr-only">Actions</span></th>
               </tr>
             </thead>
-            <tbody id="events-body" class="divide-y divide-slate-100"></tbody>
+            <tbody id="events-body" class="divide-y divide-amber-100"></tbody>
           </table>
         </div>
 
         <div id="events-cards" hidden class="mt-6 space-y-3 md:hidden"></div>
       </section>
-
-    <section id="approved-events" class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-7">
-      <div class="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 class="text-lg font-bold tracking-tight">Approved events</h2>
-          <p class="mt-1 text-sm text-slate-500">Officially scheduled sessions with a hall, date, and time.</p>
-        </div>
-        <a href="{{ url_for('approved_events') }}" class="text-sm font-semibold text-indigo-700 hover:text-indigo-800">Open public view</a>
-      </div>
-      <p id="approved-empty" class="mt-6 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">No approved events yet.</p>
-      <div id="approved-list" class="mt-6 space-y-3"></div>
-    </section>
     </section>
 
     <section id="panel-request" role="tabpanel" aria-labelledby="tab-request" hidden class="organizer-panel">
-    <div class="grid items-start gap-6 lg:grid-cols-5">
-      <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-7 lg:col-span-2">
-        <h2 class="text-lg font-bold tracking-tight">Invite a speaker</h2>
-        <p class="mt-1 text-sm text-slate-500">Ask a speaker to present a topic at a specific date, time, and hall.</p>
-        <form id="invite-speaker-form" class="mt-6 space-y-4" novalidate>
+      <div class="rounded-3xl border border-amber-100 bg-white/80 p-6 shadow-xl shadow-amber-900/5 backdrop-blur-xl sm:p-7">
+        <div class="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <label for="invite_speaker_id" class="block text-sm font-medium text-slate-700">Speaker</label>
-            <select id="invite_speaker_id" required class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
-              <option value="">Select a speaker</option>
-              {% for speaker in speakers %}
-              <option value="{{ speaker.id }}">{{ speaker.name or speaker.id }} ({{ speaker.id }})</option>
-              {% endfor %}
-            </select>
+            <h2 class="font-display text-lg font-bold tracking-tight">Request Speaker</h2>
+            <p class="mt-1 text-sm text-stone-500">Send a topic request with a date, time, and hall. It stays pending until the speaker confirms and does not enter My Events when you send it.</p>
           </div>
-          <div>
-            <label for="invite_topic" class="block text-sm font-medium text-slate-700">Topic</label>
-            <input id="invite_topic" required maxlength="255" placeholder="CQRS in production" class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
-          </div>
-          <div>
-            <label for="invite_details" class="block text-sm font-medium text-slate-700">Details</label>
-            <textarea id="invite_details" rows="3" placeholder="What you want them to cover" class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100"></textarea>
-          </div>
-          <div>
-            <label for="invite_date" class="block text-sm font-medium text-slate-700">Proposed date</label>
-            <input id="invite_date" type="date" required class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
-          </div>
-          <div class="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label for="invite_start_time" class="block text-sm font-medium text-slate-700">Start time</label>
-              <input id="invite_start_time" type="time" required class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
-            </div>
-            <div>
-              <label for="invite_end_time" class="block text-sm font-medium text-slate-700">End time</label>
-              <input id="invite_end_time" type="time" required class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
-            </div>
-          </div>
-          <div>
-            <label for="invite_capacity" class="block text-sm font-medium text-slate-700">Hall capacity</label>
-            <select id="invite_capacity" required class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
-              <option value="">Select a hall</option>
-              {% for seats in hall_capacities %}
-              <option value="{{ seats }}">{{ hall_labels[seats] }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <button id="invite-submit" type="submit" class="inline-flex w-full items-center justify-center rounded-full bg-indigo-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-800">
-            Send topic request
+          <button
+            id="open-invite-modal"
+            type="button"
+            class="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-clay-600 to-amber-700 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-orange-900/15 transition duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-orange-900/20"
+          >
+            Invite a speaker
           </button>
-        </form>
-      </section>
-
-      <section class="lg:col-span-3">
-        <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-7">
-          <h2 class="text-lg font-bold tracking-tight">Sent invitations</h2>
-          <p class="mt-1 text-sm text-slate-500">Topic requests you sent to speakers, including their response.</p>
-          <p id="invites-empty" class="mt-6 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">No invitations sent yet.</p>
-          <div id="invites-list" class="mt-6 space-y-3"></div>
         </div>
-      </section>
-    </div>
+        <div
+          id="invite-tabs"
+          role="tablist"
+          aria-label="Invitation confirmation status"
+          class="mt-5 flex flex-wrap gap-2 rounded-full border border-amber-200/70 bg-sand-50/80 p-1.5"
+        >
+          <button type="button" role="tab" id="invite-tab-awaiting" data-invite-tab="awaiting" aria-controls="invites-list" aria-selected="true" class="invite-tab inline-flex items-center justify-center rounded-full bg-gradient-to-r from-clay-600 to-amber-700 px-3.5 py-2 text-sm font-semibold text-white shadow-md shadow-orange-900/15 transition duration-300">
+            Awaiting Speaker Confirmation
+          </button>
+          <button type="button" role="tab" id="invite-tab-confirmed" data-invite-tab="confirmed" aria-controls="invites-list" aria-selected="false" class="invite-tab inline-flex items-center justify-center rounded-full px-3.5 py-2 text-sm font-semibold text-stone-600 transition duration-300 hover:bg-white hover:text-clay-700">
+            Speaker Confirmed
+          </button>
+        </div>
+        <p id="invites-empty" class="mt-6 rounded-2xl border border-dashed border-amber-200 bg-sand-50/80 px-4 py-8 text-center text-sm text-stone-500">No talks are waiting for speaker confirmation.</p>
+        <div id="invites-list" class="mt-6 space-y-3"></div>
+      </div>
     </section>
 
     <section id="panel-proposals" role="tabpanel" aria-labelledby="tab-proposals" hidden class="organizer-panel">
-      <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-7">
-        <h2 class="text-lg font-bold tracking-tight">Manage Proposals</h2>
-        <p class="mt-1 text-sm text-slate-500">Pending speaker submissions waiting for review. Approve to publish as an official event, or reject to move the talk to trash for 7 days.</p>
-        <p id="submissions-empty" class="mt-6 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">No pending proposals.</p>
+      <div class="rounded-3xl border border-amber-100 bg-white/80 p-6 shadow-xl shadow-amber-900/5 backdrop-blur-xl sm:p-7">
+        <h2 class="font-display text-lg font-bold tracking-tight">Manage Proposals</h2>
+        <p class="mt-1 text-sm text-stone-500">Review the Innovation Score and uniqueness badge next to each pending talk. Approve publishes immediately to My Events; Reject moves it to trash.</p>
+        <p id="submissions-empty" class="mt-6 rounded-2xl border border-dashed border-amber-200 bg-sand-50/80 px-4 py-8 text-center text-sm text-stone-500">No pending proposals.</p>
         <div id="submissions-list" class="mt-6 space-y-3"></div>
       </div>
     </section>
 
     <section id="panel-trash" role="tabpanel" aria-labelledby="tab-trash" hidden class="organizer-panel">
-      <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-7">
-        <h2 class="text-lg font-bold tracking-tight">Trash / Disapproved Events</h2>
-        <p class="mt-1 text-sm text-slate-500">Rejected proposals stay here for 7 days. Restore one to review it again, or delete it permanently.</p>
-        <p id="trash-empty" class="mt-6 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">Trash is empty.</p>
+      <div class="rounded-3xl border border-amber-100 bg-white/80 p-6 shadow-xl shadow-amber-900/5 backdrop-blur-xl sm:p-7">
+        <h2 class="font-display text-lg font-bold tracking-tight">Trash / Disapproved Events</h2>
+        <p class="mt-1 text-sm text-stone-500">Rejected talks stay here for 7 days with a daily countdown. Restore one before it expires, or delete it permanently.</p>
+        <p id="trash-empty" class="mt-6 rounded-2xl border border-dashed border-amber-200 bg-sand-50/80 px-4 py-8 text-center text-sm text-stone-500">Trash is empty.</p>
         <div id="trash-list" class="mt-6 space-y-3"></div>
+      </div>
+    </section>
+
+    <section id="panel-audit" role="tabpanel" aria-labelledby="tab-audit" hidden class="organizer-panel">
+      <div class="rounded-3xl border border-amber-100 bg-white/80 p-6 shadow-xl shadow-amber-900/5 backdrop-blur-xl sm:p-7">
+        <div class="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 class="font-display text-lg font-bold tracking-tight">Event Log / Audit Trail</h2>
+            <p class="mt-1 text-sm text-stone-500">Immutable Event Sourcing stream. Every proposal, AI review, approval, and rejection is appended here and used to project current talk state.</p>
+          </div>
+          <button
+            id="refresh-event-log"
+            type="button"
+            class="inline-flex items-center justify-center rounded-full border border-amber-200 bg-white px-4 py-2 text-sm font-semibold text-stone-700 transition duration-300 hover:-translate-y-0.5 hover:border-amber-200 hover:text-clay-700 hover:shadow-md"
+          >
+            Refresh log
+          </button>
+        </div>
+        <div id="event-log-filters" class="mt-5 flex flex-wrap gap-2" role="group" aria-label="Filter domain events">
+          <button type="button" data-event-filter="" class="event-log-filter inline-flex items-center justify-center rounded-full bg-gradient-to-r from-clay-600 to-amber-700 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm">All events</button>
+          <button type="button" data-event-filter="TalkProposed" class="event-log-filter inline-flex items-center justify-center rounded-full border border-amber-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-stone-600">Proposed</button>
+          <button type="button" data-event-filter="TalkInnovationReviewed" class="event-log-filter inline-flex items-center justify-center rounded-full border border-amber-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-stone-600">Reviewed</button>
+          <button type="button" data-event-filter="TalkApproved" class="event-log-filter inline-flex items-center justify-center rounded-full border border-amber-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-stone-600">Approved</button>
+          <button type="button" data-event-filter="TalkRejected" class="event-log-filter inline-flex items-center justify-center rounded-full border border-amber-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-stone-600">Rejected</button>
+        </div>
+        <p id="event-log-empty" class="mt-6 rounded-2xl border border-dashed border-amber-200 bg-sand-50/80 px-4 py-8 text-center text-sm text-stone-500">No domain events have been recorded yet.</p>
+        <div id="event-log-table-wrap" hidden class="event-log-table-wrap mt-6 hidden overflow-x-auto md:block">
+          <table class="min-w-full text-left">
+            <caption class="sr-only">Chronological domain event stream</caption>
+            <thead>
+              <tr class="text-xs font-semibold uppercase tracking-wide text-stone-400">
+                <th scope="col" class="px-3 py-2 font-semibold">When</th>
+                <th scope="col" class="px-3 py-2 font-semibold">Event</th>
+                <th scope="col" class="px-3 py-2 font-semibold">Talk</th>
+                <th scope="col" class="px-3 py-2 font-semibold">Speaker</th>
+                <th scope="col" class="px-3 py-2 font-semibold">Summary</th>
+              </tr>
+            </thead>
+            <tbody id="event-log-body" class="divide-y divide-amber-100"></tbody>
+          </table>
+        </div>
+        <div id="event-log-cards" hidden class="mt-6 space-y-3 md:hidden"></div>
       </div>
     </section>
     </div>
   </main>
+
+  <div id="invite-modal" class="fixed inset-0 z-50 hidden items-center justify-center overflow-y-auto px-4 py-8 sm:py-12" aria-hidden="true">
+    <div id="invite-backdrop" class="absolute inset-0 bg-stone-900/40 opacity-0 backdrop-blur-md transition-opacity duration-300" data-invite-dismiss></div>
+    <div
+      id="invite-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="invite-modal-title"
+      class="relative w-full max-w-lg scale-95 rounded-3xl border border-amber-100 bg-white/95 p-6 opacity-0 shadow-2xl shadow-orange-900/15 transition duration-300 sm:p-7"
+    >
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <h3 id="invite-modal-title" class="font-display text-lg font-bold tracking-tight">Invite a speaker</h3>
+          <p class="mt-1 text-sm text-stone-500">Ask a speaker to present a topic at a specific date, time, and hall.</p>
+        </div>
+        <button type="button" id="close-invite-modal" class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-amber-200 bg-white text-stone-500 shadow-sm transition hover:border-amber-300 hover:bg-sand-50 hover:text-stone-800" aria-label="Close invitation form">
+          <span aria-hidden="true">✕</span>
+        </button>
+      </div>
+      <form id="invite-speaker-form" class="mt-6 space-y-4" novalidate>
+        <div>
+          <label for="invite_speaker_id" class="block text-sm font-medium text-stone-700">Speaker</label>
+          <select id="invite_speaker_id" required class="mt-1.5 w-full rounded-xl border border-amber-200 bg-sand-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-100">
+            <option value="">Select a speaker</option>
+            {% for speaker in speakers %}
+            <option value="{{ speaker.id }}">{{ speaker.name or speaker.id }} ({{ speaker.id }})</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label for="invite_topic" class="block text-sm font-medium text-stone-700">Topic</label>
+          <input id="invite_topic" required maxlength="255" placeholder="CQRS in production" class="mt-1.5 w-full rounded-xl border border-amber-200 bg-sand-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-100">
+        </div>
+        <div>
+          <label for="invite_details" class="block text-sm font-medium text-stone-700">Details</label>
+          <textarea id="invite_details" rows="3" placeholder="What you want them to cover" class="mt-1.5 w-full rounded-xl border border-amber-200 bg-sand-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-100"></textarea>
+        </div>
+        <div>
+          <label for="invite_date" class="block text-sm font-medium text-stone-700">Proposed date</label>
+          <input id="invite_date" type="date" required lang="en-GB" placeholder="dd/mm/yyyy" class="mt-1.5 w-full rounded-xl border border-amber-200 bg-sand-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-100">
+          <p class="mt-1 text-xs text-stone-400">dd/mm/yyyy</p>
+        </div>
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label for="invite_start_time" class="block text-sm font-medium text-stone-700">Start time</label>
+            <input id="invite_start_time" type="time" required class="mt-1.5 w-full rounded-xl border border-amber-200 bg-sand-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-100">
+          </div>
+          <div>
+            <label for="invite_end_time" class="block text-sm font-medium text-stone-700">End time</label>
+            <input id="invite_end_time" type="time" required class="mt-1.5 w-full rounded-xl border border-amber-200 bg-sand-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-100">
+          </div>
+        </div>
+        <div>
+          <label for="invite_capacity" class="block text-sm font-medium text-stone-700">Hall capacity</label>
+          <select id="invite_capacity" required class="mt-1.5 w-full rounded-xl border border-amber-200 bg-sand-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-100">
+            <option value="">Select a hall</option>
+            {% for seats in hall_capacities %}
+            <option value="{{ seats }}">{{ hall_labels[seats] }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
+          <button type="button" id="cancel-invite-modal" class="inline-flex items-center justify-center rounded-full border border-amber-200 bg-white px-5 py-2.5 text-sm font-semibold text-stone-700 transition hover:border-amber-300">
+            Cancel
+          </button>
+          <button id="invite-submit" type="submit" class="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-clay-600 to-amber-700 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-orange-900/15 transition hover:shadow-xl hover:shadow-orange-900/20">
+            Send topic request
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <script>
     const refreshButton = document.getElementById("refresh-events");
@@ -227,12 +418,21 @@
     const tableWrap = document.getElementById("events-table-wrap");
     const tableBody = document.getElementById("events-body");
     const cardList = document.getElementById("events-cards");
-    const TAB_ACTIVE = "organizer-tab inline-flex items-center justify-center rounded-xl px-3 py-2.5 text-sm font-semibold transition duration-200 ease-out bg-indigo-700 text-white shadow-sm";
-    const TAB_INACTIVE = "organizer-tab inline-flex items-center justify-center rounded-xl px-3 py-2.5 text-sm font-semibold transition duration-200 ease-out text-slate-600 hover:bg-slate-50 hover:text-indigo-700";
-    const TAB_ALIASES = { approved: "events", "approved-events": "events", "my-events": "events", mine: "events", invite: "request", submissions: "proposals", pending: "proposals", create: "proposals", disapproved: "trash" };
+    const TAB_ACTIVE = "organizer-tab inline-flex items-center justify-center rounded-full bg-gradient-to-r from-clay-600 to-amber-700 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-orange-900/20 transition duration-300";
+    const TAB_INACTIVE = "organizer-tab inline-flex items-center justify-center rounded-full px-4 py-2.5 text-sm font-semibold text-stone-600 transition duration-300 hover:bg-white/80 hover:text-clay-700";
+    const TAB_ALIASES = { approved: "events", "approved-events": "events", "my-events": "events", mine: "events", invite: "request", submissions: "proposals", pending: "proposals", create: "proposals", confirmation: "proposals", confirm: "proposals", awaiting: "proposals", disapproved: "trash", log: "audit", "event-log": "audit", eventsourcing: "audit", "event-sourcing": "audit" };
+    const BTN_PRIMARY = "inline-flex items-center justify-center rounded-full bg-clay-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm shadow-orange-900/15 transition hover:bg-clay-700";
+    const BTN_DANGER = "inline-flex items-center justify-center rounded-full border border-rose-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-rose-700 transition hover:border-rose-300 hover:bg-rose-50";
+    const CARD_CLASS = "animate-fade-up rounded-2xl border border-amber-100 bg-white/90 p-5 shadow-lg shadow-amber-900/5 backdrop-blur-sm transition duration-300 hover:-translate-y-1.5 hover:shadow-xl hover:shadow-orange-900/10";
+    const dashboardStats = {
+      events: 0,
+      attendees: Number(document.getElementById("kpi-attendees")?.textContent || 0),
+      eventsHeld: Number(document.getElementById("kpi-held")?.textContent || 0),
+      pending: 0,
+    };
 
     function showTab(name, { updateHash = true } = {}) {
-      const tabName = TAB_ALIASES[name] || name || "proposals";
+      const tabName = TAB_ALIASES[name] || name || "events";
       const tabs = [...document.querySelectorAll("#organizer-tabs [data-tab]")];
       const selectedTab = tabs.find((tab) => tab.dataset.tab === tabName) || tabs[0];
       const selectedName = selectedTab.dataset.tab;
@@ -252,12 +452,17 @@
     }
 
     function tabFromHash() {
-      return (window.location.hash || "#proposals").replace("#", "");
+      return (window.location.hash || "#events").replace("#", "");
     }
 
     document.getElementById("organizer-tabs").addEventListener("click", (event) => {
       const tab = event.target.closest("[data-tab]");
       if (tab) showTab(tab.dataset.tab);
+    });
+
+    document.getElementById("kpi-bar").addEventListener("click", (event) => {
+      const card = event.target.closest("[data-kpi-tab]");
+      if (card) showTab(card.dataset.kpiTab);
     });
 
     document.getElementById("organizer-tabs").addEventListener("keydown", (event) => {
@@ -288,13 +493,31 @@
 
     function showStatus(message, kind) {
       const styles = {
-        success: "mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800",
-        error: "mt-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-800",
-        info: "mt-6 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm font-medium text-indigo-800",
+        success: "mt-6 rounded-2xl border border-emerald-200 bg-emerald-50/90 px-4 py-3 text-sm font-medium text-emerald-800 shadow-sm backdrop-blur-sm",
+        error: "mt-6 rounded-2xl border border-rose-200 bg-rose-50/90 px-4 py-3 text-sm font-medium text-rose-800 shadow-sm backdrop-blur-sm",
+        info: "mt-6 rounded-2xl border border-amber-200 bg-amber-50/90 px-4 py-3 text-sm font-medium text-clay-700 shadow-sm backdrop-blur-sm",
       };
       statusEl.hidden = false;
       statusEl.className = styles[kind] || styles.info;
       statusEl.textContent = message;
+    }
+
+    function applyEnter(el, index) {
+      el.classList.add("animate-fade-up");
+      el.style.animationDelay = `${Math.min(index, 8) * 45}ms`;
+    }
+
+    function paintKpis() {
+      document.getElementById("kpi-events").textContent = String(dashboardStats.events);
+      document.getElementById("kpi-pending").textContent = String(dashboardStats.pending);
+      document.getElementById("kpi-attendees").textContent = String(dashboardStats.attendees);
+      document.getElementById("kpi-held").textContent = String(dashboardStats.eventsHeld);
+      const pulse = document.getElementById("kpi-pending-pulse");
+      pulse.classList.toggle("hidden", dashboardStats.pending < 1);
+      const tabCount = document.getElementById("tab-proposals-count");
+      tabCount.textContent = String(dashboardStats.pending);
+      tabCount.classList.toggle("hidden", dashboardStats.pending < 1);
+      tabCount.classList.toggle("inline-flex", dashboardStats.pending > 0);
     }
 
     function statusBadge(status, label) {
@@ -302,7 +525,7 @@
       const approved = status === "approved" || status === "active";
       badge.className = approved
         ? "inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700"
-        : "inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600";
+        : "inline-flex rounded-full bg-sand-100 px-2.5 py-1 text-xs font-semibold text-stone-600";
       badge.textContent = label || (approved ? "Approved" : (status || "unknown"));
       return badge;
     }
@@ -312,54 +535,65 @@
       return `${event.start_time}–${event.end_time}`;
     }
 
+    function eventScheduleKey(event) {
+      return `${event.date || ""}\t${event.start_time || ""}\t${event.title || ""}`;
+    }
+
     function renderEvents(events) {
+      events = (events || [])
+        .filter((item) => item.status === "approved" || item.status === "active")
+        .slice()
+        .sort((left, right) => eventScheduleKey(left).localeCompare(eventScheduleKey(right)));
       tableBody.replaceChildren();
       cardList.replaceChildren();
       const hasEvents = events.length > 0;
       emptyEl.hidden = hasEvents;
       tableWrap.hidden = !hasEvents;
       cardList.hidden = !hasEvents;
+      dashboardStats.events = events.length;
+      paintKpis();
       if (!hasEvents) {
-        emptyEl.textContent = "No approved events yet. Approve a pending proposal to publish one.";
+        emptyEl.textContent = "No approved events yet. Approve a pending proposal or wait for a speaker to confirm an invitation.";
         return;
       }
 
-      events.forEach((event) => {
+      events.forEach((event, index) => {
         const row = document.createElement("tr");
-        row.className = "align-top";
+        row.className = "align-top transition hover:bg-amber-50/60";
+        applyEnter(row, index);
 
         const titleCell = document.createElement("td");
         titleCell.className = "px-3 py-3";
         const title = document.createElement("div");
-        title.className = "text-sm font-semibold text-slate-900";
+        title.className = "text-sm font-semibold text-stone-900";
         title.textContent = event.title || "";
         const description = document.createElement("div");
-        description.className = "mt-1 max-w-xs text-sm text-slate-500";
+        description.className = "mt-1 max-w-xs text-sm text-stone-500";
         description.textContent = event.description || "";
         titleCell.append(title, description);
 
         const speakerCell = document.createElement("td");
-        speakerCell.className = "px-3 py-3 text-sm text-slate-700";
+        speakerCell.className = "px-3 py-3 text-sm text-stone-700";
         speakerCell.textContent = event.speaker_name || event.speaker_id || "—";
 
         const dateCell = document.createElement("td");
-        dateCell.className = "px-3 py-3 text-sm text-slate-700";
+        dateCell.className = "px-3 py-3 text-sm text-stone-700";
         dateCell.textContent = event.date || "";
 
         const timeCell = document.createElement("td");
-        timeCell.className = "px-3 py-3 text-sm text-slate-700";
+        timeCell.className = "px-3 py-3 text-sm text-stone-700";
         timeCell.textContent = eventTime(event);
 
         const hallCell = document.createElement("td");
-        hallCell.className = "px-3 py-3 text-sm text-slate-700";
+        hallCell.className = "px-3 py-3 text-sm text-stone-700";
         hallCell.textContent = event.hall_label || String(event.capacity ?? "");
 
         const bookedCell = document.createElement("td");
-        bookedCell.className = "px-3 py-3 text-sm text-slate-700";
+        bookedCell.className = "px-3 py-3 text-sm text-stone-700";
         bookedCell.textContent = String(event.seats_booked ?? 0);
 
         const openCell = document.createElement("td");
-        openCell.className = "px-3 py-3 text-sm text-slate-700";
+        openCell.className = "px-3 py-3 text-sm text-stone-700";
         openCell.textContent = String(event.remaining_seats ?? "");
 
         const statusCell = document.createElement("td");
@@ -370,27 +604,28 @@
         editCell.className = "px-3 py-3";
         const actions = document.createElement("div");
         actions.className = "flex flex-wrap items-center gap-3";
-        const deleteButton = document.createElement("button");
-        deleteButton.type = "button";
-        deleteButton.className = "text-sm font-semibold text-rose-700 hover:text-rose-800";
-        deleteButton.textContent = "Delete";
-        deleteButton.addEventListener("click", () => deleteEvent(event));
-        actions.append(deleteButton);
+        const rejectButton = document.createElement("button");
+        rejectButton.type = "button";
+        rejectButton.className = BTN_DANGER;
+        rejectButton.textContent = "Reject";
+        rejectButton.addEventListener("click", () => rejectEvent(event));
+        actions.append(rejectButton);
         editCell.append(actions);
 
         row.append(titleCell, speakerCell, dateCell, timeCell, hallCell, bookedCell, openCell, statusCell, editCell);
         tableBody.append(row);
 
         const card = document.createElement("article");
-        card.className = "rounded-2xl border border-slate-200 bg-slate-50 p-4";
+        card.className = CARD_CLASS;
+        applyEnter(card, index);
         const cardTitle = document.createElement("h3");
-        cardTitle.className = "text-sm font-semibold text-slate-900";
+        cardTitle.className = "text-sm font-semibold text-stone-900";
         cardTitle.textContent = event.title || "";
         const cardDescription = document.createElement("p");
-        cardDescription.className = "mt-1 text-sm text-slate-500";
+        cardDescription.className = "mt-1 text-sm text-stone-500";
         cardDescription.textContent = event.description || "";
         const meta = document.createElement("dl");
-        meta.className = "mt-3 grid grid-cols-2 gap-2 text-sm text-slate-700";
+        meta.className = "mt-3 grid grid-cols-2 gap-2 text-sm text-stone-700";
         [
           ["Speaker", event.speaker_name || event.speaker_id || "—"],
           ["Date", event.date || ""],
@@ -401,7 +636,7 @@
         ].forEach(([label, value]) => {
           const wrap = document.createElement("div");
           const dt = document.createElement("dt");
-          dt.className = "text-xs font-medium uppercase tracking-wide text-slate-400";
+          dt.className = "text-xs font-medium uppercase tracking-wide text-stone-400";
           dt.textContent = label;
           const dd = document.createElement("dd");
           dd.className = "mt-0.5";
@@ -414,37 +649,14 @@
         badgeRow.append(statusBadge(event.status, event.display_status));
         const cardActions = document.createElement("div");
         cardActions.className = "mt-3 flex flex-wrap items-center gap-3";
-        const cardDelete = document.createElement("button");
-        cardDelete.type = "button";
-        cardDelete.className = "text-sm font-semibold text-rose-700";
-        cardDelete.textContent = "Delete";
-        cardDelete.addEventListener("click", () => deleteEvent(event));
-        cardActions.append(cardDelete);
+        const cardReject = document.createElement("button");
+        cardReject.type = "button";
+        cardReject.className = BTN_DANGER;
+        cardReject.textContent = "Reject";
+        cardReject.addEventListener("click", () => rejectEvent(event));
+        cardActions.append(cardReject);
         card.append(cardTitle, cardDescription, meta, badgeRow, cardActions);
         cardList.append(card);
-      });
-      renderApproved(events.filter((item) => item.status === "approved" || item.status === "active"));
-    }
-
-    function renderApproved(events) {
-      const empty = document.getElementById("approved-empty");
-      const list = document.getElementById("approved-list");
-      list.replaceChildren();
-      empty.hidden = events.length > 0;
-      events.forEach((event) => {
-        const card = document.createElement("article");
-        card.className = "rounded-2xl border border-slate-200 bg-slate-50 p-4";
-        const title = document.createElement("h3");
-        title.className = "text-sm font-semibold text-slate-900";
-        title.textContent = event.title || "";
-        const meta = document.createElement("p");
-        meta.className = "mt-1 text-sm text-slate-500";
-        meta.textContent = `${event.date || ""} · ${eventTime(event)} · ${event.hall_label || ""}`;
-        const row = document.createElement("div");
-        row.className = "mt-3";
-        row.append(statusBadge(event.status, event.display_status));
-        card.append(title, meta, row);
-        list.append(card);
       });
     }
 
@@ -546,24 +758,99 @@
 
     refreshButton.addEventListener("click", () => {
       loadEvents();
+      loadStats();
     });
+
+    async function loadStats() {
+      const id = organizerId();
+      if (!id) return;
+      try {
+        const response = await fetch("/api/organizer/stats", {
+          headers: { Accept: "application/json", "X-Organizer-Id": id },
+        });
+        const data = await readBody(response);
+        if (!response.ok) return;
+        dashboardStats.attendees = Number(data.attendees || 0);
+        dashboardStats.eventsHeld = Number(data.events_held || 0);
+        paintKpis();
+      } catch (_error) {
+        /* keep the last rendered attendee and held-event counts */
+      }
+    }
 
     const inviteForm = document.getElementById("invite-speaker-form");
     const inviteSpeaker = document.getElementById("invite_speaker_id");
+    const inviteModal = document.getElementById("invite-modal");
+    const inviteBackdrop = document.getElementById("invite-backdrop");
+    const inviteDialog = document.getElementById("invite-dialog");
+    let inviteCloseTimer = null;
+
+    function isInviteModalOpen() {
+      return !inviteModal.classList.contains("hidden");
+    }
+
+    function openInviteModal() {
+      if (inviteCloseTimer) {
+        window.clearTimeout(inviteCloseTimer);
+        inviteCloseTimer = null;
+      }
+      inviteModal.classList.remove("hidden");
+      inviteModal.classList.add("flex");
+      inviteModal.setAttribute("aria-hidden", "false");
+      document.body.classList.add("overflow-hidden");
+      window.requestAnimationFrame(() => {
+        inviteBackdrop.classList.remove("opacity-0");
+        inviteBackdrop.classList.add("opacity-100");
+        inviteDialog.classList.remove("opacity-0", "scale-95");
+        inviteDialog.classList.add("opacity-100", "scale-100");
+      });
+      window.setTimeout(() => inviteSpeaker?.focus(), 180);
+    }
+
+    function closeInviteModal() {
+      inviteForm.reset();
+      inviteBackdrop.classList.add("opacity-0");
+      inviteBackdrop.classList.remove("opacity-100");
+      inviteDialog.classList.add("opacity-0", "scale-95");
+      inviteDialog.classList.remove("opacity-100", "scale-100");
+      inviteCloseTimer = window.setTimeout(() => {
+        inviteModal.classList.add("hidden");
+        inviteModal.classList.remove("flex");
+        inviteModal.setAttribute("aria-hidden", "true");
+        document.body.classList.remove("overflow-hidden");
+        inviteCloseTimer = null;
+      }, 200);
+    }
+
+    document.getElementById("open-invite-modal").addEventListener("click", openInviteModal);
+    document.getElementById("close-invite-modal").addEventListener("click", closeInviteModal);
+    document.getElementById("cancel-invite-modal").addEventListener("click", closeInviteModal);
+    inviteModal.addEventListener("click", (event) => {
+      if (event.target.closest("[data-invite-dismiss]")) closeInviteModal();
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && isInviteModalOpen()) closeInviteModal();
+    });
     const submissionsEmpty = document.getElementById("submissions-empty");
     const submissionsList = document.getElementById("submissions-list");
     const invitesEmpty = document.getElementById("invites-empty");
     const invitesList = document.getElementById("invites-list");
     const trashEmpty = document.getElementById("trash-empty");
     const trashList = document.getElementById("trash-list");
+    const INVITE_TAB_ACTIVE = "invite-tab inline-flex items-center justify-center rounded-full bg-gradient-to-r from-clay-600 to-amber-700 px-3.5 py-2 text-sm font-semibold text-white shadow-md shadow-orange-900/15 transition duration-300";
+    const INVITE_TAB_INACTIVE = "invite-tab inline-flex items-center justify-center rounded-full px-3.5 py-2 text-sm font-semibold text-stone-600 transition duration-300 hover:bg-white hover:text-clay-700";
+    const inviteLists = { awaiting: [], confirmed: [] };
+    let currentInviteTab = "awaiting";
 
     function talkBadge(label) {
       const normalized = (label || "").toLowerCase();
       const badge = document.createElement("span");
-      badge.className = normalized.includes("approved") || normalized.includes("accept")
+      badge.className = normalized.includes("confirmed") || normalized.includes("approved") || normalized.includes("accept")
         ? "inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700"
-        : normalized.includes("review") || normalized.includes("ai")
-          ? "inline-flex rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700"
+        : normalized.includes("await") || normalized.includes("confirm")
+          ? "inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800"
+          : normalized.includes("review") || normalized.includes("ai")
+          ? "inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-clay-700"
           : normalized.includes("decline")
             ? "inline-flex rounded-full bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-700"
             : "inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700";
@@ -571,9 +858,222 @@
       return badge;
     }
 
-    function proposalDetails(item) {
+    function clockIcon() {
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.setAttribute("viewBox", "0 0 24 24");
+      svg.setAttribute("class", "h-3.5 w-3.5 shrink-0");
+      svg.setAttribute("fill", "none");
+      svg.setAttribute("stroke", "currentColor");
+      svg.setAttribute("stroke-width", "2");
+      svg.setAttribute("aria-hidden", "true");
+      const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      circle.setAttribute("cx", "12");
+      circle.setAttribute("cy", "12");
+      circle.setAttribute("r", "8");
+      const hand = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      hand.setAttribute("d", "M12 8v5l3 2");
+      svg.append(circle, hand);
+      return svg;
+    }
+
+    function retentionBadge(item) {
+      const days = item.days_remaining == null ? (item.retention_days || 7) : item.days_remaining;
+      const text = days === 1
+        ? "1 day left in trash before automatic removal"
+        : `${days} days left in trash before automatic removal`;
+      const tone = days <= 2
+        ? "border-rose-200/80 bg-rose-50 text-rose-700"
+        : days <= 4
+          ? "border-orange-200/80 bg-orange-50 text-orange-700"
+          : "border-amber-200/80 bg-amber-50 text-amber-800";
+      const badge = document.createElement("span");
+      badge.className = `mt-1.5 inline-flex max-w-full items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold leading-5 ${tone}`;
+      badge.append(clockIcon());
+      const label = document.createElement("span");
+      label.textContent = text;
+      badge.append(label);
+      return badge;
+    }
+
+    function overlapValue(hit) {
+      const raw = hit && (hit.overlap != null ? hit.overlap : hit.score);
+      const value = Number(raw);
+      return Number.isFinite(value) ? value : 0;
+    }
+
+    function dedupeOverlappingTalks(hits) {
+      const best = new Map();
+      (Array.isArray(hits) ? hits : []).forEach((hit) => {
+        const name = String((hit && (hit.title || hit.id)) || "").trim().toLowerCase();
+        if (!name) return;
+        const previous = best.get(name);
+        if (!previous || overlapValue(hit) > overlapValue(previous)) {
+          best.set(name, hit);
+        }
+      });
+      return [...best.values()];
+    }
+
+    function overlapHoverChip(notable, badgeLabel) {
+      const wrap = document.createElement("div");
+      wrap.className = "relative mt-3 inline-flex";
+      wrap.setAttribute("data-overlap-chip", "true");
+      const trigger = document.createElement("button");
+      trigger.type = "button";
+      trigger.className = "inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-white px-3 py-1.5 text-xs font-semibold text-amber-950 shadow-sm shadow-amber-900/5 transition hover:border-amber-300 hover:bg-sand-50";
+      trigger.setAttribute("aria-expanded", "false");
+      trigger.setAttribute("aria-haspopup", "true");
+      const triggerLabel = badgeLabel === "High Innovation" ? "Related talks" : "Repeats / Overlaps Found";
+      trigger.textContent = `${triggerLabel} · ${notable.length}`;
+      const cloud = document.createElement("div");
+      cloud.className = "overlap-cloud-anchor invisible pointer-events-none absolute left-0 top-full z-50 w-80 max-w-[min(20rem,calc(100vw-3rem))] pt-2 opacity-0 transition duration-150";
+      cloud.setAttribute("role", "tooltip");
+      cloud.setAttribute("data-overlap-cloud", "true");
+      const panel = document.createElement("div");
+      panel.className = "overlap-cloud relative rounded-2xl border border-amber-100 bg-white";
+      const cloudTitle = document.createElement("p");
+      cloudTitle.className = "text-[11px] font-semibold uppercase tracking-wide text-stone-400";
+      cloudTitle.textContent = badgeLabel === "High Innovation" ? "Closest existing talks" : "Repeats / overlaps with";
+      const list = document.createElement("ul");
+      list.className = "mt-2 space-y-1.5 text-sm leading-5 text-stone-700";
+      list.setAttribute("data-overlapping-talks", "true");
+      notable.forEach((hit) => {
+        const li = document.createElement("li");
+        li.className = "flex items-start justify-between gap-3 pr-1";
+        const name = document.createElement("span");
+        name.className = "font-medium text-stone-800";
+        name.textContent = hit.title || hit.id;
+        const score = document.createElement("span");
+        score.className = "shrink-0 text-xs font-semibold leading-5 text-amber-800";
+        score.textContent = `${Math.round(overlapValue(hit) * 100)}% overlap`;
+        li.append(name, score);
+        list.append(li);
+      });
+      panel.append(cloudTitle, list);
+      cloud.append(panel);
+      const show = () => {
+        cloud.classList.remove("invisible", "opacity-0", "pointer-events-none");
+        cloud.classList.add("visible", "opacity-100");
+        trigger.setAttribute("aria-expanded", "true");
+      };
+      const hide = () => {
+        cloud.classList.add("invisible", "opacity-0", "pointer-events-none");
+        cloud.classList.remove("visible", "opacity-100");
+        trigger.setAttribute("aria-expanded", "false");
+      };
+      wrap.addEventListener("mouseenter", show);
+      wrap.addEventListener("mouseleave", hide);
+      wrap.addEventListener("focusin", show);
+      wrap.addEventListener("focusout", (event) => {
+        if (!wrap.contains(event.relatedTarget)) hide();
+      });
+      wrap.append(trigger, cloud);
+      return wrap;
+    }
+
+    function isCannedTavilySnippet(text) {
+      return /public conference listings and topic pages mention/i.test(String(text || ""));
+    }
+
+    function tavilyPanel(item, assessment) {
+      const web = assessment.web_check || {};
+      const wrap = document.createElement("div");
+      wrap.className = "mt-3";
+      wrap.setAttribute("data-tavily-panel", "true");
+      const badge = document.createElement("span");
+      badge.setAttribute("data-tavily-badge", "true");
+      badge.className = "inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-800";
+      badge.textContent = item.tavily_badge || assessment.tavily_badge || web.verification_badge || "Verified via Tavily";
+      wrap.append(badge);
+      const liveSnippet = [web.summary, web.answer, ...(Array.isArray(web.results) ? web.results.map((hit) => hit && hit.snippet) : [])]
+        .map((text) => String(text || "").trim())
+        .find((text) => text && !isCannedTavilySnippet(text) && !web.fallback);
+      if (liveSnippet) {
+        const snippet = document.createElement("p");
+        snippet.className = "mt-2 text-sm text-stone-600";
+        snippet.setAttribute("data-tavily-summary", "true");
+        snippet.textContent = liveSnippet;
+        wrap.append(snippet);
+      }
+      return wrap;
+    }
+
+    function scoreRationaleFallback(badge, notable) {
+      const top = notable && notable[0];
+      const title = top && (top.title || top.id);
+      const percent = top ? Math.round(overlapValue(top) * 100) : null;
+      if (badge === "Redundant / Low Novelty") {
+        return title
+          ? `Low novelty: this proposal closely repeats ${title} (${percent}% overlap).`
+          : "Low novelty: the abstract repeats ideas already in the program.";
+      }
+      if (badge === "High Innovation") {
+        return "High novelty: the abstract introduces a distinct angle not covered by existing talks.";
+      }
+      if (title) {
+        return `Moderate novelty: it shares some ground with ${title} (${percent}% overlap).`;
+      }
+      return "Moderate novelty: the talk is partly original compared with the current program.";
+    }
+
+    function recommendationTone(label) {
+      if (label === "High Innovation" || label === "AI Approved") return "border-emerald-200 bg-emerald-50 text-emerald-800";
+      if (label === "Moderate Novelty" || label === "High Relevance") return "border-amber-200 bg-amber-50 text-amber-900";
+      return "border-rose-200 bg-rose-50 text-rose-800";
+    }
+
+    function assessmentPanel(item) {
+      const assessment = item.ai_assessment || {};
+      const box = document.createElement("div");
+      box.className = "mt-4 rounded-2xl border border-amber-100 bg-sand-50/90 p-4";
+      box.setAttribute("data-ai-assessment", "true");
+      const heading = document.createElement("p");
+      heading.className = "text-xs font-semibold uppercase tracking-wide text-stone-400";
+      heading.textContent = "Innovation & Uniqueness Review";
+      const badgeLabel = item.innovation_badge || assessment.innovation_badge || assessment.recommendation || assessment.recommended_status || "Pending";
+      const badge = document.createElement("span");
+      badge.className = `mt-2 inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${recommendationTone(badgeLabel)}`;
+      badge.setAttribute("data-recommendation", badgeLabel);
+      badge.setAttribute("data-innovation-badge", badgeLabel);
+      badge.textContent = badgeLabel;
+      const metrics = document.createElement("dl");
+      metrics.className = "mt-3 text-sm text-stone-700";
+      const innovationScore = item.innovation_score != null ? item.innovation_score : assessment.innovation_score;
+      const qualityScore = innovationScore != null ? innovationScore : assessment.quality_score;
+      const scoreWrap = document.createElement("div");
+      const scoreLabel = document.createElement("dt");
+      scoreLabel.className = "text-xs font-medium uppercase tracking-wide text-stone-400";
+      scoreLabel.textContent = "Innovation score";
+      const scoreValue = document.createElement("dd");
+      scoreValue.className = "mt-0.5 font-semibold text-stone-800";
+      const scoreText = qualityScore != null ? `${qualityScore}/100` : "Pending";
+      scoreValue.setAttribute("data-quality-score", scoreText);
+      scoreValue.setAttribute("data-innovation-score", scoreText);
+      scoreValue.textContent = scoreText;
+      scoreWrap.append(scoreLabel, scoreValue);
+      const overlaps = dedupeOverlappingTalks(
+        Array.isArray(assessment.overlapping_talks) && assessment.overlapping_talks.length
+          ? assessment.overlapping_talks
+          : (Array.isArray(assessment.similar_talks) ? assessment.similar_talks : []),
+      );
+      const notable = overlaps.filter((hit) => overlapValue(hit) >= 0.22);
+      const rationale = document.createElement("p");
+      rationale.className = "mt-1.5 max-w-xl text-sm leading-6 text-stone-500";
+      rationale.setAttribute("data-score-rationale", "true");
+      rationale.textContent = assessment.score_rationale || scoreRationaleFallback(badgeLabel, notable);
+      scoreWrap.append(rationale);
+      metrics.append(scoreWrap);
+      box.append(heading, badge, metrics);
+      if (notable.length) {
+        box.append(overlapHoverChip(notable, badgeLabel));
+      }
+      box.append(tavilyPanel(item, assessment));
+      return box;
+    }
+
+    function proposalDetails(item, options = {}) {
       const details = document.createElement("dl");
-      details.className = "mt-3 grid gap-3 text-sm text-slate-700 sm:grid-cols-2";
+      details.className = "mt-3 grid gap-3 text-sm text-stone-700 sm:grid-cols-2";
       [
         ["Speaker", item.speaker_name || item.speaker_id || "—"],
         ["Talk title", item.title || "—"],
@@ -583,21 +1083,24 @@
       ].forEach(([label, value]) => {
         const wrap = document.createElement("div");
         const dt = document.createElement("dt");
-        dt.className = "text-xs font-medium uppercase tracking-wide text-slate-400";
+        dt.className = "text-xs font-medium uppercase tracking-wide text-stone-400";
         dt.textContent = label;
         const dd = document.createElement("dd");
-        dd.className = "mt-0.5 font-medium text-slate-800";
+        dd.className = "mt-0.5 font-medium text-stone-800";
         dd.textContent = value;
         wrap.append(dt, dd);
+        if (label === "Date / time" && options.retention) {
+          wrap.append(options.retention);
+        }
         details.append(wrap);
       });
       const abstractWrap = document.createElement("div");
       abstractWrap.className = "sm:col-span-2";
       const abstractLabel = document.createElement("dt");
-      abstractLabel.className = "text-xs font-medium uppercase tracking-wide text-slate-400";
+      abstractLabel.className = "text-xs font-medium uppercase tracking-wide text-stone-400";
       abstractLabel.textContent = "Abstract / summary";
       const abstractValue = document.createElement("dd");
-      abstractValue.className = "mt-0.5 text-slate-600";
+      abstractValue.className = "mt-0.5 text-stone-600";
       abstractValue.textContent = item.abstract || "No abstract provided.";
       abstractWrap.append(abstractLabel, abstractValue);
       details.append(abstractWrap);
@@ -607,27 +1110,30 @@
     function renderSubmissions(items) {
       submissionsList.replaceChildren();
       submissionsEmpty.hidden = items.length > 0;
-      items.forEach((item) => {
+      dashboardStats.pending = items.length;
+      paintKpis();
+      items.forEach((item, index) => {
         const card = document.createElement("article");
-        card.className = "rounded-2xl border border-slate-200 bg-slate-50 p-4";
+        card.className = `${CARD_CLASS} overflow-visible`;
+        applyEnter(card, index);
         const title = document.createElement("h3");
-        title.className = "text-sm font-semibold text-slate-900";
+        title.className = "text-sm font-semibold text-stone-900";
         title.textContent = item.title;
         const row = document.createElement("div");
         row.className = "mt-3 flex flex-wrap items-center gap-2";
         row.append(talkBadge(item.display_status || item.status));
         const approveButton = document.createElement("button");
         approveButton.type = "button";
-        approveButton.className = "inline-flex rounded-full bg-indigo-700 px-3 py-1.5 text-xs font-semibold text-white";
+        approveButton.className = BTN_PRIMARY;
         approveButton.textContent = "Approve";
         approveButton.addEventListener("click", () => approveSubmission(item.id));
         const rejectButton = document.createElement("button");
         rejectButton.type = "button";
-        rejectButton.className = "inline-flex rounded-full border border-rose-200 bg-white px-3 py-1.5 text-xs font-semibold text-rose-700";
+        rejectButton.className = BTN_DANGER;
         rejectButton.textContent = "Reject";
         rejectButton.addEventListener("click", () => rejectSubmission(item.id));
         row.append(approveButton, rejectButton);
-        card.append(title, proposalDetails(item), row);
+        card.append(title, proposalDetails(item), assessmentPanel(item), row);
         submissionsList.append(card);
       });
     }
@@ -635,71 +1141,195 @@
     function renderTrash(items) {
       trashList.replaceChildren();
       trashEmpty.hidden = items.length > 0;
-      items.forEach((item) => {
+      items.forEach((item, index) => {
         const card = document.createElement("article");
-        card.className = "rounded-2xl border border-slate-200 bg-slate-50 p-4";
+        card.className = CARD_CLASS;
+        applyEnter(card, index);
         const title = document.createElement("h3");
-        title.className = "text-sm font-semibold text-slate-900";
+        title.className = "text-sm font-semibold text-stone-900";
         title.textContent = item.title;
-        const hold = document.createElement("p");
-        hold.className = "mt-1 text-sm text-slate-500";
-        const days = item.days_remaining;
-        hold.textContent = days == null
-          ? "Held in trash until restored or deleted."
-          : days === 1
-            ? "1 day left in trash before automatic removal."
-            : `${days} days left in trash before automatic removal.`;
         const row = document.createElement("div");
         row.className = "mt-3 flex flex-wrap items-center gap-2";
         row.append(talkBadge(item.display_status || item.status));
         const restoreButton = document.createElement("button");
         restoreButton.type = "button";
-        restoreButton.className = "inline-flex rounded-full bg-indigo-700 px-3 py-1.5 text-xs font-semibold text-white";
+        restoreButton.className = BTN_PRIMARY;
         restoreButton.textContent = "Restore";
         restoreButton.addEventListener("click", () => restoreTrash(item.id));
         const deleteButton = document.createElement("button");
         deleteButton.type = "button";
-        deleteButton.className = "inline-flex rounded-full border border-rose-200 bg-white px-3 py-1.5 text-xs font-semibold text-rose-700";
-        deleteButton.textContent = "Delete";
+        deleteButton.className = BTN_DANGER;
+        deleteButton.textContent = "Delete permanently";
         deleteButton.addEventListener("click", () => deleteTrash(item.id, item.title));
         row.append(restoreButton, deleteButton);
-        card.append(title, proposalDetails(item), hold, row);
+        card.append(title, proposalDetails(item, { retention: retentionBadge(item) }), row);
         trashList.append(card);
       });
+    }
+
+    function showInviteTab(name) {
+      currentInviteTab = name === "confirmed" ? "confirmed" : "awaiting";
+      document.querySelectorAll("#invite-tabs [data-invite-tab]").forEach((tab) => {
+        const selected = tab.dataset.inviteTab === currentInviteTab;
+        tab.setAttribute("aria-selected", selected ? "true" : "false");
+        tab.className = selected ? INVITE_TAB_ACTIVE : INVITE_TAB_INACTIVE;
+      });
+      renderInvites(inviteLists[currentInviteTab] || []);
     }
 
     function renderInvites(items) {
       invitesList.replaceChildren();
       invitesEmpty.hidden = items.length > 0;
-      items.forEach((item) => {
+      invitesEmpty.textContent = currentInviteTab === "confirmed"
+        ? "No speakers have confirmed a talk yet."
+        : "No talks are waiting for speaker confirmation.";
+      items.forEach((item, index) => {
         const card = document.createElement("article");
-        card.className = "rounded-2xl border border-slate-200 bg-slate-50 p-4";
+        card.className = CARD_CLASS;
+        applyEnter(card, index);
         const title = document.createElement("h3");
-        title.className = "text-sm font-semibold text-slate-900";
-        title.textContent = item.topic;
+        title.className = "text-sm font-semibold text-stone-900";
+        title.textContent = item.title || item.topic;
         const meta = document.createElement("p");
-        meta.className = "mt-1 text-sm text-slate-500";
+        meta.className = "mt-1 text-sm text-stone-500";
         const schedule = [item.date, item.start_time && item.end_time ? `${item.start_time}–${item.end_time}` : "", item.hall_label || ""].filter(Boolean).join(" · ");
-        meta.textContent = [item.speaker_name || item.speaker_id, schedule].filter(Boolean).join(" · ");
+        const kind = item.kind === "proposal" ? "Approved proposal" : "Topic request";
+        meta.textContent = [item.speaker_name || item.speaker_id, kind, schedule].filter(Boolean).join(" · ");
         const row = document.createElement("div");
         row.className = "mt-3";
-        row.append(talkBadge(item.status));
+        row.append(talkBadge(item.display_status || item.status));
         card.append(title, meta, row);
         invitesList.append(card);
       });
     }
 
+    document.getElementById("invite-tabs").addEventListener("click", (event) => {
+      const tab = event.target.closest("[data-invite-tab]");
+      if (tab) showInviteTab(tab.dataset.inviteTab);
+    });
+
+    const eventLogEmpty = document.getElementById("event-log-empty");
+    const eventLogTableWrap = document.getElementById("event-log-table-wrap");
+    const eventLogBody = document.getElementById("event-log-body");
+    const eventLogCards = document.getElementById("event-log-cards");
+    const EVENT_LOG_FILTER_ACTIVE = "event-log-filter inline-flex items-center justify-center rounded-full bg-gradient-to-r from-clay-600 to-amber-700 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm";
+    const EVENT_LOG_FILTER_IDLE = "event-log-filter inline-flex items-center justify-center rounded-full border border-amber-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-stone-600";
+    const EVENT_BADGE = {
+      TalkProposed: "inline-flex rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-[11px] font-semibold text-amber-900",
+      TalkInnovationReviewed: "inline-flex rounded-full border border-clay-200 bg-orange-50 px-2.5 py-0.5 text-[11px] font-semibold text-clay-800",
+      TalkApproved: "inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-800",
+      TalkRejected: "inline-flex rounded-full border border-rose-200 bg-rose-50 px-2.5 py-0.5 text-[11px] font-semibold text-rose-800",
+    };
+    let eventLogItems = [];
+    let eventLogFilter = "";
+
+    function formatEventWhen(value) {
+      if (!value) return "—";
+      const stamp = new Date(value.includes("T") ? value : value.replace(" ", "T"));
+      if (Number.isNaN(stamp.getTime())) return value.replace("T", " ");
+      return stamp.toLocaleString([], { dateStyle: "medium", timeStyle: "short" });
+    }
+
+    function eventBadge(item) {
+      const badge = document.createElement("span");
+      badge.className = EVENT_BADGE[item.canonical_name] || "inline-flex rounded-full border border-stone-200 bg-stone-50 px-2.5 py-0.5 text-[11px] font-semibold text-stone-600";
+      badge.textContent = item.label || item.event_name;
+      return badge;
+    }
+
+    function renderEventLog() {
+      const items = eventLogFilter
+        ? eventLogItems.filter((item) => item.canonical_name === eventLogFilter || item.event_name === eventLogFilter)
+        : eventLogItems;
+      eventLogEmpty.hidden = items.length > 0;
+      eventLogEmpty.textContent = eventLogFilter
+        ? "No events match this filter."
+        : "No domain events have been recorded yet.";
+      eventLogTableWrap.hidden = items.length === 0;
+      eventLogCards.hidden = items.length === 0;
+      eventLogBody.replaceChildren();
+      eventLogCards.replaceChildren();
+      items.forEach((item, index) => {
+        const row = document.createElement("tr");
+        row.className = "text-sm text-stone-700";
+        applyEnter(row, index);
+        const when = document.createElement("td");
+        when.className = "whitespace-nowrap px-3 py-2.5 text-stone-500";
+        when.textContent = formatEventWhen(item.occurred_at);
+        const type = document.createElement("td");
+        type.className = "px-3 py-2.5";
+        type.append(eventBadge(item));
+        const title = document.createElement("td");
+        title.className = "px-3 py-2.5 font-medium text-stone-800";
+        title.textContent = item.title || "—";
+        const speaker = document.createElement("td");
+        speaker.className = "px-3 py-2.5 text-stone-600";
+        speaker.textContent = item.speaker_name || item.speaker_id || "—";
+        const summary = document.createElement("td");
+        summary.className = "px-3 py-2.5 text-stone-600";
+        summary.textContent = item.summary || "";
+        row.append(when, type, title, speaker, summary);
+        eventLogBody.append(row);
+
+        const card = document.createElement("article");
+        card.className = CARD_CLASS;
+        applyEnter(card, index);
+        const heading = document.createElement("div");
+        heading.className = "flex flex-wrap items-center justify-between gap-2";
+        const cardTitle = document.createElement("h3");
+        cardTitle.className = "text-sm font-semibold text-stone-900";
+        cardTitle.textContent = item.title || item.label || item.event_name;
+        heading.append(cardTitle, eventBadge(item));
+        const meta = document.createElement("p");
+        meta.className = "mt-2 text-sm text-stone-500";
+        meta.textContent = [formatEventWhen(item.occurred_at), item.speaker_name || item.speaker_id, item.summary].filter(Boolean).join(" · ");
+        card.append(heading, meta);
+        eventLogCards.append(card);
+      });
+    }
+
+    function setEventLogFilter(name) {
+      eventLogFilter = name || "";
+      document.querySelectorAll("#event-log-filters [data-event-filter]").forEach((button) => {
+        const selected = (button.dataset.eventFilter || "") === eventLogFilter;
+        button.className = selected ? EVENT_LOG_FILTER_ACTIVE : EVENT_LOG_FILTER_IDLE;
+        button.setAttribute("aria-pressed", selected ? "true" : "false");
+      });
+      renderEventLog();
+    }
+
+    async function loadEventLog({ announce = false } = {}) {
+      const response = await fetch("/api/organizer/event-log?limit=200", { headers: { Accept: "application/json" } });
+      const data = await readBody(response);
+      if (!response.ok) {
+        if (announce) showStatus(data.error || "Could not load the event log.", "error");
+        return;
+      }
+      eventLogItems = Array.isArray(data) ? data : [];
+      renderEventLog();
+    }
+
+    document.getElementById("event-log-filters").addEventListener("click", (event) => {
+      const button = event.target.closest("[data-event-filter]");
+      if (button) setEventLogFilter(button.dataset.eventFilter || "");
+    });
+    document.getElementById("refresh-event-log").addEventListener("click", () => loadEventLog({ announce: true }));
+
     async function loadTalkWorkflow() {
-      const [submissionsRes, invitesRes, trashRes] = await Promise.all([
+      const [submissionsRes, awaitingRes, confirmedRes, trashRes] = await Promise.all([
         fetch("/api/organizer/proposals", { headers: { Accept: "application/json" } }),
-        fetch("/api/organizer/requests", { headers: { Accept: "application/json" } }),
+        fetch("/api/organizer/requests?confirmation=awaiting", { headers: { Accept: "application/json" } }),
+        fetch("/api/organizer/requests?confirmation=confirmed", { headers: { Accept: "application/json" } }),
         fetch("/api/organizer/trash", { headers: { Accept: "application/json" } }),
       ]);
       const submissions = await readBody(submissionsRes);
-      const invites = await readBody(invitesRes);
+      const awaiting = await readBody(awaitingRes);
+      const confirmed = await readBody(confirmedRes);
       const trash = await readBody(trashRes);
+      inviteLists.awaiting = Array.isArray(awaiting) ? awaiting : [];
+      inviteLists.confirmed = Array.isArray(confirmed) ? confirmed : [];
       renderSubmissions(Array.isArray(submissions) ? submissions : []);
-      renderInvites(Array.isArray(invites) ? invites : []);
+      showInviteTab(currentInviteTab);
       renderTrash(Array.isArray(trash) ? trash : []);
     }
 
@@ -714,7 +1344,7 @@
         return;
       }
       showStatus(`Approved "${data.title}" and added it to My Events.`, "success");
-      await Promise.all([loadTalkWorkflow(), loadEvents({ announce: false })]);
+      await Promise.all([loadTalkWorkflow(), loadEvents({ announce: false }), loadStats(), loadEventLog()]);
       showTab("events");
     }
 
@@ -729,8 +1359,8 @@
         showStatus(data.error || "Could not reject the talk.", "error");
         return;
       }
-      showStatus(`Rejected "${data.title}". The speaker was notified and the proposal is in trash for 7 days.`, "info");
-      await loadTalkWorkflow();
+      showStatus(`Rejected "${data.title}". It was moved to trash for 7 days.`, "info");
+      await Promise.all([loadTalkWorkflow(), loadEvents({ announce: false }), loadStats(), loadEventLog()]);
       showTab("trash");
     }
 
@@ -744,9 +1374,15 @@
         showStatus(data.error || "Could not restore the proposal.", "error");
         return;
       }
-      showStatus(`Restored "${data.title}" to pending proposals.`, "success");
-      await loadTalkWorkflow();
-      showTab("proposals");
+      const restoredToEvents = data.restores_to === "events" || data.status === "approved";
+      showStatus(
+        restoredToEvents
+          ? `Restored "${data.title}" to My Events.`
+          : `Restored "${data.title}" to pending proposals.`,
+        "success",
+      );
+      await Promise.all([loadTalkWorkflow(), loadEvents({ announce: false }), loadStats(), loadEventLog()]);
+      showTab(restoredToEvents ? "events" : "proposals");
     }
 
     async function deleteTrash(id, title) {
@@ -761,22 +1397,23 @@
         return;
       }
       showStatus(`Deleted "${data.title || title}".`, "success");
-      await loadTalkWorkflow();
+      await Promise.all([loadTalkWorkflow(), loadEvents({ announce: false }), loadStats(), loadEventLog()]);
     }
 
-    async function deleteEvent(event) {
-      if (!window.confirm(`Permanently delete "${event.title || "this event"}"?`)) return;
-      const response = await fetch(`/api/organizer/events/${event.id}`, {
-        method: "DELETE",
-        headers: { Accept: "application/json" },
+    async function rejectEvent(event) {
+      const response = await fetch(`/api/organizer/events/${event.id}/reject`, {
+        method: "POST",
+        headers: { Accept: "application/json", "Content-Type": "application/json" },
+        body: JSON.stringify({}),
       });
       const data = await readBody(response);
       if (!response.ok) {
-        showStatus(data.error || "Could not delete the event.", "error");
+        showStatus(data.error || "Could not reject the event.", "error");
         return;
       }
-      showStatus(`Deleted "${data.title || event.title}".`, "success");
-      await loadEvents({ announce: false });
+      showStatus(`Rejected "${event.title}". It was moved to trash for 7 days.`, "info");
+      await Promise.all([loadTalkWorkflow(), loadEvents({ announce: false }), loadStats(), loadEventLog()]);
+      showTab("trash");
     }
 
     inviteForm.addEventListener("submit", async (event) => {
@@ -817,13 +1454,18 @@
         return;
       }
       inviteForm.reset();
-      showStatus(`Invited ${data.speaker_name || speakerId} to present "${data.topic}".`, "success");
-      await loadTalkWorkflow();
+      closeInviteModal();
+      showStatus(`Invited ${data.speaker_name || speakerId} to present "${data.topic}". It stays pending until they confirm and will not enter My Events yet.`, "success");
+      await Promise.all([loadTalkWorkflow(), loadStats(), loadEventLog()]);
+      showInviteTab("awaiting");
+      showTab("request");
     });
 
     loadSpeakers();
     loadEvents({ announce: false });
     loadTalkWorkflow();
+    loadStats();
+    loadEventLog();
   </script>
 </body>
 </html>

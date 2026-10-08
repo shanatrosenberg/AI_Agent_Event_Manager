@@ -5,7 +5,7 @@ This document defines the functional and non-functional requirements for the **S
 
 ## 2. System Actors & Roles
 The system supports three primary user roles:
-1. **Event Organizer (Admin):** Manages event schedules, creates sessions, views dashboards, and reviews automated AI assessments for talk submissions.
+1. **Event Organizer (Admin):** Manages event schedules, creates sessions, views dashboards and the Event Log / audit trail, and reviews automated AI assessments for talk submissions (approving or rejecting proposals).
 2. **Speaker:** Registers in the system, submits talk proposals (including titles, abstracts, and bios), and tracks proposal statuses.
 3. **Attendee:** Searches for sessions, browses data in clean tabular views, and books or reserves seats for events.
 
@@ -25,3 +25,4 @@ The system supports three primary user roles:
 3. **Database & Deployment:** Data persistence managed via a cloud database (e.g., Somee.com).
 4. **AI & MCP:** Integration with a vector database for semantic matching and external tool integration via **Model Context Protocol (MCP)**.
 5. **Version Control:** Fully tracked and managed in a GitHub repository.
+6. **Development Standards:** Clean, modular Flask/CQRS code, descriptive commits, and a polished professional UI/UX.

@@ -1,0 +1,25 @@
+---
+description: SDAD project rules for the Smart Event Management System
+alwaysApply: true
+---
+
+# Project Rules & Skills - Smart Event Management System (SDAD)
+
+## 1. Tech Stack & Architecture
+- **Backend Framework:** Python Flask (Application Factory + Blueprints).
+- **Architecture Pattern:** MVC / CQRS with Event Sourcing.
+- **Database Persistence:** Somee.com cloud SQL plus a vector store for RAG and semantic search.
+
+## 2. Integrated Skills & AI Integration
+- **SDAD:** Read `requirements.md` and `architecture.md` before writing implementation code.
+- **Skill 1:** Clean separation of concerns, proper error handling, and robust Flask routing.
+- **Skill 2:** Autonomous Deep Agent + MCP tools (Tavily, venue validation) and embeddings for proposal assessment.
+
+## 3. User Roles & Access Control
+1. **Event Organizer (Admin):** Schedules, capacity, Event Log / audit trail, and AI assessment review (approve/reject).
+2. **Speaker:** Talk proposals, abstracts, and bios.
+3. **Attendee:** Search, tabular browse, and seat booking.
+
+## 4. Development Standards
+- Keep modules small, errors explicit, commits descriptive, and UI/UX polished and professional.
+- Do not invent product scope beyond the markdown specifications.

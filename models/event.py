@@ -60,4 +60,6 @@ class Event(db.Model):
             "display_status": "Approved" if self.is_approved else (self.status or "unknown").replace("_", " ").title(),
             "remaining_seats": self.remaining_seats,
             "available": self.is_bookable,
+            "last_seats": 0 < self.remaining_seats <= 10,
+            "sold_out": self.remaining_seats <= 0,
         }

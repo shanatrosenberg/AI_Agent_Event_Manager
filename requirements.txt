@@ -7,4 +7,5 @@ itsdangerous>=2.1.2
 psycopg2-binary==2.9.10
 pymssql==2.3.2
 python-dotenv==1.0.1
+requests>=2.32.0
 pytest==8.3.5

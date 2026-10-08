@@ -1,0 +1,27 @@
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700;9..144,800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ["Plus Jakarta Sans", "ui-sans-serif", "system-ui", "sans-serif"],
+          display: ["Fraunces", "Georgia", "serif"],
+        },
+        colors: {
+          sand: { 50: "#fbf6ee", 100: "#f4ead6", 200: "#e8d4b0" },
+          clay: { 500: "#c2410c", 600: "#9a3412", 700: "#7c2d12" },
+        },
+        keyframes: {
+          fadeUp: {
+            "0%": { opacity: "0", transform: "translateY(12px)" },
+            "100%": { opacity: "1", transform: "translateY(0)" },
+          },
+        },
+        animation: {
+          "fade-up": "fadeUp 0.45s ease-out both",
+        },
+      },
+    },
+  };
+</script>

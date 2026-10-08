@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from datetime import date as date_cls, datetime, timezone
 
 HALL_CAPACITIES = (50, 100, 300)
 HALL_LABELS = {
@@ -38,6 +39,39 @@ def clock_minutes(value: str) -> int:
 
 def clocks_overlap(start_a: str, end_a: str, start_b: str, end_b: str) -> bool:
     return clock_minutes(start_a) < clock_minutes(end_b) and clock_minutes(start_b) < clock_minutes(end_a)
+
+
+def parse_event_date(value: str) -> date_cls | None:
+    raw = (value or "").strip()
+    if not raw:
+        return None
+    try:
+        return date_cls.fromisoformat(raw[:10])
+    except ValueError:
+        return None
+
+
+def utc_now() -> datetime:
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
+def has_occurred(date_value: str, end_time: str | None = None, now: datetime | None = None) -> bool:
+    day = parse_event_date(date_value)
+    if day is None:
+        return False
+    current = now or utc_now()
+    today = current.date()
+    if day < today:
+        return True
+    if day > today:
+        return False
+    if not end_time:
+        return False
+    try:
+        end = parse_clock(end_time, "end_time")
+    except ValueError:
+        return False
+    return clock_minutes(end) <= current.hour * 60 + current.minute
 
 
 def normalize_schedule(date: str, start_time: str, end_time: str, capacity: int) -> tuple[str, str, str, int]:

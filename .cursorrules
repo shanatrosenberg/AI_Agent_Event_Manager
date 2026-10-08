@@ -1,15 +1,19 @@
 # Project Rules & Skills - Smart Event Management System (SDAD)
 
-## 1. Development Rules & Methodology
-- **Specification-Driven Application Development (SDAD):** Always rely on project markdown specifications (`requirements.md`, `architecture.md`) before writing implementation code.
-- **Architecture Pattern:** Python Flask backend structured with MVC / CQRS and Event Sourcing patterns.
-- **Database Persistence:** Cloud database (Somee.com) combined with a vector database for RAG.
+## 1. Tech Stack & Architecture
+- **Backend Framework:** Python Flask (following standard Application Factory patterns and Blueprint organization).
+- **Architecture Pattern:** MVC / CQRS with Event Sourcing.
+- **Database Persistence:** Cloud Database (Somee.com) combined with a Vector Database for RAG and semantic search.
 
-## 2. Integrated Skills
-- **Skill 1 (Flask & Python Best Practices):** Follow standard Flask application factory patterns, proper blueprint organization, and clean separation of concerns.
-- **Skill 2 (AI & Agent Integration):** Implement autonomous background agents leveraging MCP tools (e.g., Tavily search) and vector embeddings.
+## 2. Integrated Skills & AI Integration
+- **Specification-Driven Application Development (SDAD):** Always rely on project markdown specifications (`requirements.md`, `architecture.md`) before writing implementation code.
+- **Skill 1 (Flask & Python Best Practices):** Clean separation of concerns, proper error handling, and robust routing.
+- **Skill 2 (Autonomous Deep Agent & MCP):** Implement autonomous background agents leveraging MCP tools (e.g., Tavily search) and vector embeddings for speaker and proposal assessments.
 
 ## 3. User Roles & Access Control
-1. **Event Organizer (Admin):** Manages event schedules, sessions, capacity, and reviews AI assessments.
+1. **Event Organizer (Admin):** Manages event schedules, sessions, capacity, event logs, and reviews AI assessments (approving/rejecting proposals).
 2. **Speaker:** Submits talk proposals, abstracts, and speaker bios.
 3. **Attendee:** Searches for sessions, browses tabular views, and books/reserves seats.
+
+## 4. Development Standards
+- Ensure clean code, proper code modularity, descriptive commit messages, and a polished, professional UI/UX design.

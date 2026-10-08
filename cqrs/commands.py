@@ -3,7 +3,11 @@ from uuid import uuid4
 
 from models.booking import Booking
 from models.event import Event
-from models.submission import DEFAULT_REJECTION_MESSAGE, TalkSubmission, utc_now
+from models.submission import (
+    DEFAULT_REJECTION_MESSAGE,
+    TalkSubmission,
+    utc_now,
+)
 from models.talk_request import TalkRequest
 from cqrs.errors import DomainError
 from cqrs.store import EventStore
@@ -67,6 +71,12 @@ class CreateEventHandler:
         )
         self._store.append("EventCreated", event.to_dict())
         self._store.save_read_model(event)
+        try:
+            from services.vector_store import index_official_event
+
+            index_official_event(event)
+        except Exception:
+            pass
         return event
 
 
@@ -122,6 +132,12 @@ class UpdateEventHandler:
         event.status = "approved"
         self._store.append("EventUpdated", event.to_dict())
         self._store.save_read_model(event)
+        try:
+            from services.vector_store import index_official_event
+
+            index_official_event(event)
+        except Exception:
+            pass
         return event
 
 
@@ -183,14 +199,43 @@ class SubmitTalkHandler:
             status="pending_assessment",
             ai_assessment={},
         )
-        self._store.append("TalkSubmitted", submission.to_dict())
+        self._store.append("TalkProposed", submission.to_dict())
 
         assessment = self._assessor.enqueue(submission)
         submission.ai_assessment = assessment
         submission.status = "under_review"
         self._store.append("TalkQueuedForAssessment", submission.to_dict())
+        self._store.append("TalkInnovationReviewed", submission.to_dict())
         self._store.save_submission(submission)
+        try:
+            from services.vector_store import index_talk_proposal
+
+            index_talk_proposal(submission)
+        except Exception:
+            pass
         return submission
+
+
+@dataclass
+class AssessPendingTalksCommand:
+    submission_id: str | None = None
+    force: bool = False
+
+
+class AssessPendingTalksHandler:
+    def __init__(self, store: EventStore, assessor: AIAssessmentAgent | None = None) -> None:
+        self._store = store
+        self._assessor = assessor or AIAssessmentAgent()
+
+    def handle(self, command: AssessPendingTalksCommand) -> list[dict]:
+        from services.deep_agent import assess_pending_talks
+
+        return assess_pending_talks(
+            submission_id=command.submission_id,
+            force=command.force,
+            assessor=self._assessor,
+            store=self._store,
+        )
 
 
 @dataclass
@@ -456,6 +501,10 @@ class RespondToTalkRequestHandler:
                     speaker_id=command.speaker_id,
                 )
             )
+            submission.status = "approved"
+            submission.event_id = event.id
+            self._store.append("TalkApproved", submission.to_dict())
+            self._store.save_submission(submission)
             talk_request.status = "accepted"
             talk_request.submission_id = submission.id
             talk_request.event_id = event.id
@@ -474,6 +523,39 @@ class ApproveTalkCommand:
     submission_id: str
 
 
+def publish_submission_as_event(
+    store: EventStore,
+    create_event_handler: CreateEventHandler,
+    submission: TalkSubmission,
+    organizer_id: str,
+) -> TalkSubmission:
+    if submission.status == "approved" and submission.event_id:
+        return submission
+    if submission.status == "rejected":
+        raise DomainError("Restore this proposal from trash before publishing it.", status=409)
+    if not submission.date or not submission.start_time or not submission.end_time or not submission.capacity:
+        raise DomainError("proposal is missing a date, time, or hall")
+    event = create_event_handler.handle(
+        CreateEventCommand(
+            organizer_id=organizer_id,
+            title=submission.title,
+            description=submission.abstract,
+            date=submission.date,
+            start_time=submission.start_time,
+            end_time=submission.end_time,
+            capacity=int(submission.capacity),
+            speaker_id=submission.speaker_id,
+        )
+    )
+    submission.status = "approved"
+    submission.event_id = event.id
+    submission.rejected_at = None
+    submission.rejection_message = None
+    store.append("TalkPublished", submission.to_dict())
+    store.save_submission(submission)
+    return submission
+
+
 class ApproveTalkHandler:
     def __init__(self, store: EventStore, create_event_handler: CreateEventHandler | None = None) -> None:
         self._store = store
@@ -488,27 +570,66 @@ class ApproveTalkHandler:
             raise DomainError("submission does not belong to this organizer", status=403)
         if submission.status == "rejected":
             raise DomainError("Restore this proposal from trash before approving it.", status=409)
-        if submission.status == "approved" and submission.event_id:
-            return submission
-        if not submission.date or not submission.start_time or not submission.end_time or not submission.capacity:
-            raise DomainError("proposal is missing a date, time, or hall")
-        event = self._create_event_handler.handle(
-            CreateEventCommand(
-                organizer_id=organizer_id,
-                title=submission.title,
-                description=submission.abstract,
-                date=submission.date,
-                start_time=submission.start_time,
-                end_time=submission.end_time,
-                capacity=int(submission.capacity),
-                speaker_id=submission.speaker_id,
-            )
+        published = publish_submission_as_event(
+            self._store, self._create_event_handler, submission, organizer_id
         )
-        submission.status = "approved"
-        submission.event_id = event.id
-        submission.rejected_at = None
-        submission.rejection_message = None
-        self._store.append("TalkApproved", submission.to_dict())
+        self._store.append("TalkApproved", published.to_dict())
+        return published
+
+
+@dataclass
+class PublishTalkCommand:
+    organizer_id: str
+    submission_id: str
+
+
+class PublishTalkHandler:
+    def __init__(self, store: EventStore, create_event_handler: CreateEventHandler | None = None) -> None:
+        self._store = store
+        self._create_event_handler = create_event_handler or CreateEventHandler(store)
+
+    def handle(self, command: PublishTalkCommand) -> TalkSubmission:
+        submission = self._store.get_submission(command.submission_id)
+        if submission is None:
+            raise DomainError("submission not found", status=404)
+        organizer_id = command.organizer_id or admin_organizer_id()
+        if submission.organizer_id and submission.organizer_id != organizer_id:
+            raise DomainError("submission does not belong to this organizer", status=403)
+        return publish_submission_as_event(
+            self._store, self._create_event_handler, submission, organizer_id
+        )
+
+
+@dataclass
+class ConfirmTalkCommand:
+    speaker_id: str
+    submission_id: str
+    confirm: bool = True
+
+
+class ConfirmTalkHandler:
+    def __init__(self, store: EventStore, create_event_handler: CreateEventHandler | None = None) -> None:
+        self._store = store
+        self._create_event_handler = create_event_handler or CreateEventHandler(store)
+
+    def handle(self, command: ConfirmTalkCommand) -> TalkSubmission:
+        submission = self._store.get_submission(command.submission_id)
+        if submission is None:
+            raise DomainError("submission not found", status=404)
+        if submission.speaker_id != command.speaker_id:
+            raise DomainError("submission does not belong to this speaker", status=403)
+        if submission.status != "awaiting_speaker_confirmation":
+            raise DomainError("this talk is not waiting for speaker confirmation", status=409)
+        organizer_id = submission.organizer_id or admin_organizer_id()
+        if command.confirm:
+            published = publish_submission_as_event(
+                self._store, self._create_event_handler, submission, organizer_id
+            )
+            self._store.append("TalkConfirmedBySpeaker", published.to_dict())
+            return published
+        submission.status = "confirmation_declined"
+        submission.rejection_message = "The speaker cannot deliver this talk at the requested time."
+        self._store.append("TalkConfirmationDeclined", submission.to_dict())
         self._store.save_submission(submission)
         return submission
 
@@ -531,8 +652,12 @@ class RejectTalkHandler:
         organizer_id = command.organizer_id or admin_organizer_id()
         if submission.organizer_id and submission.organizer_id != organizer_id:
             raise DomainError("submission does not belong to this organizer", status=403)
-        if submission.status == "approved":
-            raise DomainError("Approved talks cannot be rejected. Delete the event instead.", status=409)
+        if submission.event_id:
+            event = self._store.get_event(submission.event_id)
+            if event is not None:
+                event.status = "disapproved"
+                self._store.append("EventDisapproved", event.to_dict())
+                self._store.save_read_model(event)
         note = (command.message or DEFAULT_REJECTION_MESSAGE).strip() or DEFAULT_REJECTION_MESSAGE
         submission.status = "rejected"
         submission.rejected_at = utc_now()
@@ -554,9 +679,58 @@ class RejectTalkHandler:
 
 
 @dataclass
-class RestoreTalkCommand:
+class DisapproveEventCommand:
     organizer_id: str
+    event_id: str
+    message: str | None = None
+
+
+class DisapproveEventHandler:
+    def __init__(self, store: EventStore, reject_handler: RejectTalkHandler) -> None:
+        self._store = store
+        self._reject_handler = reject_handler
+
+    def handle(self, command: DisapproveEventCommand) -> TalkSubmission:
+        event = self._store.get_event(command.event_id)
+        if event is None:
+            raise DomainError("event not found", status=404)
+        organizer_id = command.organizer_id or admin_organizer_id()
+        if event.organizer_id != organizer_id:
+            raise DomainError("event does not belong to this organizer", status=403)
+        submission = self._store.get_submission_by_event_id(event.id)
+        if submission is None:
+            speaker_id = (event.speaker_id or "").strip() or "unassigned"
+            self._store.ensure_speaker(speaker_id)
+            submission = TalkSubmission(
+                id=str(uuid4()),
+                speaker_id=speaker_id,
+                organizer_id=organizer_id,
+                title=event.title,
+                abstract=event.description or event.title,
+                category="event",
+                date=event.date,
+                start_time=event.start_time,
+                end_time=event.end_time,
+                capacity=event.capacity,
+                status="approved",
+                ai_assessment={},
+                event_id=event.id,
+            )
+            self._store.save_submission(submission)
+        return self._reject_handler.handle(
+            RejectTalkCommand(
+                organizer_id=organizer_id,
+                submission_id=submission.id,
+                message=command.message,
+            )
+        )
+
+
+@dataclass
+class RestoreTalkCommand:
     submission_id: str
+    organizer_id: str | None = None
+    speaker_id: str | None = None
 
 
 class RestoreTalkHandler:
@@ -568,14 +742,40 @@ class RestoreTalkHandler:
         submission = self._store.get_submission(command.submission_id)
         if submission is None:
             raise DomainError("submission not found", status=404)
-        organizer_id = command.organizer_id or admin_organizer_id()
-        if submission.organizer_id and submission.organizer_id != organizer_id:
-            raise DomainError("submission does not belong to this organizer", status=403)
+        if command.speaker_id:
+            if submission.speaker_id != command.speaker_id:
+                raise DomainError("submission does not belong to this speaker", status=403)
+            raise DomainError("Rejected proposals are removed from the speaker dashboard.", status=403)
+        else:
+            organizer_id = command.organizer_id or admin_organizer_id()
+            if submission.organizer_id and submission.organizer_id != organizer_id:
+                raise DomainError("submission does not belong to this organizer", status=403)
         if submission.status != "rejected":
             raise DomainError("only rejected proposals can be restored", status=409)
         if submission.is_expired:
             raise DomainError("this proposal has expired from trash", status=410)
-        submission.status = "under_review"
+        if submission.event_id:
+            event = self._store.get_event(submission.event_id)
+            if event is not None:
+                if event.start_time and event.end_time and event.capacity:
+                    conflict = self._store.find_hall_conflict(
+                        event.capacity,
+                        event.date,
+                        event.start_time,
+                        event.end_time,
+                        exclude_event_id=event.id,
+                    )
+                    if conflict is not None:
+                        raise DomainError(
+                            "This hall is already booked for an overlapping date and time.",
+                            status=409,
+                        )
+                event.status = "approved"
+                self._store.append("EventRestored", event.to_dict())
+                self._store.save_read_model(event)
+            submission.status = "approved"
+        else:
+            submission.status = "under_review"
         submission.rejected_at = None
         submission.rejection_message = None
         self._store.append("TalkRestored", submission.to_dict())
@@ -602,9 +802,20 @@ class DeleteRejectedTalkHandler:
             raise DomainError("submission does not belong to this organizer", status=403)
         if submission.status != "rejected":
             raise DomainError("only rejected proposals can be deleted from trash", status=409)
-        payload = {"id": submission.id, "title": submission.title}
+        payload = {"id": submission.id, "title": submission.title, "event_id": submission.event_id}
+        if submission.event_id:
+            event = self._store.get_event(submission.event_id)
+            if event is not None:
+                self._store.append("EventDeleted", {"id": event.id, "title": event.title})
+                self._store.delete_event(event)
         self._store.append("TalkDeleted", payload)
         self._store.delete_submission(submission)
+        try:
+            from services.vector_store import remove_document
+
+            remove_document("proposal", payload["id"])
+        except Exception:
+            pass
         return payload
 
 

@@ -99,17 +99,33 @@ def login():
     return redirect(safe_next_url(values.get("next") or "/organizer", result["role"]))
 
 
+def _locked_public_role() -> str | None:
+    payload = request.get_json(silent=True) if request.is_json else None
+    source = payload if isinstance(payload, dict) else request.form
+    candidate = str(
+        source.get("locked_role") or request.args.get("role") or ""
+    ).strip().lower()
+    return candidate if candidate in PUBLIC_ROLES else None
+
+
+def _register_roles(locked: str | None):
+    return (locked,) if locked else PUBLIC_ROLES
+
+
 @auth_bp.route("/register", methods=["GET", "POST"])
 def register():
+    locked = _locked_public_role()
+    default_role = locked or "speaker"
     if request.method == "GET":
         return render_template(
             "register.html",
             error=None,
             user_id="",
             name="",
-            role="speaker",
-            roles=PUBLIC_ROLES,
+            role=default_role,
+            roles=_register_roles(locked),
             role_labels=ROLE_LABELS,
+            locked_role=locked,
         )
 
     values = _form_values()
@@ -122,13 +138,14 @@ def register():
                 error="organizer accounts cannot be self-registered",
                 user_id=values["user_id"],
                 name=values["name"],
-                role="speaker",
-                roles=PUBLIC_ROLES,
+                role=default_role,
+                roles=_register_roles(locked),
                 role_labels=ROLE_LABELS,
+                locked_role=locked,
             ),
             403,
         )
-    role = values["role"] if values["role"] in PUBLIC_ROLES else "speaker"
+    role = locked or (values["role"] if values["role"] in PUBLIC_ROLES else "speaker")
     try:
         result = register_account_handler.handle(
             RegisterAccountCommand(
@@ -148,18 +165,21 @@ def register():
                 user_id=values["user_id"],
                 name=values["name"],
                 role=role,
-                roles=PUBLIC_ROLES,
+                roles=_register_roles(locked),
                 role_labels=ROLE_LABELS,
+                locked_role=locked,
             ),
             exc.status,
         )
 
+    if result["role"] == "attendee":
+        establish_session(result["user_id"], result["role"], result.get("name"))
     if _wants_json():
         token = issue_auth_token(result["user_id"], result["role"])
         return jsonify({**result, "token": token}), 201
     if result["role"] == "speaker":
         return redirect(url_for("auth.speaker_login"))
-    return redirect(url_for("auth.login"))
+    return redirect(safe_next_url(values.get("next") or "/events", result["role"]))
 
 
 @auth_bp.route("/speaker/login", methods=["GET", "POST"])
@@ -211,6 +231,38 @@ def speaker_login():
     return redirect(safe_next_url(values.get("next") or "/speaker", result["role"]))
 
 
+@auth_bp.route("/attendee/login", methods=["GET", "POST"])
+def attendee_login():
+    if request.method == "GET":
+        user = current_user()
+        if user and user["role"] == "attendee":
+            return redirect(safe_next_url(request.args.get("next") or "/events", "attendee"))
+        next_url = request.args.get("next") or ""
+        if next_url.startswith("/") and not next_url.startswith("//"):
+            return redirect(f"/events?join=1&customer=existing&next={next_url}")
+        return redirect("/events?join=1&customer=existing")
+
+    values = _form_values()
+    try:
+        result = login_handler.handle(
+            LoginCommand(
+                user_id=values["user_id"],
+                password=values["password"],
+                role="attendee",
+            )
+        )
+    except DomainError as exc:
+        if _wants_json():
+            return jsonify({"error": exc.message}), exc.status
+        return redirect("/events?join=1&customer=existing")
+
+    establish_session(result["user_id"], result["role"], result.get("name"))
+    token = issue_auth_token(result["user_id"], result["role"])
+    if _wants_json():
+        return jsonify({**result, "token": token}), 200
+    return redirect(safe_next_url(values.get("next") or "/events", result["role"]))
+
+
 @auth_bp.route("/logout", methods=["GET", "POST"])
 def logout():
     role = session.get("role")
@@ -219,4 +271,6 @@ def logout():
         return jsonify({"status": "signed_out"}), 200
     if role == "speaker":
         return redirect(url_for("auth.speaker_login"))
+    if role == "attendee":
+        return redirect("/events")
     return redirect(url_for("auth.login"))

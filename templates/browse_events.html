@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Browse talks · Smart Event Management System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  {% include 'partials/theme.html' %}
+  <style>
+    #events-grid article[hidden] { display: none !important; }
+  </style>
+</head>
+<body class="min-h-screen bg-sand-50 font-sans text-stone-900 antialiased">
+  <div class="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+    <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(251,191,36,0.18),_transparent_55%)]"></div>
+    <div class="absolute -left-16 top-24 h-72 w-72 rounded-full bg-rose-200/40 blur-3xl"></div>
+    <div class="absolute -right-10 top-80 h-80 w-80 rounded-full bg-amber-200/40 blur-3xl"></div>
+  </div>
+
+  <header class="sticky top-0 z-40 border-b border-amber-200/70 bg-sand-50/80 backdrop-blur-xl">
+    <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+      <a href="{{ url_for('home') }}" class="flex items-center gap-3">
+        <span class="flex h-10 w-10 items-center justify-center rounded-2xl bg-clay-600 text-white shadow-md shadow-orange-900/20">
+          <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+            <rect x="3" y="5" width="18" height="16" rx="2"></rect>
+            <path d="M3 10h18M8 3v4M16 3v4"></path>
+          </svg>
+        </span>
+        <span class="text-sm font-semibold tracking-tight text-stone-800">Smart Events</span>
+      </a>
+      <nav class="flex items-center gap-5 text-sm font-medium text-stone-600">
+        <a href="{{ url_for('home') }}" class="transition hover:text-clay-600">Home</a>
+        <a href="{{ url_for('browse_events') }}" class="text-clay-700">Browse talks</a>
+        {% if attendee_id %}
+        <a href="{{ url_for('my_tickets') }}" class="inline-flex items-center justify-center rounded-full border border-amber-200 bg-white px-4 py-2 text-sm font-semibold text-clay-700 shadow-sm transition hover:border-amber-300 hover:bg-sand-50">My Tickets</a>
+        <span class="hidden text-stone-500 sm:inline">{{ attendee_name or attendee_id }}</span>
+        <form method="post" action="{{ url_for('auth.logout') }}">
+          <button type="submit" class="transition hover:text-clay-600">Sign out</button>
+        </form>
+        {% else %}
+        <a href="/events?join=1&customer=existing" class="transition hover:text-clay-600">Sign in</a>
+        <a id="join-as-attendee" href="/events?join=1" class="inline-flex items-center justify-center rounded-full bg-clay-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-clay-700">Join as attendee</a>
+        {% endif %}
+      </nav>
+    </div>
+  </header>
+
+  <main class="mx-auto max-w-6xl px-6 py-10 sm:py-14">
+    <p class="text-xs font-semibold uppercase tracking-[0.22em] text-clay-600">For attendees</p>
+    <h1 class="font-display mt-3 max-w-3xl text-4xl font-extrabold tracking-tight text-stone-900 sm:text-5xl">Find a talk that feels like an invitation.</h1>
+    <p class="mt-4 max-w-2xl text-base leading-relaxed text-stone-600">
+      Upcoming sessions, closest date first. Reserve a seat while the hall is still open.
+    </p>
+    {% if attendee_name %}
+    <p class="mt-4 text-sm font-medium text-stone-500">Signed in as {{ attendee_name }}.</p>
+    {% endif %}
+
+    <form id="talk-search-form" class="mt-8" role="search" action="{{ url_for('browse_events') }}" method="get">
+      <label for="talk-search" class="sr-only">Search talks</label>
+      <div class="flex flex-col gap-3 sm:flex-row">
+        <div class="relative flex-1">
+          <span class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-clay-600" aria-hidden="true">
+            <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8">
+              <circle cx="11" cy="11" r="7"></circle>
+              <path d="M20 20l-3.2-3.2"></path>
+            </svg>
+          </span>
+          <input
+            id="talk-search"
+            name="q"
+            type="search"
+            value="{{ search_query or '' }}"
+            autocomplete="off"
+            placeholder="Search talks by topic, speaker, or a few words…"
+            class="w-full rounded-full border border-amber-200 bg-white/90 py-3 pl-12 pr-4 text-sm text-stone-800 shadow-sm outline-none transition placeholder:text-stone-400 focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-100"
+          >
+        </div>
+        <button type="submit" id="talk-search-button" class="inline-flex items-center justify-center rounded-full bg-clay-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-clay-700">
+          Search
+        </button>
+      </div>
+      <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+        <div class="min-w-[12rem] flex-1">
+          <label for="filter-topic" class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-stone-500">Filter by topic</label>
+          <select id="filter-topic" name="topic" class="w-full rounded-full border border-amber-200 bg-white/90 px-4 py-2.5 text-sm text-stone-800 shadow-sm outline-none transition focus:border-amber-400 focus:ring-2 focus:ring-amber-100">
+            <option value="">All topics</option>
+            {% for topic in (filter_options.topics if filter_options else []) %}
+            <option value="{{ topic }}" {% if selected_topic and selected_topic|lower == topic|lower %}selected{% endif %}>{{ topic }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="min-w-[12rem] flex-1">
+          <label for="filter-speaker" class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-stone-500">Filter by speaker</label>
+          <select id="filter-speaker" name="speaker" class="w-full rounded-full border border-amber-200 bg-white/90 px-4 py-2.5 text-sm text-stone-800 shadow-sm outline-none transition focus:border-amber-400 focus:ring-2 focus:ring-amber-100">
+            <option value="">All speakers</option>
+            {% for speaker in (filter_options.speakers if filter_options else []) %}
+            <option value="{{ speaker.id }}" {% if selected_speaker and (selected_speaker|lower == speaker.id|lower or selected_speaker|lower == speaker.name|lower) %}selected{% endif %}>{{ speaker.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <button type="button" id="reset-filters" class="inline-flex items-center justify-center rounded-full border border-amber-200 bg-white px-5 py-2.5 text-sm font-semibold text-clay-700 shadow-sm transition hover:border-amber-300 hover:bg-sand-50">
+          Reset Filters
+        </button>
+      </div>
+      <p id="talk-search-meta" class="mt-3 min-h-[1.25rem] text-sm text-stone-500"></p>
+    </form>
+
+    <p id="browse-status" class="mt-6 hidden rounded-2xl border px-4 py-3 text-sm font-medium"></p>
+
+    {% if events %}
+    <section id="events-grid" class="mt-10 grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+      {% for event in events %}
+      <article data-event-id="{{ event.id }}" data-topic="{{ event.topic }}" data-speaker-id="{{ event.speaker_id or '' }}" data-speaker-name="{{ event.speaker_name or event.speaker_id or '' }}" data-remaining="{{ event.remaining_seats }}" data-capacity="{{ event.capacity }}" data-title="{{ event.title }}" class="group relative flex flex-col overflow-hidden rounded-[1.75rem] border border-amber-100 bg-white/90 p-6 shadow-lg shadow-amber-900/5 backdrop-blur-sm transition duration-300 hover:-translate-y-1.5 hover:shadow-xl hover:shadow-orange-900/10">
+        <div data-badge-row class="flex flex-wrap items-center gap-2">
+          <span class="inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-amber-800">{{ event.topic }}</span>
+          {% if event.sold_out %}
+          <span data-sold-out-badge class="inline-flex rounded-full bg-stone-800 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white">Sold Out</span>
+          {% elif event.last_seats %}
+          <span data-last-seats-badge class="inline-flex animate-pulse rounded-full bg-rose-600 px-2.5 py-1 text-[11px] font-bold text-white shadow-sm shadow-rose-600/30">Last seats!</span>
+          {% endif %}
+        </div>
+        <h2 class="font-display mt-4 text-2xl font-bold leading-tight tracking-tight text-stone-900">{{ event.title }}</h2>
+        <p class="mt-2 text-sm font-semibold text-clay-700">{{ event.speaker_name or event.speaker_id or "Guest speaker" }}</p>
+        <p class="mt-2 text-sm text-stone-500">
+          {{ event.date }}{% if event.start_time %} | {{ event.start_time }}{% endif %}
+        </p>
+        <p class="mt-4 flex-1 text-sm leading-relaxed text-stone-600">{{ event.description or "Join this session to hear the speaker share their work with the room." }}</p>
+        <div class="mt-5 flex items-center justify-end gap-3">
+          {% if event.sold_out %}
+          <button type="button" disabled class="inline-flex cursor-not-allowed items-center justify-center rounded-full bg-stone-200 px-4 py-2 text-sm font-semibold text-stone-500">Sold Out</button>
+          {% else %}
+          <button type="button" data-buy-tickets="{{ event.id }}" class="inline-flex items-center justify-center rounded-full bg-clay-600 px-4 py-2 text-sm font-semibold text-white shadow-md shadow-orange-900/15 transition hover:-translate-y-0.5 hover:bg-clay-700">Buy Tickets</button>
+          {% endif %}
+        </div>
+      </article>
+      {% endfor %}
+    </section>
+    <p id="search-empty" hidden class="mt-10 rounded-3xl border border-dashed border-amber-200 bg-white/70 px-6 py-16 text-center text-stone-500">No talks match those filters. Try another topic, speaker, or a few different words.</p>
+    {% elif selected_topic or selected_speaker or search_query %}
+    <p id="search-empty" class="mt-10 rounded-3xl border border-dashed border-amber-200 bg-white/70 px-6 py-16 text-center text-stone-500">No talks match those filters. Try another topic, speaker, or a few different words.</p>
+    {% else %}
+    <p id="browse-empty" class="mt-10 rounded-3xl border border-dashed border-amber-200 bg-white/70 px-6 py-16 text-center text-stone-500">No talks are on the public program yet.</p>
+    {% endif %}
+  </main>
+
+  <div id="join-modal" class="fixed inset-0 z-50 hidden items-center justify-center overflow-y-auto px-4 py-8 sm:py-12" aria-hidden="true">
+    <div id="join-backdrop" class="absolute inset-0 bg-stone-900/40 opacity-0 backdrop-blur-md transition-opacity duration-300" data-join-dismiss></div>
+    <div
+      id="join-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="join-modal-title"
+      class="relative w-full max-w-lg scale-95 rounded-3xl border border-amber-100 bg-white/95 p-6 opacity-0 shadow-2xl shadow-orange-900/15 transition duration-300 sm:p-7"
+    >
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <h2 id="join-modal-title" class="font-display text-lg font-bold tracking-tight">Join as attendee</h2>
+          <p class="mt-1 text-sm text-stone-500">Sign in as an existing customer or create a new customer account. This portal is for attendees only.</p>
+        </div>
+        <button type="button" id="close-join-modal" class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-amber-200 bg-white text-stone-500 shadow-sm transition hover:border-amber-300 hover:bg-sand-50 hover:text-stone-800" aria-label="Close attendee form">
+          <span aria-hidden="true">✕</span>
+        </button>
+      </div>
+      <form id="join-form" class="mt-6 space-y-4" novalidate>
+        <div>
+          <p class="block text-sm font-medium text-stone-700">Customer</p>
+          <div class="mt-2 grid grid-cols-2 gap-2" role="tablist" aria-label="Customer type">
+            <button type="button" data-join-tab="existing" class="join-customer-tab inline-flex items-center justify-center rounded-full bg-clay-600 px-3 py-2 text-xs font-semibold text-white">Existing Customer</button>
+            <button type="button" data-join-tab="new" class="join-customer-tab inline-flex items-center justify-center rounded-full border border-amber-200 bg-white px-3 py-2 text-xs font-semibold text-stone-600">New Customer</button>
+          </div>
+        </div>
+        <div id="join-existing-fields" class="space-y-4">
+          <div>
+            <label for="join-existing-user" class="block text-sm font-medium text-stone-700">User id</label>
+            <input id="join-existing-user" autocomplete="username" class="mt-1.5 w-full rounded-xl border border-amber-200 bg-sand-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-100">
+          </div>
+          <div>
+            <label for="join-existing-password" class="block text-sm font-medium text-stone-700">Password</label>
+            <input id="join-existing-password" type="password" autocomplete="current-password" class="mt-1.5 w-full rounded-xl border border-amber-200 bg-sand-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-100">
+          </div>
+        </div>
+        <div id="join-new-fields" class="hidden space-y-4">
+          <div>
+            <label for="join-new-name" class="block text-sm font-medium text-stone-700">Display name</label>
+            <input id="join-new-name" autocomplete="name" class="mt-1.5 w-full rounded-xl border border-amber-200 bg-sand-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-100">
+          </div>
+          <div>
+            <label for="join-new-user" class="block text-sm font-medium text-stone-700">User id</label>
+            <input id="join-new-user" autocomplete="username" class="mt-1.5 w-full rounded-xl border border-amber-200 bg-sand-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-100">
+          </div>
+          <div>
+            <label for="join-new-password" class="block text-sm font-medium text-stone-700">Password</label>
+            <input id="join-new-password" type="password" autocomplete="new-password" class="mt-1.5 w-full rounded-xl border border-amber-200 bg-sand-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-100">
+            <p class="mt-1 text-xs text-stone-400">At least 8 characters.</p>
+          </div>
+        </div>
+        <p id="join-form-status" hidden class="rounded-2xl border px-4 py-3 text-sm font-medium"></p>
+        <div class="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
+          <button type="button" id="cancel-join-modal" class="inline-flex items-center justify-center rounded-full border border-amber-200 bg-white px-5 py-2.5 text-sm font-semibold text-stone-700 transition hover:border-amber-300">Cancel</button>
+          <button id="confirm-join-button" type="submit" class="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-clay-600 to-amber-700 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-orange-900/15 transition hover:shadow-xl hover:shadow-orange-900/20">Continue</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="ticket-modal" class="fixed inset-0 z-50 hidden items-center justify-center overflow-y-auto px-4 py-8 sm:py-12" aria-hidden="true">
+    <div id="ticket-backdrop" class="absolute inset-0 bg-stone-900/40 opacity-0 backdrop-blur-md transition-opacity duration-300" data-ticket-dismiss></div>
+    <div
+      id="ticket-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="ticket-modal-title"
+      class="relative w-full max-w-lg scale-95 rounded-3xl border border-amber-100 bg-white/95 p-6 opacity-0 shadow-2xl shadow-orange-900/15 transition duration-300 sm:p-7"
+    >
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <h2 id="ticket-modal-title" class="font-display text-lg font-bold tracking-tight">Buy Tickets</h2>
+          <p id="ticket-event-title" class="mt-1 text-sm text-stone-500"></p>
+        </div>
+        <button type="button" id="close-ticket-modal" class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-amber-200 bg-white text-stone-500 shadow-sm transition hover:border-amber-300 hover:bg-sand-50 hover:text-stone-800" aria-label="Close ticket form">
+          <span aria-hidden="true">✕</span>
+        </button>
+      </div>
+      <form id="ticket-form" class="mt-6 space-y-4" novalidate>
+        <input type="hidden" id="ticket-event-id" name="event_id">
+        <div>
+          <label for="ticket-seats" class="block text-sm font-medium text-stone-700">Ticket quantity</label>
+          <input id="ticket-seats" name="seats" type="number" min="1" value="1" required class="mt-1.5 w-full rounded-xl border border-amber-200 bg-sand-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-100">
+          <p id="ticket-seats-hint" class="mt-1 text-xs text-stone-400"></p>
+        </div>
+        {% if attendee_id %}
+        <p class="rounded-2xl border border-amber-100 bg-sand-50 px-4 py-3 text-sm text-stone-600">Signed in as {{ attendee_name or attendee_id }}. Tickets will be saved to this account.</p>
+        {% else %}
+        <div>
+          <p class="block text-sm font-medium text-stone-700">Customer</p>
+          <div class="mt-2 grid grid-cols-2 gap-2" role="tablist" aria-label="Customer type">
+            <button type="button" data-customer-tab="existing" class="ticket-customer-tab inline-flex items-center justify-center rounded-full bg-clay-600 px-3 py-2 text-xs font-semibold text-white">Existing Customer</button>
+            <button type="button" data-customer-tab="new" class="ticket-customer-tab inline-flex items-center justify-center rounded-full border border-amber-200 bg-white px-3 py-2 text-xs font-semibold text-stone-600">New Customer</button>
+          </div>
+        </div>
+        <div id="ticket-existing-fields" class="space-y-4">
+          <div>
+            <label for="ticket-existing-user" class="block text-sm font-medium text-stone-700">User id</label>
+            <input id="ticket-existing-user" name="existing_user_id" autocomplete="username" class="mt-1.5 w-full rounded-xl border border-amber-200 bg-sand-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-100">
+          </div>
+          <div>
+            <label for="ticket-existing-password" class="block text-sm font-medium text-stone-700">Password</label>
+            <input id="ticket-existing-password" name="existing_password" type="password" autocomplete="current-password" class="mt-1.5 w-full rounded-xl border border-amber-200 bg-sand-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-100">
+          </div>
+        </div>
+        <div id="ticket-new-fields" class="hidden space-y-4">
+          <div>
+            <label for="ticket-new-name" class="block text-sm font-medium text-stone-700">Display name</label>
+            <input id="ticket-new-name" name="name" autocomplete="name" class="mt-1.5 w-full rounded-xl border border-amber-200 bg-sand-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-100">
+          </div>
+          <div>
+            <label for="ticket-new-user" class="block text-sm font-medium text-stone-700">User id</label>
+            <input id="ticket-new-user" name="new_user_id" autocomplete="username" class="mt-1.5 w-full rounded-xl border border-amber-200 bg-sand-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-100">
+          </div>
+          <div>
+            <label for="ticket-new-password" class="block text-sm font-medium text-stone-700">Password</label>
+            <input id="ticket-new-password" name="new_password" type="password" autocomplete="new-password" class="mt-1.5 w-full rounded-xl border border-amber-200 bg-sand-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-100">
+            <p class="mt-1 text-xs text-stone-400">At least 8 characters.</p>
+          </div>
+        </div>
+        {% endif %}
+        <p id="ticket-form-status" hidden class="rounded-2xl border px-4 py-3 text-sm font-medium"></p>
+        <div class="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
+          <button type="button" id="cancel-ticket-modal" class="inline-flex items-center justify-center rounded-full border border-amber-200 bg-white px-5 py-2.5 text-sm font-semibold text-stone-700 transition hover:border-amber-300">
+            Cancel
+          </button>
+          <button id="confirm-ticket-button" type="submit" class="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-clay-600 to-amber-700 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-orange-900/15 transition hover:shadow-xl hover:shadow-orange-900/20">
+            Confirm
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const attendeeId = {{ attendee_id|tojson }};
+    const statusEl = document.getElementById("browse-status");
+    const searchForm = document.getElementById("talk-search-form");
+    const searchInput = document.getElementById("talk-search");
+    const searchMeta = document.getElementById("talk-search-meta");
+    const searchEmpty = document.getElementById("search-empty");
+    const topicFilter = document.getElementById("filter-topic");
+    const speakerFilter = document.getElementById("filter-speaker");
+    const resetFilters = document.getElementById("reset-filters");
+    const eventCards = Array.from(document.querySelectorAll("#events-grid [data-event-id]"));
+    let searchTimer = null;
+    let searchSeq = 0;
+
+    function currentFilters() {
+      return {
+        query: (searchInput && searchInput.value ? searchInput.value : "").trim(),
+        topic: topicFilter ? topicFilter.value.trim() : "",
+        speaker: speakerFilter ? speakerFilter.value.trim() : "",
+      };
+    }
+
+    function filterUrl(filters) {
+      const params = new URLSearchParams();
+      if (filters.query) params.set("q", filters.query);
+      if (filters.topic) params.set("topic", filters.topic);
+      if (filters.speaker) params.set("speaker", filters.speaker);
+      const next = params.toString();
+      return next ? `/events?${next}` : "/events";
+    }
+
+    function setCardVisible(card, visible, order) {
+      card.hidden = !visible;
+      card.style.display = visible ? "" : "none";
+      if (order !== undefined) card.style.order = String(order);
+    }
+
+    function showMatchingCards(ids, filters) {
+      const rank = new Map((ids || []).map((id, index) => [id, index]));
+      let shown = 0;
+      eventCards.forEach((card) => {
+        const id = card.getAttribute("data-event-id");
+        const visible = rank.has(id);
+        setCardVisible(card, visible, visible ? rank.get(id) : 999);
+        if (visible) shown += 1;
+      });
+      if (searchEmpty) {
+        searchEmpty.hidden = shown !== 0;
+        searchEmpty.style.display = shown ? "none" : "";
+      }
+      if (searchMeta) {
+        const bits = [];
+        if (filters.query) bits.push(`“${filters.query}”`);
+        if (filters.topic) bits.push(filters.topic);
+        if (filters.speaker) {
+          const option = speakerFilter && speakerFilter.selectedOptions[0];
+          bits.push(option && option.textContent ? option.textContent.trim() : filters.speaker);
+        }
+        searchMeta.textContent = shown
+          ? `${shown} talk${shown === 1 ? "" : "s"}${bits.length ? ` matching ${bits.join(" · ")}` : ""}`
+          : "";
+      }
+    }
+
+    function navigateWithFilters() {
+      window.location.href = filterUrl(currentFilters());
+    }
+
+    async function applySemanticSearch() {
+      const filters = currentFilters();
+      if (!filters.query) {
+        eventCards.forEach((card, index) => setCardVisible(card, true, index));
+        if (searchEmpty) {
+          searchEmpty.hidden = eventCards.length !== 0;
+          searchEmpty.style.display = eventCards.length ? "none" : "";
+        }
+        if (searchMeta) searchMeta.textContent = "";
+        return;
+      }
+      const seq = ++searchSeq;
+      if (searchMeta) searchMeta.textContent = "Searching talks…";
+      const params = new URLSearchParams();
+      params.set("q", filters.query);
+      params.set("limit", "24");
+      if (filters.topic) params.set("topic", filters.topic);
+      if (filters.speaker) params.set("speaker", filters.speaker);
+      try {
+        const response = await fetch(`/api/attendee/search?${params.toString()}`, {
+          headers: { Accept: "application/json" },
+        });
+        const data = await response.json().catch(() => ({}));
+        if (seq !== searchSeq) return;
+        if (!response.ok) {
+          if (searchMeta) searchMeta.textContent = data.error || "Could not search talks.";
+          return;
+        }
+        const allowed = new Set(eventCards.map((card) => card.getAttribute("data-event-id")));
+        const ids = (data.results || []).map((item) => item.id).filter((id) => allowed.has(id));
+        showMatchingCards(ids, filters);
+      } catch (_error) {
+        if (seq !== searchSeq) return;
+        if (searchMeta) searchMeta.textContent = "Could not reach semantic search.";
+      }
+    }
+
+    if (searchForm) {
+      searchForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+        applySemanticSearch();
+      });
+    }
+    if (searchInput) {
+      searchInput.addEventListener("input", () => {
+        window.clearTimeout(searchTimer);
+        searchTimer = window.setTimeout(() => applySemanticSearch(), 280);
+      });
+    }
+    if (topicFilter) topicFilter.addEventListener("change", navigateWithFilters);
+    if (speakerFilter) speakerFilter.addEventListener("change", navigateWithFilters);
+    if (resetFilters) {
+      resetFilters.addEventListener("click", () => {
+        window.location.href = "/events";
+      });
+    }
+    if (currentFilters().query) {
+      applySemanticSearch();
+    }
+    const ticketModal = document.getElementById("ticket-modal");
+    const ticketBackdrop = document.getElementById("ticket-backdrop");
+    const ticketDialog = document.getElementById("ticket-dialog");
+    const ticketForm = document.getElementById("ticket-form");
+    const ticketFormStatus = document.getElementById("ticket-form-status");
+    const confirmButton = document.getElementById("confirm-ticket-button");
+    const seatsInput = document.getElementById("ticket-seats");
+    const TAB_ACTIVE = "ticket-customer-tab inline-flex items-center justify-center rounded-full bg-clay-600 px-3 py-2 text-xs font-semibold text-white";
+    const TAB_INACTIVE = "ticket-customer-tab inline-flex items-center justify-center rounded-full border border-amber-200 bg-white px-3 py-2 text-xs font-semibold text-stone-600";
+    let customerType = "existing";
+    let currentCard = null;
+
+    function showStatus(message, kind) {
+      if (!statusEl) return;
+      statusEl.hidden = false;
+      statusEl.classList.remove("hidden");
+      statusEl.textContent = message;
+      statusEl.className = kind === "success"
+        ? "mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800"
+        : "mt-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-800";
+    }
+
+    function showFormStatus(message, kind) {
+      ticketFormStatus.hidden = false;
+      ticketFormStatus.textContent = message;
+      ticketFormStatus.className = kind === "error"
+        ? "rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-800"
+        : "rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800";
+    }
+
+    function setCustomerTab(nextType) {
+      customerType = nextType;
+      document.querySelectorAll("[data-customer-tab]").forEach((tab) => {
+        tab.className = tab.getAttribute("data-customer-tab") === nextType ? TAB_ACTIVE : TAB_INACTIVE;
+      });
+      const existingFields = document.getElementById("ticket-existing-fields");
+      const newFields = document.getElementById("ticket-new-fields");
+      if (existingFields && newFields) {
+        existingFields.classList.toggle("hidden", nextType !== "existing");
+        newFields.classList.toggle("hidden", nextType !== "new");
+      }
+    }
+
+    function openTicketModal(card) {
+      currentCard = card;
+      const remaining = Number(card.getAttribute("data-remaining") || 0);
+      document.getElementById("ticket-event-id").value = card.getAttribute("data-event-id") || "";
+      document.getElementById("ticket-event-title").textContent = card.getAttribute("data-title") || "Selected talk";
+      document.getElementById("ticket-seats-hint").textContent = `${remaining} seats still open.`;
+      seatsInput.max = String(Math.max(1, remaining));
+      seatsInput.value = "1";
+      ticketFormStatus.hidden = true;
+      ticketModal.classList.remove("hidden");
+      ticketModal.classList.add("flex");
+      ticketModal.setAttribute("aria-hidden", "false");
+      document.body.classList.add("overflow-hidden");
+      requestAnimationFrame(() => {
+        ticketBackdrop.classList.remove("opacity-0");
+        ticketBackdrop.classList.add("opacity-100");
+        ticketDialog.classList.remove("opacity-0", "scale-95");
+        ticketDialog.classList.add("opacity-100", "scale-100");
+      });
+    }
+
+    function closeTicketModal() {
+      ticketBackdrop.classList.add("opacity-0");
+      ticketBackdrop.classList.remove("opacity-100");
+      ticketDialog.classList.add("opacity-0", "scale-95");
+      ticketDialog.classList.remove("opacity-100", "scale-100");
+      window.setTimeout(() => {
+        ticketModal.classList.add("hidden");
+        ticketModal.classList.remove("flex");
+        ticketModal.setAttribute("aria-hidden", "true");
+        document.body.classList.remove("overflow-hidden");
+      }, 200);
+    }
+
+    function applySeatUpdate(card, remaining, _capacity) {
+      const open = Math.max(0, Number(remaining) || 0);
+      card.setAttribute("data-remaining", String(open));
+      const badgeRow = card.querySelector("[data-badge-row]");
+      if (badgeRow) {
+        badgeRow.querySelectorAll("[data-sold-out-badge], [data-last-seats-badge]").forEach((node) => node.remove());
+        if (open <= 0) {
+          const badge = document.createElement("span");
+          badge.setAttribute("data-sold-out-badge", "");
+          badge.className = "inline-flex rounded-full bg-stone-800 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white";
+          badge.textContent = "Sold Out";
+          badgeRow.append(badge);
+        } else if (open <= 10) {
+          const badge = document.createElement("span");
+          badge.setAttribute("data-last-seats-badge", "");
+          badge.className = "inline-flex animate-pulse rounded-full bg-rose-600 px-2.5 py-1 text-[11px] font-bold text-white shadow-sm shadow-rose-600/30";
+          badge.textContent = "Last seats!";
+          badgeRow.append(badge);
+        }
+      }
+      const buyButton = card.querySelector("[data-buy-tickets]");
+      if (open <= 0 && buyButton) {
+        const sold = document.createElement("button");
+        sold.type = "button";
+        sold.disabled = true;
+        sold.className = "inline-flex cursor-not-allowed items-center justify-center rounded-full bg-stone-200 px-4 py-2 text-sm font-semibold text-stone-500";
+        sold.textContent = "Sold Out";
+        buyButton.replaceWith(sold);
+      }
+    }
+
+    document.querySelectorAll("[data-buy-tickets]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest("[data-event-id]");
+        if (card) openTicketModal(card);
+      });
+    });
+    document.querySelectorAll("[data-customer-tab]").forEach((tab) => {
+      tab.addEventListener("click", () => setCustomerTab(tab.getAttribute("data-customer-tab")));
+    });
+    document.getElementById("close-ticket-modal").addEventListener("click", closeTicketModal);
+    document.getElementById("cancel-ticket-modal").addEventListener("click", closeTicketModal);
+    ticketBackdrop.addEventListener("click", closeTicketModal);
+
+    ticketForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const eventId = document.getElementById("ticket-event-id").value;
+      const seats = Number(seatsInput.value || 0);
+      if (!eventId || seats < 1) {
+        showFormStatus("Enter a ticket quantity of at least 1.", "error");
+        return;
+      }
+      const payload = { event_id: eventId, seats };
+      if (!attendeeId) {
+        payload.customer = customerType;
+        if (customerType === "existing") {
+          payload.user_id = document.getElementById("ticket-existing-user").value.trim();
+          payload.password = document.getElementById("ticket-existing-password").value;
+        } else {
+          payload.name = document.getElementById("ticket-new-name").value.trim();
+          payload.user_id = document.getElementById("ticket-new-user").value.trim();
+          payload.password = document.getElementById("ticket-new-password").value;
+        }
+      }
+      confirmButton.disabled = true;
+      try {
+        const response = await fetch("/api/attendee/tickets", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { Accept: "application/json", "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          showFormStatus(data.error || "Could not complete this purchase.", "error");
+          confirmButton.disabled = false;
+          return;
+        }
+        if (currentCard) applySeatUpdate(currentCard, data.remaining_seats, data.capacity);
+        closeTicketModal();
+        showStatus(`Purchase confirmed. ${data.seats} ticket${data.seats === 1 ? "" : "s"} reserved.`, "success");
+      } catch (_error) {
+        showFormStatus("Could not reach the ticket API.", "error");
+      }
+      confirmButton.disabled = false;
+    });
+
+    const joinModal = document.getElementById("join-modal");
+    const joinBackdrop = document.getElementById("join-backdrop");
+    const joinDialog = document.getElementById("join-dialog");
+    const joinForm = document.getElementById("join-form");
+    const joinFormStatus = document.getElementById("join-form-status");
+    const joinConfirm = document.getElementById("confirm-join-button");
+    const joinParams = new URLSearchParams(window.location.search);
+    const JOIN_TAB_ACTIVE = "join-customer-tab inline-flex items-center justify-center rounded-full bg-clay-600 px-3 py-2 text-xs font-semibold text-white";
+    const JOIN_TAB_INACTIVE = "join-customer-tab inline-flex items-center justify-center rounded-full border border-amber-200 bg-white px-3 py-2 text-xs font-semibold text-stone-600";
+    let joinCustomerType = "existing";
+
+    function setJoinTab(nextType) {
+      joinCustomerType = nextType;
+      document.querySelectorAll("[data-join-tab]").forEach((tab) => {
+        tab.className = tab.getAttribute("data-join-tab") === nextType ? JOIN_TAB_ACTIVE : JOIN_TAB_INACTIVE;
+      });
+      document.getElementById("join-existing-fields").classList.toggle("hidden", nextType !== "existing");
+      document.getElementById("join-new-fields").classList.toggle("hidden", nextType !== "new");
+    }
+
+    function openJoinModal(preferred) {
+      if (attendeeId) {
+        window.location.href = "{{ url_for('browse_events') }}";
+        return;
+      }
+      setJoinTab(preferred === "new" ? "new" : "existing");
+      joinFormStatus.hidden = true;
+      joinModal.classList.remove("hidden");
+      joinModal.classList.add("flex");
+      joinModal.setAttribute("aria-hidden", "false");
+      document.body.classList.add("overflow-hidden");
+      requestAnimationFrame(() => {
+        joinBackdrop.classList.remove("opacity-0");
+        joinBackdrop.classList.add("opacity-100");
+        joinDialog.classList.remove("opacity-0", "scale-95");
+        joinDialog.classList.add("opacity-100", "scale-100");
+      });
+    }
+
+    function closeJoinModal() {
+      joinBackdrop.classList.add("opacity-0");
+      joinBackdrop.classList.remove("opacity-100");
+      joinDialog.classList.add("opacity-0", "scale-95");
+      joinDialog.classList.remove("opacity-100", "scale-100");
+      window.setTimeout(() => {
+        joinModal.classList.add("hidden");
+        joinModal.classList.remove("flex");
+        joinModal.setAttribute("aria-hidden", "true");
+        document.body.classList.remove("overflow-hidden");
+      }, 200);
+    }
+
+    document.querySelectorAll("[data-join-tab]").forEach((tab) => {
+      tab.addEventListener("click", () => setJoinTab(tab.getAttribute("data-join-tab")));
+    });
+    document.getElementById("close-join-modal").addEventListener("click", closeJoinModal);
+    document.getElementById("cancel-join-modal").addEventListener("click", closeJoinModal);
+    joinBackdrop.addEventListener("click", closeJoinModal);
+
+    joinForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      joinConfirm.disabled = true;
+      try {
+        let response;
+        if (joinCustomerType === "existing") {
+          response = await fetch("/attendee/login", {
+            method: "POST",
+            credentials: "same-origin",
+            headers: { Accept: "application/json", "Content-Type": "application/json" },
+            body: JSON.stringify({
+              user_id: document.getElementById("join-existing-user").value.trim(),
+              password: document.getElementById("join-existing-password").value,
+            }),
+          });
+        } else {
+          response = await fetch("/register", {
+            method: "POST",
+            credentials: "same-origin",
+            headers: { Accept: "application/json", "Content-Type": "application/json" },
+            body: JSON.stringify({
+              locked_role: "attendee",
+              role: "attendee",
+              name: document.getElementById("join-new-name").value.trim(),
+              user_id: document.getElementById("join-new-user").value.trim(),
+              password: document.getElementById("join-new-password").value,
+            }),
+          });
+        }
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          joinFormStatus.hidden = false;
+          joinFormStatus.textContent = data.error || "Could not sign you in as an attendee.";
+          joinFormStatus.className = "rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-800";
+          joinConfirm.disabled = false;
+          return;
+        }
+        const nextPath = joinParams.get("next") || "";
+        window.location.href = nextPath.startsWith("/") && !nextPath.startsWith("//")
+          ? nextPath
+          : "{{ url_for('browse_events') }}";
+      } catch (_error) {
+        joinFormStatus.hidden = false;
+        joinFormStatus.textContent = "Could not reach the attendee portal.";
+        joinFormStatus.className = "rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-800";
+        joinConfirm.disabled = false;
+      }
+    });
+
+    if (joinParams.get("join") === "1") {
+      openJoinModal(joinParams.get("customer") || "new");
+    }
+  </script>
+</body>
+</html>

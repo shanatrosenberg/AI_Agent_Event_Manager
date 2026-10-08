@@ -171,7 +171,12 @@ def login_required(*roles: str) -> Callable[[_F], _F]:
         @wraps(view)
         def wrapped(*args, **kwargs):
             user = current_user()
-            login_endpoint = "auth.speaker_login" if roles == ("speaker",) else "auth.login"
+            if roles == ("speaker",):
+                login_endpoint = "auth.speaker_login"
+            elif roles == ("attendee",):
+                login_endpoint = "auth.attendee_login"
+            else:
+                login_endpoint = "auth.login"
             if user is None:
                 return redirect(url_for(login_endpoint, next=request.path))
             if roles and user["role"] not in roles:

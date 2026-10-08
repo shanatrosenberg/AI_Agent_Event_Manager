@@ -1,35 +1,50 @@
 from flask import Blueprint, current_app, jsonify, request
 
 from cqrs import (
+    AssessPendingTalksCommand,
     ApproveTalkCommand,
     DeleteEventCommand,
     DeleteRejectedTalkCommand,
+    DisapproveEventCommand,
+    ListEventLogQuery,
     ListOrganizerEventsQuery,
     ListOrganizerRequestsQuery,
     ListOrganizerSubmissionsQuery,
     ListPendingProposalsQuery,
     ListSpeakersQuery,
     ListTrashQuery,
+    OrganizerStatsQuery,
+    ProjectTalksQuery,
+    PublishTalkCommand,
     RejectTalkCommand,
     RequestTalkCommand,
     RestoreTalkCommand,
     UpdateEventCommand,
+    assess_pending_talks_handler,
     approve_talk_handler,
     delete_event_handler,
     delete_rejected_talk_handler,
+    disapprove_event_handler,
+    list_event_log_handler,
     list_organizer_events_handler,
     list_organizer_requests_handler,
     list_organizer_submissions_handler,
     list_pending_proposals_handler,
     list_speakers_handler,
     list_trash_handler,
+    organizer_stats_handler,
+    project_talks_handler,
+    publish_talk_handler,
     reject_talk_handler,
     request_talk_handler,
     restore_talk_handler,
     update_event_handler,
+    event_store,
 )
 from cqrs.errors import DomainError
 from extensions import db
+from models.talk_request import AWAITING_STATUSES, CONFIRMED_STATUSES
+from controllers.search import run_semantic_search
 from services.auth import admin_organizer_id, current_user
 
 organizer_bp = Blueprint("organizer", __name__, url_prefix="/api/organizer")
@@ -52,6 +67,27 @@ def _organizer_id() -> str | None:
 
 def _validation_error(message: str, status: int = 400):
     return jsonify({"error": message}), status
+
+
+def _confirmation_filter(raw: str | None) -> str | None:
+    value = str(raw or "").strip().lower()
+    if value in {"", "all"}:
+        return None
+    if value in {"awaiting", "pending", "awaiting_speaker_confirmation"}:
+        return "awaiting"
+    if value in {"confirmed", "accepted", "approved", "speaker_confirmed"}:
+        return "confirmed"
+    return "invalid"
+
+
+def _proposal_confirmation_item(submission) -> dict:
+    item = submission.to_dict()
+    confirmed = submission.status == "approved" and bool(submission.event_id)
+    item["kind"] = "proposal"
+    item["topic"] = submission.title
+    item["confirmation"] = "confirmed" if confirmed else "awaiting"
+    item["display_status"] = "Speaker Confirmed" if confirmed else submission.display_status
+    return item
 
 
 def _event_command_fields(payload: dict) -> dict:
@@ -119,6 +155,49 @@ def list_events():
     return jsonify([event.to_dict() for event in events]), 200
 
 
+@organizer_bp.route("/event-log", methods=["GET"])
+def list_event_log():
+    organizer_id = _organizer_id() or admin_organizer_id()
+    if not organizer_id:
+        return _validation_error("organizer_id is required (sign in as admin, or send X-Organizer-Id in tests)")
+    try:
+        limit = int(request.args.get("limit") or 200)
+    except (TypeError, ValueError):
+        limit = 200
+    events = list_event_log_handler.handle(
+        ListEventLogQuery(
+            limit=limit,
+            event_name=request.args.get("event_name") or request.args.get("type"),
+            aggregate_id=request.args.get("aggregate_id") or request.args.get("talk_id"),
+        )
+    )
+    return jsonify(events), 200
+
+
+@organizer_bp.route("/projections/talks", methods=["GET"])
+def list_talk_projections():
+    organizer_id = _organizer_id() or admin_organizer_id()
+    if not organizer_id:
+        return _validation_error("organizer_id is required (sign in as admin, or send X-Organizer-Id in tests)")
+    talks = project_talks_handler.handle(
+        ProjectTalksQuery(submission_id=request.args.get("submission_id") or request.args.get("talk_id"))
+    )
+    return jsonify(talks), 200
+
+
+@organizer_bp.route("/stats", methods=["GET"])
+def organizer_stats():
+    organizer_id = _organizer_id()
+    if not organizer_id:
+        return _validation_error("organizer_id is required (sign in as admin, or send X-Organizer-Id in tests)")
+    return jsonify(organizer_stats_handler.handle(OrganizerStatsQuery(organizer_id=organizer_id))), 200
+
+
+@organizer_bp.route("/search", methods=["GET", "POST"])
+def search_proposals():
+    return run_semantic_search()
+
+
 @organizer_bp.route("/speakers", methods=["GET"])
 def list_speakers():
     speakers = list_speakers_handler.handle(ListSpeakersQuery())
@@ -128,10 +207,42 @@ def list_speakers():
 @organizer_bp.route("/requests", methods=["GET"])
 def list_requests():
     organizer_id = _organizer_id() or admin_organizer_id()
-    requests = list_organizer_requests_handler.handle(
-        ListOrganizerRequestsQuery(organizer_id=organizer_id)
+    confirmation = _confirmation_filter(request.args.get("confirmation") or request.args.get("status"))
+    if confirmation == "invalid":
+        return _validation_error("confirmation must be awaiting or confirmed")
+
+    request_statuses = None
+    if confirmation == "awaiting":
+        request_statuses = AWAITING_STATUSES
+    elif confirmation == "confirmed":
+        request_statuses = CONFIRMED_STATUSES
+
+    invitations = list_organizer_requests_handler.handle(
+        ListOrganizerRequestsQuery(organizer_id=organizer_id, statuses=request_statuses)
     )
-    return jsonify([item.to_dict() for item in requests]), 200
+    items = [item.to_dict() for item in invitations]
+    if confirmation is None:
+        return jsonify(items), 200
+
+    submissions = list_organizer_submissions_handler.handle(
+        ListOrganizerSubmissionsQuery(organizer_id=organizer_id)
+    )
+    linked_ids = {item.submission_id for item in invitations if item.submission_id}
+    if confirmation == "awaiting":
+        proposals = [
+            _proposal_confirmation_item(item)
+            for item in submissions
+            if item.status == "awaiting_speaker_confirmation"
+        ]
+    else:
+        proposals = [
+            _proposal_confirmation_item(item)
+            for item in submissions
+            if item.status == "approved" and item.event_id and item.id not in linked_ids
+        ]
+    items.extend(proposals)
+    items.sort(key=lambda item: (item.get("title") or item.get("topic") or "").lower())
+    return jsonify(items), 200
 
 
 @organizer_bp.route("/requests", methods=["POST"])
@@ -207,6 +318,40 @@ def get_proposal(submission_id: str):
     return jsonify(match.to_dict()), 200
 
 
+@organizer_bp.route("/proposals/<submission_id>/publish", methods=["POST"])
+def publish_submission(submission_id: str):
+    organizer_id = _organizer_id() or admin_organizer_id()
+    try:
+        submission = publish_talk_handler.handle(
+            PublishTalkCommand(organizer_id=organizer_id, submission_id=str(submission_id).strip())
+        )
+    except DomainError as exc:
+        db.session.rollback()
+        return _validation_error(exc.message, status=exc.status)
+    return jsonify(submission.to_dict()), 200
+
+
+@organizer_bp.route("/proposals/<submission_id>/assess", methods=["POST"])
+def assess_proposal(submission_id: str):
+    organizer_id = _organizer_id() or admin_organizer_id()
+    submission = event_store.get_submission(str(submission_id).strip())
+    if submission is None:
+        return _validation_error("submission not found", status=404)
+    owned = (
+        submission.organizer_id in {None, "", organizer_id}
+        or submission.organizer_id == admin_organizer_id()
+    )
+    if not owned:
+        return _validation_error("submission not found", status=404)
+    assessed = assess_pending_talks_handler.handle(
+        AssessPendingTalksCommand(submission_id=str(submission_id).strip(), force=True)
+    )
+    if not assessed:
+        return _validation_error("submission not found", status=404)
+    refreshed = event_store.get_submission(str(submission_id).strip())
+    return jsonify((refreshed or submission).to_dict()), 200
+
+
 @organizer_bp.route("/proposals/<submission_id>/approve", methods=["POST"])
 @organizer_bp.route("/submissions/<submission_id>/approve", methods=["POST"])
 def approve_submission(submission_id: str):
@@ -218,7 +363,12 @@ def approve_submission(submission_id: str):
     except DomainError as exc:
         db.session.rollback()
         return _validation_error(exc.message, status=exc.status)
-    return jsonify(submission.to_dict()), 200
+    payload = submission.to_dict()
+    if submission.event_id:
+        event = event_store.get_event(submission.event_id)
+        if event is not None:
+            payload["event"] = event.to_dict()
+    return jsonify(payload), 200
 
 
 @organizer_bp.route("/proposals/<submission_id>/reject", methods=["POST"])
@@ -271,6 +421,27 @@ def delete_trash(submission_id: str):
         db.session.rollback()
         return _validation_error(exc.message, status=exc.status)
     return jsonify(payload), 200
+
+
+@organizer_bp.route("/events/<event_id>/reject", methods=["POST"])
+def reject_event(event_id: str):
+    organizer_id = _organizer_id()
+    if not organizer_id:
+        return _validation_error("organizer_id is required (sign in as admin, or send X-Organizer-Id in tests)")
+    payload = request.get_json(silent=True) or {}
+    message = payload.get("message") if isinstance(payload, dict) else None
+    try:
+        submission = disapprove_event_handler.handle(
+            DisapproveEventCommand(
+                organizer_id=str(organizer_id),
+                event_id=str(event_id).strip(),
+                message=str(message).strip() if message else None,
+            )
+        )
+    except DomainError as exc:
+        db.session.rollback()
+        return _validation_error(exc.message, status=exc.status)
+    return jsonify(submission.to_dict()), 200
 
 
 @organizer_bp.route("/events/<event_id>", methods=["DELETE"])

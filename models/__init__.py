@@ -1,5 +1,6 @@
 from models.attendee import Attendee
 from models.booking import Booking
+from models.embedding import TalkEmbedding
 from models.event import Event
 from models.organizer import Organizer
 from models.speaker import Speaker
@@ -14,6 +15,7 @@ __all__ = [
     "Organizer",
     "Speaker",
     "StoredEvent",
+    "TalkEmbedding",
     "TalkRequest",
     "TalkSubmission",
 ]

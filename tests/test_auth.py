@@ -119,20 +119,36 @@ def test_organizer_dashboard_allows_signed_in_admin(client):
     assert b"Manage your program" in response.data
     assert admin_organizer_id().encode() in response.data
     assert admin_organizer_username().encode() in response.data
+    assert b'id="open-invite-modal"' in response.data
+    assert b'id="invite-modal"' in response.data
+    assert b'id="close-invite-modal"' in response.data
+    assert b'id="cancel-invite-modal"' in response.data
+    assert 'id="invite-modal" class="fixed inset-0 z-50 hidden' in response.get_data(as_text=True)
     assert b'id="invite_speaker_id"' in response.data
+    assert b'id="invite_topic"' in response.data
+    assert b'id="invite_details"' in response.data
+    assert b'id="invite_date"' in response.data
+    assert b'id="invite_start_time"' in response.data
+    assert b'id="invite_end_time"' in response.data
+    assert b'id="invite_capacity"' in response.data
+    assert b"Select a speaker" in response.data
+    assert b"CQRS in production" in response.data
     assert b'id="create-event-form"' not in response.data
     assert b"Create Event" not in response.data
     assert b"Request Speaker" in response.data
     assert b"Pending Proposals" in response.data
     assert b"Manage Proposals" in response.data
     assert b"My Events" in response.data
-    assert b"Disapproved / Trash Events" in response.data
+    assert b"Trash / Disapproved Events" in response.data
     assert b'id="organizer-tabs"' in response.data
     assert b'id="panel-create"' not in response.data
     assert b'id="panel-request"' in response.data
     assert b'id="panel-proposals"' in response.data
     assert b'id="panel-events"' in response.data
     assert b'id="panel-trash"' in response.data
+    html = response.get_data(as_text=True)
+    assert html.index('data-tab="events"') < html.index('data-tab="request"') < html.index('data-tab="proposals"') < html.index('data-tab="trash"')
+    assert html.index('id="panel-events"') < html.index('id="panel-request"') < html.index('id="panel-proposals"') < html.index('id="panel-trash"')
 
 
 def test_organizer_dashboard_rejects_other_roles(client):
@@ -176,7 +192,10 @@ def test_signed_in_admin_events_use_admin_id(client, speaker_headers, event_payl
         headers={"X-Organizer-Id": "spoofed-org"},
     )
     assert approved.status_code == 200
+    assert approved.get_json()["status"] == "approved"
     event_id = approved.get_json()["event_id"]
+    assert event_id
+    assert approved.get_json()["event"]["id"] == event_id
 
     listed = client.get("/api/organizer/events")
     assert listed.status_code == 200
