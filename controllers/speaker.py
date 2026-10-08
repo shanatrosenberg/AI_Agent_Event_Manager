@@ -1,6 +1,3 @@
-import os
-
-import requests
 from flask import Blueprint, current_app, jsonify, request, session
 from cqrs import (
     ConfirmTalkCommand,
@@ -21,7 +18,7 @@ from cqrs import (
 )
 from cqrs.errors import DomainError
 from extensions import db
-from services.abstract_enhancer import HF_INFERENCE_URL, huggingface_token
+from services.abstract_enhancer import enhance_abstract
 from services.auth import admin_organizer_id, current_user
 
 speaker_bp = Blueprint("speaker", __name__, url_prefix="/api/speaker")
@@ -99,43 +96,19 @@ def enhance_abstract_view():
         return _validation_error("Add a short draft abstract before enhancing it.")
     if len(abstract) > 4000:
         return _validation_error("Abstract is too long to enhance.")
-    hf_token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_API_KEY") or huggingface_token()
-    if not hf_token:
-        return jsonify({"error": "Hugging Face is not configured. Set HUGGINGFACE_API_KEY or HF_TOKEN."}), 503
+    result = enhance_abstract(abstract, title=title, category=category)
+    if result.error:
+        return jsonify({"error": result.error}), result.status_code
 
-    raw_text = " ".join(part for part in (title, category, abstract) if part)
-    API_URL = HF_INFERENCE_URL
-    headers = {"Authorization": f"Bearer {hf_token}"}
-    hf_payload = {
-        "inputs": f"Rewrite this conference talk abstract into a professional description: {raw_text}",
-        "parameters": {"max_length": 200},
+    body = {
+        "enhanced_abstract": result.text,
+        "abstract": result.text,
+        "model": result.model,
     }
-    try:
-        response = requests.post(API_URL, headers=headers, json=hf_payload, timeout=60)
-        result = response.json()
-    except Exception as e:
-        print(f"Hugging Face request failed: {e}")
-        current_app.logger.exception("Hugging Face request failed: %s", e)
-        return jsonify({"error": str(e)}), 500
-
-    if response.status_code != 200:
-        print(f"Hugging Face request failed: {response.status_code} {result}")
-        return jsonify({"error": str(result)}), 500
-
-    if isinstance(result, list) and len(result) > 0:
-        enhanced_text = result[0].get("generated_text", raw_text)
-    elif isinstance(result, dict):
-        enhanced_text = result.get("generated_text", raw_text)
-    else:
-        enhanced_text = raw_text
-
-    return jsonify(
-        {
-            "enhanced_abstract": enhanced_text,
-            "abstract": enhanced_text,
-            "model": "google/flan-t5-large",
-        }
-    ), 200
+    if result.fallback:
+        body["fallback"] = True
+        body["message"] = result.message
+    return jsonify(body), 200
 
 
 def submit_talk_view():

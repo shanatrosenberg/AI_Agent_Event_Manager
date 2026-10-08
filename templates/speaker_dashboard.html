@@ -612,6 +612,22 @@
       label.textContent = busy ? "Enhancing…" : "✨ Enhance with AI";
     }
 
+    function enhancedAbstractText(payload) {
+      if (typeof payload === "string") return payload.trim();
+      if (Array.isArray(payload)) {
+        for (const item of payload) {
+          const text = enhancedAbstractText(item);
+          if (text) return text;
+        }
+        return "";
+      }
+      if (!payload || typeof payload !== "object") return "";
+      const direct = payload.enhanced_abstract ?? payload.generated_text ?? payload.text ?? payload.abstract;
+      if (typeof direct === "string") return direct.trim();
+      if (direct) return enhancedAbstractText(direct);
+      return "";
+    }
+
     async function enhanceAbstract() {
       const field = document.getElementById("abstract");
       const draft = field.value.trim();
@@ -638,11 +654,25 @@
           showStatus(data.error || "Could not enhance the abstract.", "error");
           return;
         }
-        if (data.enhanced_abstract || data.abstract) {
-          field.value = data.enhanced_abstract || data.abstract;
-          field.focus();
+        const enhanced = enhancedAbstractText(data);
+        if (!enhanced) {
+          showStatus("The enhancement service did not return any text.", "error");
+          return;
+        }
+        const abstractField = document.getElementById("abstract");
+        abstractField.value = enhanced;
+        abstractField.dispatchEvent(new Event("input", { bubbles: true }));
+        abstractField.focus();
+        if (data && data.fallback) {
+          showStatus(
+            data.message || "Hugging Face could not be reached, so a local rewrite was applied. Review it before you submit.",
+            "info"
+          );
+          return;
         }
         showStatus("Abstract enhanced with AI. Review it before you submit.", "success");
+      } catch (_error) {
+        showStatus("Could not reach the enhancement service. Your draft was left unchanged.", "error");
       } finally {
         setEnhanceBusy(false);
       }

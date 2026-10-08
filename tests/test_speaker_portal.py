@@ -1,3 +1,8 @@
+import json
+
+import httpx
+from huggingface_hub.errors import HfHubHTTPError, TextGenerationError
+
 from extensions import db
 from models.submission import TalkSubmission
 from services.auth import admin_organizer_id
@@ -496,19 +501,17 @@ def test_enhance_abstract_uses_flan_t5_serverless_api(client, app, monkeypatch):
     app.config["HUGGINGFACE_API_KEY"] = "hf-test-token"
     captured = {}
 
-    class FakeResponse:
-        status_code = 200
+    class FakeClient:
+        def __init__(self, model=None, token=None, **kwargs):
+            captured["model"] = model
+            captured["token"] = token
 
-        def json(self):
-            return [{"generated_text": "A polished conference abstract on CQRS for event organizers."}]
+        def text_generation(self, prompt, **kwargs):
+            captured["prompt"] = prompt
+            captured["max_new_tokens"] = kwargs.get("max_new_tokens")
+            return "A polished conference abstract on CQRS for event organizers."
 
-    def fake_post(url, headers=None, json=None, timeout=0):
-        captured["url"] = url
-        captured["headers"] = headers
-        captured["json"] = json
-        return FakeResponse()
-
-    monkeypatch.setattr("controllers.speaker.requests.post", fake_post)
+    monkeypatch.setattr("services.abstract_enhancer.InferenceClient", FakeClient)
     response = client.post(
         "/api/enhance-abstract",
         json={
@@ -522,11 +525,113 @@ def test_enhance_abstract_uses_flan_t5_serverless_api(client, app, monkeypatch):
     assert body["abstract"] == "A polished conference abstract on CQRS for event organizers."
     assert body["enhanced_abstract"] == body["abstract"]
     assert body["model"] == "google/flan-t5-large"
-    assert captured["url"] == "https://api-inference.huggingface.co/models/google/flan-t5-large"
-    assert captured["headers"]["Authorization"] == "Bearer hf-test-token"
-    assert captured["json"]["parameters"]["max_length"] == 200
-    assert "Rewrite this conference talk abstract" in captured["json"]["inputs"]
-    assert "A practical walkthrough" in captured["json"]["inputs"]
+    assert captured["model"] == "google/flan-t5-large"
+    assert captured["token"] == "hf-test-token"
+    assert captured["max_new_tokens"] == 256
+    assert "Rewrite this conference talk abstract" in captured["prompt"]
+    assert "A practical walkthrough" in captured["prompt"]
+
+
+def test_enhance_abstract_extracts_generated_text_shapes(client, app, monkeypatch):
+    _register_speaker(client, user_id="spk-parse", name="Parse Speaker")
+    _login_speaker(client, user_id="spk-parse")
+    monkeypatch.setenv("HF_TOKEN", "hf-test-token")
+    app.config["HUGGINGFACE_API_KEY"] = "hf-test-token"
+    expected = "A polished conference abstract on CQRS for event organizers."
+    shapes = [
+        expected,
+        {"generated_text": expected},
+        [{"generated_text": expected}],
+        json.dumps([{"generated_text": expected}]),
+    ]
+
+    for shape in shapes:
+        class FakeClient:
+            def __init__(self, model=None, token=None, **kwargs):
+                pass
+
+            def text_generation(self, prompt, **kwargs):
+                return shape
+
+        monkeypatch.setattr("services.abstract_enhancer.InferenceClient", FakeClient)
+        response = client.post(
+            "/api/enhance-abstract",
+            json={"abstract": "A practical walkthrough of commands and queries."},
+        )
+        assert response.status_code == 200
+        body = response.get_json()
+        assert body["enhanced_abstract"] == expected
+        assert body["abstract"] == expected
+
+
+def test_enhance_abstract_falls_back_when_huggingface_is_unreachable(client, app, monkeypatch):
+    _register_speaker(client)
+    _login_speaker(client)
+    monkeypatch.setenv("HF_TOKEN", "hf-test-token")
+    app.config["HUGGINGFACE_API_KEY"] = "hf-test-token"
+
+    class UnreachableClient:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def text_generation(self, prompt, **kwargs):
+            raise OSError(
+                "Failed to resolve 'api-inference.huggingface.co' ([Errno 11001] getaddrinfo failed)"
+            )
+
+    monkeypatch.setattr("services.abstract_enhancer.InferenceClient", UnreachableClient)
+    response = client.post(
+        "/api/enhance-abstract",
+        json={
+            "title": "Building CQRS with Flask",
+            "category": "architecture",
+            "abstract": "a practical walkthrough of commands and queries",
+        },
+    )
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["fallback"] is True
+    assert body["model"] == "local-fallback"
+    assert "Building CQRS with Flask" in body["abstract"]
+    assert "A practical walkthrough of commands and queries." in body["abstract"]
+    assert "Hugging Face could not be reached" in body["message"]
+    assert "error" not in body
+
+
+def test_enhance_abstract_falls_back_when_model_is_loading(client, app, monkeypatch):
+    _register_speaker(client, user_id="spk-loading", name="Loading Speaker")
+    _login_speaker(client, user_id="spk-loading")
+    monkeypatch.setenv("HF_TOKEN", "hf-test-token")
+    app.config["HUGGINGFACE_API_KEY"] = "hf-test-token"
+    request = httpx.Request("POST", "https://api-inference.huggingface.co")
+    response = httpx.Response(
+        503,
+        json={"error": "Model google/flan-t5-large is currently loading"},
+        request=request,
+    )
+
+    class LoadingClient:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def text_generation(self, prompt, **kwargs):
+            raise HfHubHTTPError("Model is loading", response=response)
+
+    monkeypatch.setattr("services.abstract_enhancer.InferenceClient", LoadingClient)
+    result = client.post(
+        "/api/enhance-abstract",
+        json={
+            "title": "Building CQRS with Flask",
+            "category": "architecture",
+            "abstract": "a practical walkthrough of commands and queries",
+        },
+    )
+    assert result.status_code == 200
+    body = result.get_json()
+    assert body["fallback"] is True
+    assert body["model"] == "local-fallback"
+    assert "A practical walkthrough of commands and queries." in body["enhanced_abstract"]
+    assert "error" not in body
 
 
 def test_enhance_abstract_returns_huggingface_exception_details(client, app, monkeypatch):
@@ -535,16 +640,14 @@ def test_enhance_abstract_returns_huggingface_exception_details(client, app, mon
     monkeypatch.setenv("HF_TOKEN", "hf-test-token")
     app.config["HUGGINGFACE_API_KEY"] = "hf-test-token"
 
-    class FakeResponse:
-        status_code = 403
+    class FailingClient:
+        def __init__(self, *args, **kwargs):
+            pass
 
-        def json(self):
-            return {"error": "StopIteration from inference provider mapping"}
+        def text_generation(self, prompt, **kwargs):
+            raise TextGenerationError("StopIteration from inference provider mapping")
 
-    monkeypatch.setattr(
-        "controllers.speaker.requests.post",
-        lambda *_args, **_kwargs: FakeResponse(),
-    )
+    monkeypatch.setattr("services.abstract_enhancer.InferenceClient", FailingClient)
     response = client.post(
         "/api/enhance-abstract",
         json={"abstract": "A practical walkthrough of commands and queries."},
