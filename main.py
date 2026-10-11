@@ -25,6 +25,7 @@ from services.auth import (
 )
 from cqrs import OrganizerStatsQuery, organizer_stats_handler
 from services.scheduling import HALL_CAPACITIES, HALL_LABELS
+from services.seating import ensure_booking_seat_schema
 
 DEFAULT_DATABASE_URL = "http://my-event-manager.somee.com"
 
@@ -67,7 +68,7 @@ def _load_env() -> None:
     from dotenv import dotenv_values
 
     values = dotenv_values(nested_env)
-    for key in ("HF_TOKEN", "HUGGINGFACE_API_KEY", "HUGGINGFACE_MODEL", "TAVILY_API_KEY"):
+    for key in ("OLLAMA_URL", "OLLAMA_MODEL", "OLLAMA_HOST", "TAVILY_API_KEY"):
         value = (values.get(key) or "").strip()
         if value and not (os.environ.get(key) or "").strip():
             os.environ[key] = value
@@ -102,19 +103,11 @@ def create_app(config: dict | None = None) -> Flask:
         "ORGANIZER_ADMIN_PASSWORD",
         os.environ.get("ORGANIZER_ADMIN_PASSWORD", "AdminPass!2026"),
     )
-    if testing:
-        app.config.setdefault("HF_TOKEN", "")
-        app.config.setdefault("HUGGINGFACE_API_KEY", "")
-    else:
-        app.config.setdefault("HF_TOKEN", os.environ.get("HF_TOKEN") or "")
-        app.config.setdefault(
-            "HUGGINGFACE_API_KEY",
-            os.environ.get("HUGGINGFACE_API_KEY") or os.environ.get("HF_TOKEN") or "",
-        )
     app.config.setdefault(
-        "HUGGINGFACE_MODEL",
-        os.environ.get("HUGGINGFACE_MODEL", "google/flan-t5-large"),
+        "OLLAMA_URL",
+        os.environ.get("OLLAMA_URL") or "http://127.0.0.1:11434/api/generate",
     )
+    app.config.setdefault("OLLAMA_MODEL", os.environ.get("OLLAMA_MODEL") or "llama3")
     if testing:
         app.config.setdefault("EMBEDDING_PROVIDER", "local")
     else:
@@ -124,7 +117,7 @@ def create_app(config: dict | None = None) -> Flask:
         )
     app.config.setdefault(
         "EMBEDDING_MODEL",
-        os.environ.get("EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2"),
+        os.environ.get("EMBEDDING_MODEL", "local-hash"),
     )
     app.config.setdefault(
         "EMBEDDING_DIM",
@@ -149,6 +142,9 @@ def create_app(config: dict | None = None) -> Flask:
 
     db.init_app(app)
     migrate.init_app(app, db)
+    from services.event_covers import cover_image_url
+
+    app.jinja_env.globals["event_cover_url"] = cover_image_url
 
     import models  # noqa: F401 — register SQLAlchemy models with metadata
 
@@ -266,6 +262,17 @@ def create_app(config: dict | None = None) -> Flask:
     from services.deep_agent import start_assessment_agent
 
     start_assessment_agent(app)
+
+    @app.cli.command("seed")
+    def seed_command() -> None:
+        """Load a realistic conference program (open, last-seat, sold-out, cancelled, deleted)."""
+        from scripts.seed import seed_database
+
+        summary = seed_database(reset=True)
+        print("Seeded conference program:")
+        for key, value in summary.items():
+            print(f"  {key}: {value}")
+
     return app
 
 
@@ -280,5 +287,6 @@ if __name__ == "__main__":
         ensure_event_schedule_columns()
         ensure_talk_portal_schema()
         ensure_event_store_schema()
+        ensure_booking_seat_schema()
         ensure_admin_organizer()
     app.run(debug=True, port=5000)

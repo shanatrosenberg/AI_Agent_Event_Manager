@@ -243,6 +243,7 @@ class RegisterAttendeeCommand:
     attendee_id: str
     event_id: str
     seats: int = 1
+    seat_ids: list[str] | None = None
 
 
 class RegisterAttendeeHandler:
@@ -255,6 +256,7 @@ class RegisterAttendeeHandler:
             raise DomainError("event not found", status=404)
 
         from services.scheduling import BOOKABLE_STATUSES
+        from services.seating import assign_open_seats, hall_seat_ids, normalize_seat_ids, reserved_seat_ids
 
         if event.status not in BOOKABLE_STATUSES:
             raise DomainError("event is not active", status=409)
@@ -262,21 +264,51 @@ class RegisterAttendeeHandler:
         if self._store.has_booking(command.attendee_id, command.event_id):
             raise DomainError("attendee is already registered for this event", status=409)
 
-        if command.seats > event.remaining_seats:
+        requested = normalize_seat_ids(command.seat_ids)
+        if requested:
+            if command.seats and command.seats != len(requested):
+                raise DomainError("seats must match the number of selected seat IDs")
+            seats = len(requested)
+        else:
+            seats = command.seats
+
+        if seats < 1:
+            raise DomainError("seats must be at least 1")
+
+        if seats > event.remaining_seats:
             raise DomainError(
                 f"not enough seats remaining ({event.remaining_seats} available)",
                 status=409,
             )
 
+        taken = reserved_seat_ids(event)
+        valid = set(hall_seat_ids(event.capacity))
+        if requested:
+            unknown = [seat for seat in requested if seat not in valid]
+            if unknown:
+                raise DomainError(f"unknown seat(s): {', '.join(unknown)}")
+            conflict = [seat for seat in requested if seat in taken]
+            if conflict:
+                raise DomainError(f"seat(s) already reserved: {', '.join(conflict)}", status=409)
+            labels = requested
+        else:
+            labels = assign_open_seats(event.capacity, taken, seats)
+            if len(labels) != seats:
+                raise DomainError(
+                    f"not enough seats remaining ({event.remaining_seats} available)",
+                    status=409,
+                )
+
         self._store.ensure_attendee(command.attendee_id)
-        event.seats_booked += command.seats
+        event.seats_booked += seats
         self._store.save_read_model(event)
         self._store.append(
             "SeatReserved",
             {
                 "event_id": event.id,
                 "attendee_id": command.attendee_id,
-                "seats": command.seats,
+                "seats": seats,
+                "seat_ids": labels,
                 "seats_booked": event.seats_booked,
                 "remaining_seats": event.remaining_seats,
             },
@@ -286,7 +318,8 @@ class RegisterAttendeeHandler:
             id=str(uuid4()),
             attendee_id=command.attendee_id,
             event_id=command.event_id,
-            seats=command.seats,
+            seats=seats,
+            seat_labels=labels,
             status="confirmed",
         )
         self._store.append("AttendeeRegistered", booking.to_dict())
@@ -835,7 +868,7 @@ class DeleteEventHandler:
             raise DomainError("event not found", status=404)
         if event.organizer_id != command.organizer_id:
             raise DomainError("event does not belong to this organizer", status=403)
-        payload = {"id": event.id, "title": event.title}
+        payload = {"id": event.id, "title": event.title, "status": "deleted"}
         self._store.append("EventDeleted", payload)
         self._store.delete_event(event)
         return payload

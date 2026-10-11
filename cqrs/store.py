@@ -12,7 +12,14 @@ from cqrs.events import infer_aggregate_id, infer_aggregate_type
 from cqrs.projections import project_talk, project_talk_state
 from extensions import db
 from services.auth import ROLE_MODELS, create_account, find_account, get_account
-from services.scheduling import APPROVED_STATUSES, BOOKABLE_STATUSES, clocks_overlap, has_occurred
+from services.scheduling import (
+    APPROVED_STATUSES,
+    BOOKABLE_STATUSES,
+    DELETED_STATUS,
+    ORGANIZER_EVENT_STATUSES,
+    clocks_overlap,
+    has_occurred,
+)
 
 
 def ensure_event_store_schema() -> None:
@@ -161,7 +168,7 @@ class EventStore:
         self.purge_expired_rejections()
         return (
             Event.query.filter_by(organizer_id=organizer_id)
-            .filter(Event.status.in_(APPROVED_STATUSES))
+            .filter(Event.status.in_(ORGANIZER_EVENT_STATUSES))
             .order_by(Event.date.asc(), Event.start_time.asc(), Event.title.asc())
             .all()
         )
@@ -170,7 +177,7 @@ class EventStore:
         return Attendee.query.count()
 
     def organizer_stats(self, organizer_id: str) -> dict[str, int]:
-        events = self.list_by_organizer(organizer_id)
+        events = [event for event in self.list_by_organizer(organizer_id) if event.status in APPROVED_STATUSES]
         return {
             "attendees": self.count_attendees(),
             "events_held": sum(1 for event in events if has_occurred(event.date, event.end_time)),
@@ -288,8 +295,8 @@ class EventStore:
         self._commit()
 
     def delete_event(self, event: Event) -> None:
-        Booking.query.filter_by(event_id=event.id).delete()
-        db.session.delete(event)
+        event.status = DELETED_STATUS
+        db.session.add(event)
         self._commit()
 
     def save_talk_request(self, talk_request: TalkRequest) -> None:

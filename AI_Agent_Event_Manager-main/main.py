@@ -1,6 +1,5 @@
 from pathlib import Path
 
-import click
 from dotenv import load_dotenv
 from flask import Flask, jsonify
 from sqlalchemy import event, text
@@ -68,17 +67,6 @@ def create_app(config: dict | None = None) -> Flask:
                 "database": "unavailable",
                 "detail": str(exc),
             }), 503
-
-    @app.cli.command("seed")
-    @click.option("--reset", is_flag=True, help="Remove previous seed rows, then insert.")
-    def seed_command(reset: bool) -> None:
-        """Load sample organizers, speakers, attendees, and events."""
-        from scripts.seed import seed_database
-
-        click.echo("Seeding database...")
-        summary = seed_database(reset=reset)
-        for table, count in summary.items():
-            click.echo(f"  {table}: {count}")
 
     return app
 

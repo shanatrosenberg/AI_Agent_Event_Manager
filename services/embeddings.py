@@ -6,8 +6,6 @@ import os
 import re
 from typing import Iterable
 
-import requests
-
 DEFAULT_EMBEDDING_DIM = 384
 TOKEN_PATTERN = re.compile(r"[a-z0-9]+")
 
@@ -45,10 +43,7 @@ def embedding_model() -> str:
             return str(configured).strip()
     except RuntimeError:
         pass
-    return (
-        os.environ.get("EMBEDDING_MODEL")
-        or "sentence-transformers/all-MiniLM-L6-v2"
-    ).strip()
+    return (os.environ.get("EMBEDDING_MODEL") or "local-hash").strip()
 
 
 def proposal_document(
@@ -96,57 +91,8 @@ def embed_local(text: str, dim: int | None = None) -> list[float]:
     return _normalize(vector)
 
 
-def _mean_pool(payload) -> list[float]:
-    if isinstance(payload, dict):
-        payload = payload.get("embeddings") or payload.get("data") or payload
-    if isinstance(payload, list) and payload and isinstance(payload[0], (int, float)):
-        return [float(value) for value in payload]
-    if isinstance(payload, list) and payload and isinstance(payload[0], list):
-        first = payload[0]
-        if first and isinstance(first[0], list):
-            payload = first
-        width = len(payload[0])
-        totals = [0.0] * width
-        count = 0
-        for row in payload:
-            if not isinstance(row, list) or len(row) != width:
-                continue
-            for index, value in enumerate(row):
-                totals[index] += float(value)
-            count += 1
-        if count:
-            return [value / count for value in totals]
-    raise ValueError("Unexpected embedding payload from Hugging Face")
-
-
-def embed_huggingface(text: str) -> list[float]:
-    token = (
-        os.environ.get("HF_TOKEN")
-        or os.environ.get("HUGGINGFACE_API_KEY")
-        or ""
-    ).strip()
-    if not token:
-        raise RuntimeError("Hugging Face token is not configured")
-    model = embedding_model()
-    url = f"https://api-inference.huggingface.co/pipeline/feature-extraction/{model}"
-    response = requests.post(
-        url,
-        headers={"Authorization": f"Bearer {token}"},
-        json={"inputs": text, "options": {"wait_for_model": True}},
-        timeout=60,
-    )
-    response.raise_for_status()
-    return _normalize(_mean_pool(response.json()))
-
-
 def embed_text(text: str) -> list[float]:
-    provider = embedding_provider()
     cleaned = (text or "").strip()
-    if provider == "huggingface":
-        try:
-            return embed_huggingface(cleaned)
-        except Exception:
-            return embed_local(cleaned)
     return embed_local(cleaned)
 
 

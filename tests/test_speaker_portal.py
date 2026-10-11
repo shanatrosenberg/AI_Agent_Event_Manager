@@ -1,8 +1,5 @@
 import json
 
-import httpx
-from huggingface_hub.errors import HfHubHTTPError, TextGenerationError
-
 from extensions import db
 from models.submission import TalkSubmission
 from services.auth import admin_organizer_id
@@ -66,6 +63,12 @@ def test_speaker_login_and_dashboard(client):
     assert b'id="rejected-submissions-block"' in response.data
     assert b'id="rejected-body"' in response.data
     assert b"Organizer Requests" in response.data
+    assert b"AI Innovation Ideas Hub" in response.data
+    assert b'id="panel-ideas"' in response.data
+    assert b'id="ideas-grid"' in response.data
+    assert b'id="ideas-search-form"' in response.data
+    assert b'id="ideas-query"' in response.data
+    assert b'id="refresh-ideas"' in response.data
     assert b'id="speaker-tabs"' in response.data
     assert b'id="panel-events"' in response.data
     assert b'id="events-table-wrap"' in response.data
@@ -91,7 +94,7 @@ def test_speaker_login_and_dashboard(client):
     assert b'id="requests-body"' in response.data
     assert b'id="requests-cards"' in response.data
     html = response.get_data(as_text=True)
-    assert html.index('data-tab="events"') < html.index('data-tab="submissions"') < html.index('data-tab="requests"')
+    assert html.index('data-tab="events"') < html.index('data-tab="submissions"') < html.index('data-tab="ideas"') < html.index('data-tab="requests"')
     assert b'id="open-proposal-modal"' in response.data
     assert html.index('id="panel-submissions"') < html.index('id="open-proposal-modal"') < html.index('id="panel-requests"')
     assert b'id="proposal-modal"' in response.data
@@ -464,9 +467,7 @@ def test_enhance_abstract_requires_draft_text(client):
     assert response.status_code == 400
 
 
-def test_enhance_abstract_accepts_dashboard_session_keys(client, monkeypatch):
-    monkeypatch.delenv("HF_TOKEN", raising=False)
-    monkeypatch.delenv("HUGGINGFACE_API_KEY", raising=False)
+def test_enhance_abstract_accepts_dashboard_session_keys(client):
     _register_speaker(client)
     with client.session_transaction() as stored:
         stored["user_id"] = "spk-maya"
@@ -478,40 +479,42 @@ def test_enhance_abstract_accepts_dashboard_session_keys(client, monkeypatch):
         "/api/speaker/enhance-abstract",
         json={"abstract": "A practical walkthrough of commands and queries."},
     )
-    assert response.status_code == 503
-    assert "Hugging Face" in response.get_json()["error"]
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["fallback"] is True
+    assert "Ollama could not be reached" in body["message"]
+    assert body["abstract"] == "A practical walkthrough of commands and queries."
+    assert "This conference session covers" not in body["abstract"]
 
 
-def test_enhance_abstract_requires_huggingface_token(client, monkeypatch):
-    monkeypatch.delenv("HF_TOKEN", raising=False)
-    monkeypatch.delenv("HUGGINGFACE_API_KEY", raising=False)
+def test_enhance_abstract_falls_back_when_ollama_is_offline(client):
     _register_speaker(client)
     _login_speaker(client)
     response = client.post(
         "/api/enhance-abstract",
         json={"abstract": "A practical walkthrough of commands and queries."},
     )
-    assert response.status_code == 503
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["fallback"] is True
+    assert body["model"] == "local-fallback"
+    assert body["abstract"] == "A practical walkthrough of commands and queries."
+    assert "This conference session covers" not in body["abstract"]
+    assert "error" not in body
 
 
-def test_enhance_abstract_uses_flan_t5_serverless_api(client, app, monkeypatch):
+def test_enhance_abstract_uses_ollama_generate_api(client, app, monkeypatch):
     _register_speaker(client)
     _login_speaker(client)
-    monkeypatch.setenv("HF_TOKEN", "hf-test-token")
-    app.config["HUGGINGFACE_API_KEY"] = "hf-test-token"
+    app.config["OLLAMA_MODEL"] = "llama3"
     captured = {}
 
-    class FakeClient:
-        def __init__(self, model=None, token=None, **kwargs):
-            captured["model"] = model
-            captured["token"] = token
+    def fake_generate(prompt, **kwargs):
+        captured["prompt"] = prompt
+        captured["max_tokens"] = kwargs.get("max_tokens")
+        return "A polished conference abstract on CQRS for event organizers."
 
-        def text_generation(self, prompt, **kwargs):
-            captured["prompt"] = prompt
-            captured["max_new_tokens"] = kwargs.get("max_new_tokens")
-            return "A polished conference abstract on CQRS for event organizers."
-
-    monkeypatch.setattr("services.abstract_enhancer.InferenceClient", FakeClient)
+    monkeypatch.setattr("services.abstract_enhancer.generate", fake_generate)
     response = client.post(
         "/api/enhance-abstract",
         json={
@@ -524,36 +527,31 @@ def test_enhance_abstract_uses_flan_t5_serverless_api(client, app, monkeypatch):
     body = response.get_json()
     assert body["abstract"] == "A polished conference abstract on CQRS for event organizers."
     assert body["enhanced_abstract"] == body["abstract"]
-    assert body["model"] == "google/flan-t5-large"
-    assert captured["model"] == "google/flan-t5-large"
-    assert captured["token"] == "hf-test-token"
-    assert captured["max_new_tokens"] == 256
-    assert "Rewrite this conference talk abstract" in captured["prompt"]
-    assert "A practical walkthrough" in captured["prompt"]
+    assert body["model"] == "llama3"
+    assert captured["max_tokens"] == 400
+    assert "Act as a professional conference content writer" in captured["prompt"]
+    assert "3-4 sentences" in captured["prompt"]
+    assert "A practical walkthrough of commands and queries." in captured["prompt"]
+    assert "This conference session covers" not in body["abstract"]
 
 
-def test_enhance_abstract_extracts_generated_text_shapes(client, app, monkeypatch):
+def test_enhance_abstract_extracts_generated_text_shapes(client, monkeypatch):
     _register_speaker(client, user_id="spk-parse", name="Parse Speaker")
     _login_speaker(client, user_id="spk-parse")
-    monkeypatch.setenv("HF_TOKEN", "hf-test-token")
-    app.config["HUGGINGFACE_API_KEY"] = "hf-test-token"
     expected = "A polished conference abstract on CQRS for event organizers."
     shapes = [
         expected,
+        {"response": expected},
         {"generated_text": expected},
         [{"generated_text": expected}],
-        json.dumps([{"generated_text": expected}]),
+        json.dumps([{"response": expected}]),
     ]
 
     for shape in shapes:
-        class FakeClient:
-            def __init__(self, model=None, token=None, **kwargs):
-                pass
-
-            def text_generation(self, prompt, **kwargs):
-                return shape
-
-        monkeypatch.setattr("services.abstract_enhancer.InferenceClient", FakeClient)
+        monkeypatch.setattr(
+            "services.abstract_enhancer.generate",
+            lambda prompt, current=shape, **kwargs: current,
+        )
         response = client.post(
             "/api/enhance-abstract",
             json={"abstract": "A practical walkthrough of commands and queries."},
@@ -564,22 +562,16 @@ def test_enhance_abstract_extracts_generated_text_shapes(client, app, monkeypatc
         assert body["abstract"] == expected
 
 
-def test_enhance_abstract_falls_back_when_huggingface_is_unreachable(client, app, monkeypatch):
+def test_enhance_abstract_falls_back_when_ollama_is_unreachable(client, monkeypatch):
+    from services.ollama import OllamaError
+
     _register_speaker(client)
     _login_speaker(client)
-    monkeypatch.setenv("HF_TOKEN", "hf-test-token")
-    app.config["HUGGINGFACE_API_KEY"] = "hf-test-token"
 
-    class UnreachableClient:
-        def __init__(self, *args, **kwargs):
-            pass
+    def boom(prompt, **kwargs):
+        raise OllamaError("Ollama could not be reached: connection refused", status_code=503)
 
-        def text_generation(self, prompt, **kwargs):
-            raise OSError(
-                "Failed to resolve 'api-inference.huggingface.co' ([Errno 11001] getaddrinfo failed)"
-            )
-
-    monkeypatch.setattr("services.abstract_enhancer.InferenceClient", UnreachableClient)
+    monkeypatch.setattr("services.abstract_enhancer.generate", boom)
     response = client.post(
         "/api/enhance-abstract",
         json={
@@ -592,32 +584,21 @@ def test_enhance_abstract_falls_back_when_huggingface_is_unreachable(client, app
     body = response.get_json()
     assert body["fallback"] is True
     assert body["model"] == "local-fallback"
-    assert "Building CQRS with Flask" in body["abstract"]
-    assert "A practical walkthrough of commands and queries." in body["abstract"]
-    assert "Hugging Face could not be reached" in body["message"]
+    assert body["abstract"] == "a practical walkthrough of commands and queries"
+    assert "This conference session covers" not in body["abstract"]
+    assert "is an architecture session" not in body["abstract"]
+    assert "Ollama could not be reached" in body["message"]
     assert "error" not in body
 
 
-def test_enhance_abstract_falls_back_when_model_is_loading(client, app, monkeypatch):
-    _register_speaker(client, user_id="spk-loading", name="Loading Speaker")
-    _login_speaker(client, user_id="spk-loading")
-    monkeypatch.setenv("HF_TOKEN", "hf-test-token")
-    app.config["HUGGINGFACE_API_KEY"] = "hf-test-token"
-    request = httpx.Request("POST", "https://api-inference.huggingface.co")
-    response = httpx.Response(
-        503,
-        json={"error": "Model google/flan-t5-large is currently loading"},
-        request=request,
-    )
+def test_enhance_abstract_falls_back_on_ollama_errors(client, monkeypatch):
+    _register_speaker(client)
+    _login_speaker(client)
 
-    class LoadingClient:
-        def __init__(self, *args, **kwargs):
-            pass
+    def boom(prompt, **kwargs):
+        raise RuntimeError("model llama3 is currently loading")
 
-        def text_generation(self, prompt, **kwargs):
-            raise HfHubHTTPError("Model is loading", response=response)
-
-    monkeypatch.setattr("services.abstract_enhancer.InferenceClient", LoadingClient)
+    monkeypatch.setattr("services.abstract_enhancer.generate", boom)
     result = client.post(
         "/api/enhance-abstract",
         json={
@@ -630,27 +611,6 @@ def test_enhance_abstract_falls_back_when_model_is_loading(client, app, monkeypa
     body = result.get_json()
     assert body["fallback"] is True
     assert body["model"] == "local-fallback"
-    assert "A practical walkthrough of commands and queries." in body["enhanced_abstract"]
+    assert body["enhanced_abstract"] == "a practical walkthrough of commands and queries"
+    assert "This conference session covers" not in body["enhanced_abstract"]
     assert "error" not in body
-
-
-def test_enhance_abstract_returns_huggingface_exception_details(client, app, monkeypatch):
-    _register_speaker(client)
-    _login_speaker(client)
-    monkeypatch.setenv("HF_TOKEN", "hf-test-token")
-    app.config["HUGGINGFACE_API_KEY"] = "hf-test-token"
-
-    class FailingClient:
-        def __init__(self, *args, **kwargs):
-            pass
-
-        def text_generation(self, prompt, **kwargs):
-            raise TextGenerationError("StopIteration from inference provider mapping")
-
-    monkeypatch.setattr("services.abstract_enhancer.InferenceClient", FailingClient)
-    response = client.post(
-        "/api/enhance-abstract",
-        json={"abstract": "A practical walkthrough of commands and queries."},
-    )
-    assert response.status_code == 500
-    assert "StopIteration" in response.get_json()["error"]

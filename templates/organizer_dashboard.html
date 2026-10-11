@@ -523,9 +523,15 @@
     function statusBadge(status, label) {
       const badge = document.createElement("span");
       const approved = status === "approved" || status === "active";
+      const cancelled = status === "cancelled";
+      const deleted = status === "deleted";
       badge.className = approved
         ? "inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700"
-        : "inline-flex rounded-full bg-sand-100 px-2.5 py-1 text-xs font-semibold text-stone-600";
+        : cancelled
+          ? "inline-flex rounded-full bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-700"
+          : deleted
+            ? "inline-flex rounded-full bg-stone-200 px-2.5 py-1 text-xs font-semibold text-stone-600"
+            : "inline-flex rounded-full bg-sand-100 px-2.5 py-1 text-xs font-semibold text-stone-600";
       badge.textContent = label || (approved ? "Approved" : (status || "unknown"));
       return badge;
     }
@@ -541,7 +547,7 @@
 
     function renderEvents(events) {
       events = (events || [])
-        .filter((item) => item.status === "approved" || item.status === "active")
+        .filter((item) => ["approved", "active", "cancelled", "deleted"].includes(item.status))
         .slice()
         .sort((left, right) => eventScheduleKey(left).localeCompare(eventScheduleKey(right)));
       tableBody.replaceChildren();
@@ -616,8 +622,22 @@
         tableBody.append(row);
 
         const card = document.createElement("article");
-        card.className = CARD_CLASS;
+        const remaining = Number(event.remaining_seats);
+        const tone = event.status === "cancelled" || event.status === "deleted"
+          ? "event-card--muted"
+          : remaining <= 0
+            ? "event-card--sold"
+            : remaining <= 10
+              ? "event-card--low"
+              : "event-card--open";
+        card.className = `event-card event-card--photo event-card--compact ${tone}`;
         applyEnter(card, index);
+        if (typeof window.attachEventCover === "function") {
+          window.attachEventCover(card, event.topic || event.title || "", event.id || event.title || "", event.description || "");
+        }
+        if (typeof window.syncSoldRibbon === "function") {
+          window.syncSoldRibbon(card, tone === "event-card--sold");
+        }
         const cardTitle = document.createElement("h3");
         cardTitle.className = "text-sm font-semibold text-stone-900";
         cardTitle.textContent = event.title || "";

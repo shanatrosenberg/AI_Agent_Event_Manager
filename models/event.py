@@ -41,6 +41,18 @@ class Event(db.Model):
     def is_bookable(self) -> bool:
         return self.status in BOOKABLE_STATUSES and self.remaining_seats > 0
 
+    def _display_status(self) -> str:
+        labels = {
+            "approved": "Approved",
+            "active": "Approved",
+            "cancelled": "Cancelled",
+            "deleted": "Deleted",
+            "disapproved": "Disapproved",
+        }
+        if self.status in labels:
+            return labels[self.status]
+        return (self.status or "unknown").replace("_", " ").title()
+
     def to_dict(self) -> dict[str, Any]:
         speaker_name = self.speaker.name if self.speaker and self.speaker.name else None
         return {
@@ -57,7 +69,7 @@ class Event(db.Model):
             "hall_label": self.hall_label,
             "seats_booked": self.seats_booked,
             "status": self.status,
-            "display_status": "Approved" if self.is_approved else (self.status or "unknown").replace("_", " ").title(),
+            "display_status": self._display_status(),
             "remaining_seats": self.remaining_seats,
             "available": self.is_bookable,
             "last_seats": 0 < self.remaining_seats <= 10,

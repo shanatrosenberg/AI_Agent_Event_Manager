@@ -18,6 +18,8 @@ The system supports three primary user roles:
 4. **Management Dashboard:** A dedicated dashboard displaying key metrics, such as open sessions, total registrations, and seat capacity.
 5. **Data Entry (Command Model):** Authorized users can input new data, such as booking a seat, submitting a talk proposal, or creating a new session.
 6. **Autonomous AI Assessment Agent:** A background process reads speaker submissions, queries a vector database (RAG style), and performs external checks via MCP tools (e.g., Tavily search) to evaluate talk relevance.
+7. **AI Innovation Ideas Hub:** Speakers can search a topic or keyword, browse Ollama-generated talk concepts tailored to that query, and convert an idea into a talk proposal. If the local model is offline, curated fallback ideas stay on screen.
+8. **Hall Seat Selection:** When booking a session, attendees see a visual seating map sized to the hall capacity (50 / 100 / 300), click available seats to select or deselect them, and reserve those seat IDs. Taken seats are disabled; the booking updates remaining capacity.
 
 ## 4. Non-Functional & Architecture Requirements
 1. **Methodology:** Developed using structured Markdown documentation and SDAD.

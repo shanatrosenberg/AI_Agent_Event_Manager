@@ -9,6 +9,25 @@
   {% include 'partials/theme.html' %}
   <style>
     #events-grid article[hidden] { display: none !important; }
+    .hall-map { display: flex; flex-direction: column; gap: 0.35rem; }
+    .hall-row { display: flex; align-items: center; justify-content: center; gap: 0.28rem; }
+    .hall-row-label { width: 1.1rem; flex: none; text-align: right; font-size: 0.65rem; font-weight: 700; color: #a8a29e; }
+    .hall-aisle { width: 0.7rem; flex: none; }
+    .hall-seat {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 1.7rem; height: 1.7rem; border-radius: 0.45rem;
+      border: 1px solid #f1d4a4; background: #fbf6ee; color: #57534e;
+      font-size: 0.58rem; font-weight: 700; line-height: 1; cursor: pointer;
+      transition: transform 0.12s ease, background 0.12s ease, border-color 0.12s ease;
+    }
+    .hall-map[data-cols="20"] .hall-seat { width: 1.15rem; height: 1.15rem; font-size: 0.48rem; border-radius: 0.3rem; }
+    .hall-map[data-cols="20"] .hall-aisle { width: 0.45rem; }
+    .hall-seat:hover:not(:disabled) { transform: translateY(-1px); border-color: #c2410c; background: #fff7ed; color: #9a3412; }
+    .hall-seat[data-state="selected"] { background: #9a3412; border-color: #7c2d12; color: #fff; }
+    .hall-seat[data-state="taken"] {
+      background: #fda4af; border-color: #e11d48; color: #881337;
+      cursor: not-allowed; text-decoration: line-through; opacity: 0.75;
+    }
   </style>
 </head>
 <body class="min-h-screen bg-sand-50 font-sans text-stone-900 antialiased">
@@ -111,24 +130,31 @@
     {% if events %}
     <section id="events-grid" class="mt-10 grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
       {% for event in events %}
-      <article data-event-id="{{ event.id }}" data-topic="{{ event.topic }}" data-speaker-id="{{ event.speaker_id or '' }}" data-speaker-name="{{ event.speaker_name or event.speaker_id or '' }}" data-remaining="{{ event.remaining_seats }}" data-capacity="{{ event.capacity }}" data-title="{{ event.title }}" class="group relative flex flex-col overflow-hidden rounded-[1.75rem] border border-amber-100 bg-white/90 p-6 shadow-lg shadow-amber-900/5 backdrop-blur-sm transition duration-300 hover:-translate-y-1.5 hover:shadow-xl hover:shadow-orange-900/10">
+      <article data-event-id="{{ event.id }}" data-topic="{{ event.topic }}" data-speaker-id="{{ event.speaker_id or '' }}" data-speaker-name="{{ event.speaker_name or event.speaker_id or '' }}" data-remaining="{{ event.remaining_seats }}" data-capacity="{{ event.capacity }}" data-title="{{ event.title }}" class="event-card event-card--photo {% if event.sold_out %}event-card--sold{% elif event.last_seats %}event-card--low{% else %}event-card--open{% endif %}">
+        <div class="event-card__media" aria-hidden="true">
+          <img src="{{ event.cover_image or event_cover_url(event.topic, event.title, seed=event.id) }}" alt="" loading="lazy">
+        </div>
+        <div class="event-card__overlay" aria-hidden="true"></div>
+        {% if event.sold_out %}
+        <span class="event-card__ribbon" aria-hidden="true">SOLD OUT</span>
+        {% endif %}
         <div data-badge-row class="flex flex-wrap items-center gap-2">
-          <span class="inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-amber-800">{{ event.topic }}</span>
+          <span class="inline-flex rounded-full bg-white/20 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white ring-1 ring-white/35 backdrop-blur-md">{{ event.topic }}</span>
           {% if event.sold_out %}
-          <span data-sold-out-badge class="inline-flex rounded-full bg-stone-800 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white">Sold Out</span>
+          <span data-sold-out-badge class="inline-flex rounded-full bg-stone-950 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white ring-2 ring-white/70 shadow-lg shadow-stone-950/40">Sold Out</span>
           {% elif event.last_seats %}
-          <span data-last-seats-badge class="inline-flex animate-pulse rounded-full bg-rose-600 px-2.5 py-1 text-[11px] font-bold text-white shadow-sm shadow-rose-600/30">Last seats!</span>
+          <span data-last-seats-badge class="inline-flex animate-pulse rounded-full bg-rose-600 px-2.5 py-1 text-[11px] font-bold text-white ring-2 ring-white/70 shadow-lg shadow-rose-700/40">Last seats!</span>
           {% endif %}
         </div>
-        <h2 class="font-display mt-4 text-2xl font-bold leading-tight tracking-tight text-stone-900">{{ event.title }}</h2>
-        <p class="mt-2 text-sm font-semibold text-clay-700">{{ event.speaker_name or event.speaker_id or "Guest speaker" }}</p>
-        <p class="mt-2 text-sm text-stone-500">
+        <h2 class="font-display mt-4 text-2xl font-bold leading-tight tracking-tight text-white">{{ event.title }}</h2>
+        <p class="mt-2 text-sm font-semibold text-amber-100">{{ event.speaker_name or event.speaker_id or "Guest speaker" }}</p>
+        <p class="mt-2 text-sm text-stone-100">
           {{ event.date }}{% if event.start_time %} | {{ event.start_time }}{% endif %}
         </p>
-        <p class="mt-4 flex-1 text-sm leading-relaxed text-stone-600">{{ event.description or "Join this session to hear the speaker share their work with the room." }}</p>
+        <p class="mt-4 flex-1 text-sm leading-relaxed text-white/85">{{ event.description or "Join this session to hear the speaker share their work with the room." }}</p>
         <div class="mt-5 flex items-center justify-end gap-3">
           {% if event.sold_out %}
-          <button type="button" disabled class="inline-flex cursor-not-allowed items-center justify-center rounded-full bg-stone-200 px-4 py-2 text-sm font-semibold text-stone-500">Sold Out</button>
+          <button type="button" disabled class="inline-flex cursor-not-allowed items-center justify-center rounded-full bg-white/20 px-4 py-2 text-sm font-semibold text-white ring-1 ring-white/40">Sold Out</button>
           {% else %}
           <button type="button" data-buy-tickets="{{ event.id }}" class="inline-flex items-center justify-center rounded-full bg-clay-600 px-4 py-2 text-sm font-semibold text-white shadow-md shadow-orange-900/15 transition hover:-translate-y-0.5 hover:bg-clay-700">Buy Tickets</button>
           {% endif %}
@@ -211,7 +237,7 @@
       role="dialog"
       aria-modal="true"
       aria-labelledby="ticket-modal-title"
-      class="relative w-full max-w-lg scale-95 rounded-3xl border border-amber-100 bg-white/95 p-6 opacity-0 shadow-2xl shadow-orange-900/15 transition duration-300 sm:p-7"
+      class="relative w-full max-w-2xl scale-95 rounded-3xl border border-amber-100 bg-white/95 p-6 opacity-0 shadow-2xl shadow-orange-900/15 transition duration-300 sm:p-7"
     >
       <div class="flex items-start justify-between gap-3">
         <div>
@@ -224,10 +250,20 @@
       </div>
       <form id="ticket-form" class="mt-6 space-y-4" novalidate>
         <input type="hidden" id="ticket-event-id" name="event_id">
+        <input type="hidden" id="ticket-seats" name="seats" value="0">
         <div>
-          <label for="ticket-seats" class="block text-sm font-medium text-stone-700">Ticket quantity</label>
-          <input id="ticket-seats" name="seats" type="number" min="1" value="1" required class="mt-1.5 w-full rounded-xl border border-amber-200 bg-sand-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-100">
-          <p id="ticket-seats-hint" class="mt-1 text-xs text-stone-400"></p>
+          <p class="block text-sm font-medium text-stone-700">Choose your seats</p>
+          <p id="ticket-hall-label" class="mt-1 text-xs font-semibold uppercase tracking-wide text-clay-600"></p>
+          <div class="mt-3 rounded-2xl border border-amber-100 bg-sand-50/80 p-3 sm:p-4">
+            <div class="mb-3 rounded-xl bg-stone-800 px-3 py-1.5 text-center text-[11px] font-bold uppercase tracking-[0.28em] text-amber-100">Stage</div>
+            <div id="seat-map" class="hall-map max-h-72 overflow-auto py-1" role="group" aria-label="Hall seating map"></div>
+            <p id="ticket-seats-hint" class="mt-3 text-xs text-stone-500">Select open seats on the hall map.</p>
+            <div class="mt-3 flex flex-wrap items-center gap-3 text-[11px] font-semibold text-stone-500">
+              <span class="inline-flex items-center gap-1.5"><span class="hall-seat pointer-events-none" data-state="available">1</span> Available</span>
+              <span class="inline-flex items-center gap-1.5"><span class="hall-seat pointer-events-none" data-state="selected">2</span> Selected</span>
+              <span class="inline-flex items-center gap-1.5"><span class="hall-seat pointer-events-none" data-state="taken">3</span> Reserved</span>
+            </div>
+          </div>
         </div>
         {% if attendee_id %}
         <p class="rounded-2xl border border-amber-100 bg-sand-50 px-4 py-3 text-sm text-stone-600">Signed in as {{ attendee_name or attendee_id }}. Tickets will be saved to this account.</p>
@@ -412,10 +448,14 @@
     const ticketFormStatus = document.getElementById("ticket-form-status");
     const confirmButton = document.getElementById("confirm-ticket-button");
     const seatsInput = document.getElementById("ticket-seats");
+    const seatMapEl = document.getElementById("seat-map");
+    const hallLabelEl = document.getElementById("ticket-hall-label");
+    const seatsHintEl = document.getElementById("ticket-seats-hint");
     const TAB_ACTIVE = "ticket-customer-tab inline-flex items-center justify-center rounded-full bg-clay-600 px-3 py-2 text-xs font-semibold text-white";
     const TAB_INACTIVE = "ticket-customer-tab inline-flex items-center justify-center rounded-full border border-amber-200 bg-white px-3 py-2 text-xs font-semibold text-stone-600";
     let customerType = "existing";
     let currentCard = null;
+    let selectedSeats = [];
 
     function showStatus(message, kind) {
       if (!statusEl) return;
@@ -448,14 +488,107 @@
       }
     }
 
+    function selectedSeatIds() {
+      return selectedSeats.slice();
+    }
+
+    function updateSeatHint(remaining) {
+      const count = selectedSeats.length;
+      const open = remaining == null ? "" : ` ${remaining} seats still open.`;
+      if (count === 0) {
+        seatsHintEl.textContent = `Select open seats on the hall map.${open}`;
+      } else {
+        seatsHintEl.textContent = `${count} seat${count === 1 ? "" : "s"} selected: ${selectedSeats.join(", ")}.${open}`;
+      }
+      seatsInput.value = String(count);
+    }
+
+    function toggleSeat(button) {
+      if (button.disabled || button.dataset.state === "taken") return;
+      const seatId = button.dataset.seatId;
+      const index = selectedSeats.indexOf(seatId);
+      if (index >= 0) {
+        selectedSeats.splice(index, 1);
+        button.dataset.state = "available";
+        button.setAttribute("aria-pressed", "false");
+      } else {
+        selectedSeats.push(seatId);
+        button.dataset.state = "selected";
+        button.setAttribute("aria-pressed", "true");
+      }
+      updateSeatHint();
+    }
+
+    function renderSeatMap(data) {
+      selectedSeats = [];
+      seatMapEl.innerHTML = "";
+      seatMapEl.dataset.cols = String(data.cols || 10);
+      const remaining = data.available_count;
+      hallLabelEl.textContent = data.hall_label || `${data.capacity} seat hall`;
+      const aisleAfter = Number(data.aisle_after || 0);
+      const cols = Number(data.cols || 10);
+      const rows = Number(data.rows || 1);
+      for (let row = 0; row < rows; row += 1) {
+        const rowEl = document.createElement("div");
+        rowEl.className = "hall-row";
+        const label = document.createElement("span");
+        label.className = "hall-row-label";
+        label.textContent = String.fromCharCode(65 + row);
+        rowEl.append(label);
+        for (let col = 0; col < cols; col += 1) {
+          if (aisleAfter && col === aisleAfter) {
+            const aisle = document.createElement("span");
+            aisle.className = "hall-aisle";
+            aisle.setAttribute("aria-hidden", "true");
+            rowEl.append(aisle);
+          }
+          const seat = (data.seats || [])[row * cols + col];
+          if (!seat) continue;
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "hall-seat";
+          button.dataset.seatId = seat.id;
+          button.dataset.state = seat.available ? "available" : "taken";
+          button.disabled = !seat.available;
+          button.textContent = String(seat.number);
+          button.setAttribute("aria-pressed", "false");
+          button.setAttribute("aria-label", seat.available ? `Seat ${seat.id}` : `Seat ${seat.id} reserved`);
+          button.addEventListener("click", () => toggleSeat(button));
+          rowEl.append(button);
+        }
+        seatMapEl.append(rowEl);
+      }
+      updateSeatHint(remaining);
+    }
+
+    async function loadSeatMap(eventId) {
+      seatMapEl.innerHTML = '<p class="py-6 text-center text-sm text-stone-400">Loading hall map…</p>';
+      try {
+        const response = await fetch(`/api/attendee/events/${encodeURIComponent(eventId)}/seats`, {
+          credentials: "same-origin",
+          headers: { Accept: "application/json" },
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          seatMapEl.innerHTML = `<p class="py-6 text-center text-sm text-rose-700">${data.error || "Could not load the hall map."}</p>`;
+          return;
+        }
+        renderSeatMap(data);
+      } catch (_error) {
+        seatMapEl.innerHTML = '<p class="py-6 text-center text-sm text-rose-700">Could not load the hall map.</p>';
+      }
+    }
+
     function openTicketModal(card) {
       currentCard = card;
       const remaining = Number(card.getAttribute("data-remaining") || 0);
-      document.getElementById("ticket-event-id").value = card.getAttribute("data-event-id") || "";
+      const eventId = card.getAttribute("data-event-id") || "";
+      document.getElementById("ticket-event-id").value = eventId;
       document.getElementById("ticket-event-title").textContent = card.getAttribute("data-title") || "Selected talk";
-      document.getElementById("ticket-seats-hint").textContent = `${remaining} seats still open.`;
-      seatsInput.max = String(Math.max(1, remaining));
-      seatsInput.value = "1";
+      hallLabelEl.textContent = `${card.getAttribute("data-capacity") || ""} seat hall`;
+      selectedSeats = [];
+      seatsInput.value = "0";
+      updateSeatHint(remaining);
       ticketFormStatus.hidden = true;
       ticketModal.classList.remove("hidden");
       ticketModal.classList.add("flex");
@@ -467,6 +600,7 @@
         ticketDialog.classList.remove("opacity-0", "scale-95");
         ticketDialog.classList.add("opacity-100", "scale-100");
       });
+      if (eventId) loadSeatMap(eventId);
     }
 
     function closeTicketModal() {
@@ -485,19 +619,22 @@
     function applySeatUpdate(card, remaining, _capacity) {
       const open = Math.max(0, Number(remaining) || 0);
       card.setAttribute("data-remaining", String(open));
+      card.classList.remove("event-card--open", "event-card--low", "event-card--sold");
+      card.classList.add(open <= 0 ? "event-card--sold" : open <= 10 ? "event-card--low" : "event-card--open");
+      if (typeof window.syncSoldRibbon === "function") window.syncSoldRibbon(card, open <= 0);
       const badgeRow = card.querySelector("[data-badge-row]");
       if (badgeRow) {
         badgeRow.querySelectorAll("[data-sold-out-badge], [data-last-seats-badge]").forEach((node) => node.remove());
         if (open <= 0) {
           const badge = document.createElement("span");
           badge.setAttribute("data-sold-out-badge", "");
-          badge.className = "inline-flex rounded-full bg-stone-800 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white";
+          badge.className = "inline-flex rounded-full bg-stone-950 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white ring-2 ring-white/70 shadow-lg shadow-stone-950/40";
           badge.textContent = "Sold Out";
           badgeRow.append(badge);
         } else if (open <= 10) {
           const badge = document.createElement("span");
           badge.setAttribute("data-last-seats-badge", "");
-          badge.className = "inline-flex animate-pulse rounded-full bg-rose-600 px-2.5 py-1 text-[11px] font-bold text-white shadow-sm shadow-rose-600/30";
+          badge.className = "inline-flex animate-pulse rounded-full bg-rose-600 px-2.5 py-1 text-[11px] font-bold text-white ring-2 ring-white/70 shadow-lg shadow-rose-700/40";
           badge.textContent = "Last seats!";
           badgeRow.append(badge);
         }
@@ -507,7 +644,7 @@
         const sold = document.createElement("button");
         sold.type = "button";
         sold.disabled = true;
-        sold.className = "inline-flex cursor-not-allowed items-center justify-center rounded-full bg-stone-200 px-4 py-2 text-sm font-semibold text-stone-500";
+        sold.className = "inline-flex cursor-not-allowed items-center justify-center rounded-full bg-white/20 px-4 py-2 text-sm font-semibold text-white ring-1 ring-white/40";
         sold.textContent = "Sold Out";
         buyButton.replaceWith(sold);
       }
@@ -529,12 +666,12 @@
     ticketForm.addEventListener("submit", async (event) => {
       event.preventDefault();
       const eventId = document.getElementById("ticket-event-id").value;
-      const seats = Number(seatsInput.value || 0);
-      if (!eventId || seats < 1) {
-        showFormStatus("Enter a ticket quantity of at least 1.", "error");
+      const seatIds = selectedSeatIds();
+      if (!eventId || seatIds.length < 1) {
+        showFormStatus("Select at least one open seat on the hall map.", "error");
         return;
       }
-      const payload = { event_id: eventId, seats };
+      const payload = { event_id: eventId, seats: seatIds.length, seat_ids: seatIds };
       if (!attendeeId) {
         payload.customer = customerType;
         if (customerType === "existing") {
@@ -562,7 +699,13 @@
         }
         if (currentCard) applySeatUpdate(currentCard, data.remaining_seats, data.capacity);
         closeTicketModal();
-        showStatus(`Purchase confirmed. ${data.seats} ticket${data.seats === 1 ? "" : "s"} reserved.`, "success");
+        const reserved = (data.seat_ids || []).join(", ");
+        showStatus(
+          reserved
+            ? `Purchase confirmed. Seats ${reserved} reserved.`
+            : `Purchase confirmed. ${data.seats} ticket${data.seats === 1 ? "" : "s"} reserved.`,
+          "success"
+        );
       } catch (_error) {
         showFormStatus("Could not reach the ticket API.", "error");
       }

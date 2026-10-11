@@ -255,4 +255,8 @@ def test_delete_event_removes_it_from_program(client):
     assert removed.status_code == 200
     assert removed.get_json()["id"] == event_id
     events = client.get("/api/organizer/events").get_json()
-    assert all(item["id"] != event_id for item in events)
+    deleted = next(item for item in events if item["id"] == event_id)
+    assert deleted["status"] == "deleted"
+    assert deleted["display_status"] == "Deleted"
+    public = client.get("/api/attendee/approved").get_json()
+    assert all(item["id"] != event_id for item in public)

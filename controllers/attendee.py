@@ -20,6 +20,8 @@ from models.event import Event
 from models.submission import TalkSubmission
 from services.auth import current_user, establish_session
 from services.embeddings import cosine_similarity, embed_text, proposal_document
+from services.event_covers import cover_image_url
+from services.seating import normalize_seat_ids, seating_map_payload
 from services.vector_store import search_similar
 
 attendee_bp = Blueprint("attendee", __name__, url_prefix="/api/attendee")
@@ -57,6 +59,9 @@ def browse_event_cards(topic: str | None = None, speaker: str | None = None):
     for event in events:
         item = event.to_dict()
         item["topic"] = topics.get(event.id) or "Session"
+        item["cover_image"] = cover_image_url(
+            item["topic"], item["title"], seed=event.id
+        )
         cards.append(item)
     topic_key = (topic or "").strip().lower()
     speaker_key = (speaker or "").strip().lower()
@@ -174,7 +179,9 @@ def attendee_ticket_cards(attendee_id: str) -> list[dict]:
             continue
         item = event.to_dict()
         item["topic"] = topics.get(event.id) or "Session"
+        item["cover_image"] = cover_image_url(item["topic"], item["title"], seed=event.id)
         item["tickets"] = booking.seats
+        item["seat_ids"] = booking.seat_ids
         item["booking_id"] = booking.id
         item["booking_status"] = booking.status
         cards.append(item)
@@ -203,12 +210,37 @@ def _booking_payload(booking) -> dict:
     return {**booking.to_dict(), **_seat_snapshot(booking.event_id)}
 
 
-def _book_seats(attendee_id: str, event_id: str, seats: int):
+def _parse_seat_request(payload: dict) -> tuple[int, list[str]]:
+    raw_seats = payload.get("seats")
+    seat_ids = normalize_seat_ids(
+        payload.get("seat_ids")
+        or payload.get("seat_numbers")
+        or payload.get("selected_seats")
+        or (raw_seats if isinstance(raw_seats, (list, tuple)) else None)
+    )
+    if isinstance(raw_seats, (list, tuple)):
+        seats = len(seat_ids)
+    elif raw_seats in (None, ""):
+        seats = len(seat_ids) or 1
+    else:
+        try:
+            seats = int(raw_seats)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("seats must be an integer") from exc
+    if seat_ids and seats != len(seat_ids):
+        raise ValueError("seats must match the number of selected seat IDs")
+    if seats < 1:
+        raise ValueError("seats must be at least 1")
+    return seats, seat_ids
+
+
+def _book_seats(attendee_id: str, event_id: str, seats: int, seat_ids: list[str] | None = None):
     return register_attendee_handler.handle(
         RegisterAttendeeCommand(
             attendee_id=str(attendee_id),
             event_id=event_id,
             seats=seats,
+            seat_ids=seat_ids or None,
         )
     )
 
@@ -217,6 +249,14 @@ def _book_seats(attendee_id: str, event_id: str, seats: int):
 def list_events():
     events = list_active_events_handler.handle(ListActiveEventsQuery())
     return jsonify([event.to_dict() for event in events]), 200
+
+
+@attendee_bp.route("/events/<event_id>/seats", methods=["GET"])
+def event_seat_map(event_id: str):
+    event = db.session.get(Event, str(event_id or "").strip())
+    if event is None:
+        return _validation_error("event not found", status=404)
+    return jsonify(seating_map_payload(event)), 200
 
 
 def _request_filters(body: dict | None = None) -> tuple[str, str]:
@@ -274,17 +314,13 @@ def register():
     if not event_id:
         return _validation_error("event_id cannot be empty")
 
-    seats_value = payload.get("seats", 1)
     try:
-        seats = int(seats_value)
-    except (TypeError, ValueError):
-        return _validation_error("seats must be an integer")
-
-    if seats < 1:
-        return _validation_error("seats must be at least 1")
+        seats, seat_ids = _parse_seat_request(payload)
+    except ValueError as exc:
+        return _validation_error(str(exc))
 
     try:
-        booking = _book_seats(str(attendee_id), event_id, seats)
+        booking = _book_seats(str(attendee_id), event_id, seats, seat_ids)
     except DomainError as exc:
         db.session.rollback()
         return _validation_error(exc.message, status=exc.status)
@@ -302,13 +338,10 @@ def buy_tickets():
     if not event_id:
         return _validation_error("event_id cannot be empty")
 
-    seats_value = payload.get("seats", 1)
     try:
-        seats = int(seats_value)
-    except (TypeError, ValueError):
-        return _validation_error("seats must be an integer")
-    if seats < 1:
-        return _validation_error("seats must be at least 1")
+        seats, seat_ids = _parse_seat_request(payload)
+    except ValueError as exc:
+        return _validation_error(str(exc))
 
     customer = str(payload.get("customer") or "").strip().lower()
     user_id = str(payload.get("user_id") or payload.get("attendee_id") or "").strip()
@@ -337,7 +370,7 @@ def buy_tickets():
             attendee_id = _attendee_id(payload)
             if not attendee_id:
                 return _validation_error("Choose Existing Customer or New Customer to buy tickets")
-        booking = _book_seats(attendee_id, event_id, seats)
+        booking = _book_seats(attendee_id, event_id, seats, seat_ids)
     except DomainError as exc:
         db.session.rollback()
         return _validation_error(exc.message, status=exc.status)

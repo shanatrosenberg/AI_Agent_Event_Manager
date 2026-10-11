@@ -101,8 +101,16 @@
         body.append(row);
 
         const card = document.createElement("article");
-        card.className = "rounded-2xl border border-amber-200 bg-sand-50 p-4";
+        const remaining = Number(event.remaining_seats);
+        const tone = remaining <= 0 ? "event-card--sold" : remaining <= 10 ? "event-card--low" : "event-card--open";
+        card.className = `event-card event-card--photo event-card--compact ${tone}`;
         card.innerHTML = "";
+        if (typeof window.attachEventCover === "function") {
+          window.attachEventCover(card, event.topic || event.title || "", event.id || event.title || "", event.description || "");
+        }
+        if (typeof window.syncSoldRibbon === "function") {
+          window.syncSoldRibbon(card, remaining <= 0);
+        }
         const title = document.createElement("h3");
         title.className = "text-sm font-semibold text-stone-900";
         title.textContent = event.title || "";

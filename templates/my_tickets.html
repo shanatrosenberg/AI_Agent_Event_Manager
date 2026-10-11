@@ -42,7 +42,7 @@
     <p class="text-xs font-semibold uppercase tracking-[0.22em] text-clay-600">Your registrations</p>
     <h1 class="font-display mt-3 max-w-3xl text-4xl font-extrabold tracking-tight text-stone-900 sm:text-5xl">My Tickets</h1>
     <p class="mt-4 max-w-2xl text-base leading-relaxed text-stone-600">
-      Talks you have reserved, with the number of tickets purchased for each session.
+      Talks you have reserved, with ticket counts and the seat numbers held for each session.
     </p>
     {% if attendee_name %}
     <p class="mt-4 text-sm font-medium text-stone-500">Signed in as {{ attendee_name }}.</p>
@@ -51,18 +51,25 @@
     {% if tickets %}
     <section id="tickets-grid" class="mt-10 grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
       {% for event in tickets %}
-      <article data-booking-id="{{ event.booking_id }}" data-event-id="{{ event.id }}" class="group relative flex flex-col overflow-hidden rounded-[1.75rem] border border-amber-100 bg-white/90 p-6 shadow-lg shadow-amber-900/5 backdrop-blur-sm transition duration-300 hover:-translate-y-1.5 hover:shadow-xl hover:shadow-orange-900/10">
-        <div class="flex flex-wrap items-center gap-2">
-          <span class="inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-amber-800">{{ event.topic }}</span>
-          <span class="inline-flex rounded-full bg-clay-600 px-2.5 py-1 text-[11px] font-bold text-white">{{ event.tickets }} ticket{% if event.tickets != 1 %}s{% endif %}</span>
+      <article data-booking-id="{{ event.booking_id }}" data-event-id="{{ event.id }}" data-topic="{{ event.topic }}" class="event-card event-card--photo event-card--open">
+        <div class="event-card__media" aria-hidden="true">
+          <img src="{{ event.cover_image or event_cover_url(event.topic, event.title, seed=event.id) }}" alt="" loading="lazy">
         </div>
-        <h2 class="font-display mt-4 text-2xl font-bold leading-tight tracking-tight text-stone-900">{{ event.title }}</h2>
-        <p class="mt-2 text-sm font-semibold text-clay-700">{{ event.speaker_name or event.speaker_id or "Guest speaker" }}</p>
-        <p class="mt-2 text-sm text-stone-500">
+        <div class="event-card__overlay" aria-hidden="true"></div>
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="inline-flex rounded-full bg-white/20 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white ring-1 ring-white/35 backdrop-blur-md">{{ event.topic }}</span>
+          <span class="inline-flex rounded-full bg-clay-600 px-2.5 py-1 text-[11px] font-bold text-white ring-2 ring-white/50">{{ event.tickets }} ticket{% if event.tickets != 1 %}s{% endif %}</span>
+        </div>
+        {% if event.seat_ids %}
+        <p class="mt-3 text-sm font-medium text-white/90">Seats {{ event.seat_ids|join(", ") }}</p>
+        {% endif %}
+        <h2 class="font-display mt-4 text-2xl font-bold leading-tight tracking-tight text-white">{{ event.title }}</h2>
+        <p class="mt-2 text-sm font-semibold text-amber-100">{{ event.speaker_name or event.speaker_id or "Guest speaker" }}</p>
+        <p class="mt-2 text-sm text-stone-100">
           {{ event.date }}{% if event.start_time %} | {{ event.start_time }}{% endif %}
         </p>
         {% if event.description %}
-        <p class="mt-4 flex-1 text-sm leading-relaxed text-stone-600">{{ event.description }}</p>
+        <p class="mt-4 flex-1 text-sm leading-relaxed text-white/85">{{ event.description }}</p>
         {% endif %}
       </article>
       {% endfor %}

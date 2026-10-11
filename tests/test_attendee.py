@@ -333,6 +333,9 @@ def test_browse_events_last_seats_and_sold_out_badges(client, attendee_headers, 
     assert 'href="/register"' not in html
     assert 'id="join-modal"' in html
     assert "This portal is for attendees only" in html
+    assert 'id="seat-map"' in html
+    assert "Choose your seats" in html
+    assert "Hall seating map" in html
 
 
 def test_join_as_attendee_opens_attendee_only_portal(client):
@@ -529,9 +532,123 @@ def test_my_tickets_lists_purchased_events(client, created_event):
     html = page.get_data(as_text=True)
     assert created_event["title"] in html
     assert "3 tickets" in html
+    assert "Seats A1, A2, A3" in html
     assert f"{created_event['date']} | {created_event['start_time']}" in html
     assert 'id="tickets-grid"' in html
     assert bought.get_json()["id"] in html or created_event["id"] in html
     assert "seats held for you" not in html
     assert "seats open" not in html
     assert created_event["hall_label"] not in html
+
+
+def test_seat_map_matches_hall_capacity(client, created_event):
+    response = client.get(f"/api/attendee/events/{created_event['id']}/seats")
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["capacity"] == 50
+    assert body["rows"] == 5
+    assert body["cols"] == 10
+    assert len(body["seats"]) == 50
+    assert body["seats"][0]["id"] == "A1"
+    assert body["seats"][-1]["id"] == "E10"
+    assert body["taken"] == []
+    assert all(seat["available"] for seat in body["seats"])
+
+
+def test_register_specific_seats_and_mark_them_taken(client, attendee_headers, created_event):
+    booked = client.post(
+        "/api/attendee/register",
+        json={"event_id": created_event["id"], "seat_ids": ["B3", "C4"]},
+        headers=attendee_headers,
+    )
+    assert booked.status_code == 201
+    body = booked.get_json()
+    assert body["seats"] == 2
+    assert body["seat_ids"] == ["B3", "C4"]
+    assert body["remaining_seats"] == created_event["capacity"] - 2
+
+    hall = client.get(f"/api/attendee/events/{created_event['id']}/seats")
+    assert hall.status_code == 200
+    payload = hall.get_json()
+    assert payload["taken"] == ["B3", "C4"]
+    by_id = {seat["id"]: seat for seat in payload["seats"]}
+    assert by_id["B3"]["available"] is False
+    assert by_id["C4"]["available"] is False
+    assert by_id["A1"]["available"] is True
+
+
+def test_register_rejects_taken_and_unknown_seats(client, attendee_headers, created_event):
+    first = client.post(
+        "/api/attendee/register",
+        json={"event_id": created_event["id"], "seat_ids": ["A1"]},
+        headers=attendee_headers,
+    )
+    assert first.status_code == 201
+
+    taken = client.post(
+        "/api/attendee/register",
+        json={"event_id": created_event["id"], "seat_ids": ["A1"]},
+        headers={"X-Attendee-Id": "att-second"},
+    )
+    assert taken.status_code == 409
+    assert "already reserved" in taken.get_json()["error"]
+
+    unknown = client.post(
+        "/api/attendee/register",
+        json={"event_id": created_event["id"], "seat_ids": ["Z99"]},
+        headers={"X-Attendee-Id": "att-third"},
+    )
+    assert unknown.status_code == 400
+    assert "unknown seat" in unknown.get_json()["error"]
+
+
+def test_tickets_accept_selected_seat_ids(client, created_event):
+    client.post(
+        "/register",
+        json={
+            "user_id": "att-seat-picker",
+            "password": "SecurePass1",
+            "role": "attendee",
+            "name": "Seat Picker",
+        },
+    )
+    bought = client.post(
+        "/api/attendee/tickets",
+        json={"event_id": created_event["id"], "seat_ids": ["D5", "D6"]},
+    )
+    assert bought.status_code == 201
+    assert bought.get_json()["seat_ids"] == ["D5", "D6"]
+    assert bought.get_json()["remaining_seats"] == created_event["capacity"] - 2
+
+
+def test_quantity_booking_auto_assigns_open_seats(client, attendee_headers, created_event):
+    response = client.post(
+        "/api/attendee/register",
+        json={"event_id": created_event["id"], "seats": 2},
+        headers=attendee_headers,
+    )
+    assert response.status_code == 201
+    assert response.get_json()["seat_ids"] == ["A1", "A2"]
+
+
+def test_seat_map_for_large_hall(client, speaker_headers, event_payload):
+    from tests.conftest import approve_talk_event
+
+    event = approve_talk_event(
+        client,
+        speaker_headers,
+        event_payload,
+        title="Arena Keynote",
+        date="2026-12-01",
+        start_time="15:00",
+        end_time="16:00",
+        capacity=300,
+    )
+    response = client.get(f"/api/attendee/events/{event['id']}/seats")
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["capacity"] == 300
+    assert body["rows"] == 15
+    assert body["cols"] == 20
+    assert len(body["seats"]) == 300
+    assert body["seats"][-1]["id"] == "O20"

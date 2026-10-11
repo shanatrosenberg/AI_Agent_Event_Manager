@@ -20,6 +20,7 @@ from cqrs.errors import DomainError
 from extensions import db
 from services.abstract_enhancer import enhance_abstract
 from services.auth import admin_organizer_id, current_user
+from services.idea_hub import generate_talk_ideas, normalize_topic_query
 
 speaker_bp = Blueprint("speaker", __name__, url_prefix="/api/speaker")
 
@@ -104,6 +105,41 @@ def enhance_abstract_view():
         "enhanced_abstract": result.text,
         "abstract": result.text,
         "model": result.model,
+    }
+    if result.fallback:
+        body["fallback"] = True
+        body["message"] = result.message
+    return jsonify(body), 200
+
+
+@speaker_bp.route("/innovation-ideas", methods=["GET", "POST"])
+def innovation_ideas():
+    speaker_id = _speaker_id()
+    if not speaker_id:
+        return _validation_error("Sign in as a speaker to browse innovation ideas", status=401)
+    payload = request.get_json(silent=True) if request.method == "POST" else None
+    raw_limit = None
+    raw_query = None
+    if isinstance(payload, dict):
+        raw_limit = payload.get("limit")
+        raw_query = payload.get("query") or payload.get("topic") or payload.get("q")
+    if raw_query in (None, ""):
+        raw_query = request.args.get("query") or request.args.get("topic") or request.args.get("q")
+    raw_limit = request.args.get("limit") if raw_limit in (None, "") else raw_limit
+    try:
+        limit = int(raw_limit or 6)
+    except (TypeError, ValueError):
+        limit = 6
+    query = normalize_topic_query(raw_query)
+    result = generate_talk_ideas(limit=limit, query=query or None)
+    if result.error:
+        return jsonify({"error": result.error}), result.status_code
+    body = {
+        **_speaker_profile(speaker_id),
+        "ideas": result.ideas,
+        "model": result.model,
+        "source": result.source,
+        "query": query,
     }
     if result.fallback:
         body["fallback"] = True
