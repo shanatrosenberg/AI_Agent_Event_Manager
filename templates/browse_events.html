@@ -9,25 +9,209 @@
   {% include 'partials/theme.html' %}
   <style>
     #events-grid article[hidden] { display: none !important; }
-    .hall-map { display: flex; flex-direction: column; gap: 0.35rem; }
-    .hall-row { display: flex; align-items: center; justify-content: center; gap: 0.28rem; }
-    .hall-row-label { width: 1.1rem; flex: none; text-align: right; font-size: 0.65rem; font-weight: 700; color: #a8a29e; }
-    .hall-aisle { width: 0.7rem; flex: none; }
+    .hall-theater {
+      position: relative;
+      overflow: hidden;
+      border-radius: 1.45rem;
+      padding: 1.35rem 1.15rem 1.1rem;
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      background:
+        radial-gradient(ellipse 70% 42% at 50% -4%, rgba(251, 191, 36, 0.32), transparent 58%),
+        radial-gradient(ellipse 38% 28% at 50% 18%, rgba(251, 191, 36, 0.08), transparent 70%),
+        radial-gradient(ellipse 50% 40% at 100% 100%, rgba(30, 58, 138, 0.28), transparent 62%),
+        linear-gradient(180deg, #111827 0%, #1e293b 46%, #020617 100%);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.07), 0 22px 48px -26px rgba(2, 6, 23, 0.7);
+    }
+    .hall-theater::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(180deg, rgba(255,255,255,0.05), transparent 26%);
+    }
+    .hall-stage {
+      position: relative;
+      z-index: 1;
+      margin: 0 auto 1.15rem;
+      width: min(100%, 24rem);
+      border-radius: 999px;
+      padding: 0.68rem 1.2rem;
+      border: 1px solid rgba(253, 224, 71, 0.72);
+      background: linear-gradient(180deg, #fde68a 0%, #f59e0b 42%, #b45309 100%);
+      color: #1c1917;
+      font-family: Fraunces, Georgia, serif;
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.46em;
+      text-align: center;
+      text-transform: uppercase;
+      box-shadow:
+        0 0 0 1px rgba(253, 224, 71, 0.28),
+        0 0 36px rgba(251, 191, 36, 0.55),
+        0 12px 26px rgba(2, 6, 23, 0.45),
+        inset 0 1px 0 rgba(255, 251, 235, 0.55);
+    }
+    .hall-map-shell {
+      position: relative;
+      z-index: 1;
+      padding: 0.85rem 0.35rem 0.55rem;
+      overflow-x: auto;
+      overflow-y: auto;
+      max-height: min(22rem, 46vh);
+      overscroll-behavior: contain;
+    }
+    .hall-map {
+      --hall-seat: 1.62rem;
+      --hall-gap: 0.3rem;
+      --hall-aisle: 1.15rem;
+      --hall-aisle-count: 2;
+      --hall-cols: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.38rem;
+      position: relative;
+      min-width: min-content;
+    }
+    .hall-map[data-cols="20"] {
+      --hall-seat: 1.08rem;
+      --hall-gap: 0.2rem;
+      --hall-aisle: 0.95rem;
+    }
+    .hall-row { display: flex; align-items: center; justify-content: center; gap: var(--hall-gap); }
+    .hall-row-label {
+      width: 1.05rem; flex: none; text-align: center;
+      font-size: 0.62rem; font-weight: 700; color: #94a3b8; letter-spacing: 0.04em;
+    }
+    .hall-row-label.is-end { text-align: center; }
+    .hall-aisle {
+      width: var(--hall-aisle);
+      align-self: stretch;
+      min-height: var(--hall-seat);
+      flex: none;
+      border-radius: 999px;
+      background:
+        linear-gradient(180deg, rgba(253, 230, 138, 0.22), rgba(148, 163, 184, 0.1) 42%, rgba(15, 23, 42, 0.42));
+      box-shadow:
+        inset 0 0 0 1px rgba(253, 230, 138, 0.16),
+        0 0 14px rgba(251, 191, 36, 0.08);
+    }
+    .hall-section-row { margin-bottom: 0.2rem; }
+    .hall-cross-row { margin: 0.18rem 0; }
+    .hall-cross-aisle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 1.15rem;
+      min-width: calc(
+        var(--hall-cols) * var(--hall-seat)
+        + var(--hall-aisle-count) * var(--hall-aisle)
+        + (var(--hall-cols) + var(--hall-aisle-count) - 1) * var(--hall-gap)
+      );
+      border-radius: 999px;
+      background:
+        linear-gradient(90deg, rgba(15, 23, 42, 0.15), rgba(253, 230, 138, 0.22) 50%, rgba(15, 23, 42, 0.15));
+      box-shadow:
+        inset 0 0 0 1px rgba(253, 230, 138, 0.18),
+        0 0 16px rgba(251, 191, 36, 0.08);
+    }
+    .hall-cross-aisle::after {
+      content: "Aisle";
+      font-size: 0.5rem;
+      font-weight: 800;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(253, 230, 138, 0.62);
+    }
+    .hall-map[data-cols="20"] .hall-cross-aisle { height: 1rem; }
+    .hall-section-label {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: calc(var(--section-cols) * var(--hall-seat) + (var(--section-cols) - 1) * var(--hall-gap));
+      color: #fbbf24;
+      font-size: 0.58rem;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
     .hall-seat {
       display: inline-flex; align-items: center; justify-content: center;
-      width: 1.7rem; height: 1.7rem; border-radius: 0.45rem;
-      border: 1px solid #f1d4a4; background: #fbf6ee; color: #57534e;
+      width: var(--hall-seat); height: var(--hall-seat); border-radius: 0.5rem;
+      border: 1px solid rgba(231, 229, 228, 0.28);
+      background: linear-gradient(180deg, #44403c 0%, #292524 100%);
+      color: #e7e5e4;
       font-size: 0.58rem; font-weight: 700; line-height: 1; cursor: pointer;
-      transition: transform 0.12s ease, background 0.12s ease, border-color 0.12s ease;
+      transition: transform 0.22s ease, background 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease, color 0.22s ease;
     }
-    .hall-map[data-cols="20"] .hall-seat { width: 1.15rem; height: 1.15rem; font-size: 0.48rem; border-radius: 0.3rem; }
-    .hall-map[data-cols="20"] .hall-aisle { width: 0.45rem; }
-    .hall-seat:hover:not(:disabled) { transform: translateY(-1px); border-color: #c2410c; background: #fff7ed; color: #9a3412; }
-    .hall-seat[data-state="selected"] { background: #9a3412; border-color: #7c2d12; color: #fff; }
+    .hall-map[data-cols="20"] .hall-seat { font-size: 0.48rem; border-radius: 0.32rem; }
+    .hall-seat[data-state="available"]:hover:not(:disabled) {
+      transform: translateY(-2px);
+      border-color: rgba(251, 191, 36, 0.75);
+      background: linear-gradient(180deg, #57534e 0%, #44403c 100%);
+      color: #fef3c7;
+      box-shadow: 0 0 0 1px rgba(251, 191, 36, 0.28), 0 0 14px rgba(245, 158, 11, 0.42);
+    }
+    .hall-seat[data-state="selected"] {
+      background: linear-gradient(180deg, #f59e0b 0%, #c2410c 100%);
+      border-color: #fdba74;
+      color: #fffbeb;
+      box-shadow: 0 0 0 1px rgba(251, 191, 36, 0.45), 0 0 16px rgba(245, 158, 11, 0.55);
+      animation: seatPulse 1.55s ease-in-out infinite;
+    }
     .hall-seat[data-state="taken"] {
-      background: #fda4af; border-color: #e11d48; color: #881337;
-      cursor: not-allowed; text-decoration: line-through; opacity: 0.75;
+      background: #292524;
+      border-color: #44403c;
+      color: #78716c;
+      cursor: not-allowed;
+      opacity: 0.48;
+      box-shadow: none;
+      text-decoration: none;
     }
+    @keyframes seatPulse {
+      0%, 100% { box-shadow: 0 0 0 1px rgba(251, 191, 36, 0.4), 0 0 10px rgba(245, 158, 11, 0.35); }
+      50% { box-shadow: 0 0 0 2px rgba(253, 186, 116, 0.7), 0 0 18px rgba(245, 158, 11, 0.7); }
+    }
+    .hall-footer {
+      position: relative;
+      z-index: 1;
+      margin-top: 1rem;
+      padding: 0.8rem 0.9rem;
+      border-radius: 1rem;
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      background: rgba(15, 23, 42, 0.48);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    .hall-hint {
+      margin: 0;
+      font-size: 0.76rem;
+      font-weight: 500;
+      letter-spacing: 0.01em;
+      color: #e2e8f0;
+    }
+    .hall-legend {
+      margin-top: 0.7rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.55rem;
+      color: #cbd5e1;
+      font-size: 0.66rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .hall-legend > span {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      background: rgba(2, 6, 23, 0.35);
+      padding: 0.28rem 0.55rem 0.28rem 0.32rem;
+    }
+    .hall-legend .hall-seat { width: 1.15rem; height: 1.15rem; font-size: 0.5rem; animation: none; }
   </style>
 </head>
 <body class="min-h-screen bg-sand-50 font-sans text-stone-900 antialiased">
@@ -137,13 +321,13 @@
         <div class="event-card__overlay" aria-hidden="true"></div>
         {% if event.sold_out %}
         <span class="event-card__ribbon" aria-hidden="true">SOLD OUT</span>
+        {% elif event.last_seats %}
+        <span class="event-card__ribbon event-card__ribbon--last" aria-hidden="true">LAST SEATS</span>
         {% endif %}
         <div data-badge-row class="flex flex-wrap items-center gap-2">
           <span class="inline-flex rounded-full bg-white/20 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white ring-1 ring-white/35 backdrop-blur-md">{{ event.topic }}</span>
           {% if event.sold_out %}
           <span data-sold-out-badge class="inline-flex rounded-full bg-stone-950 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white ring-2 ring-white/70 shadow-lg shadow-stone-950/40">Sold Out</span>
-          {% elif event.last_seats %}
-          <span data-last-seats-badge class="inline-flex animate-pulse rounded-full bg-rose-600 px-2.5 py-1 text-[11px] font-bold text-white ring-2 ring-white/70 shadow-lg shadow-rose-700/40">Last seats!</span>
           {% endif %}
         </div>
         <h2 class="font-display mt-4 text-2xl font-bold leading-tight tracking-tight text-white">{{ event.title }}</h2>
@@ -152,13 +336,11 @@
           {{ event.date }}{% if event.start_time %} | {{ event.start_time }}{% endif %}
         </p>
         <p class="mt-4 flex-1 text-sm leading-relaxed text-white/85">{{ event.description or "Join this session to hear the speaker share their work with the room." }}</p>
-        <div class="mt-5 flex items-center justify-end gap-3">
-          {% if event.sold_out %}
-          <button type="button" disabled class="inline-flex cursor-not-allowed items-center justify-center rounded-full bg-white/20 px-4 py-2 text-sm font-semibold text-white ring-1 ring-white/40">Sold Out</button>
-          {% else %}
-          <button type="button" data-buy-tickets="{{ event.id }}" class="inline-flex items-center justify-center rounded-full bg-clay-600 px-4 py-2 text-sm font-semibold text-white shadow-md shadow-orange-900/15 transition hover:-translate-y-0.5 hover:bg-clay-700">Buy Tickets</button>
-          {% endif %}
+        {% if not event.sold_out %}
+        <div class="event-card__cta">
+          <button type="button" data-buy-tickets="{{ event.id }}" class="event-card__cta-btn">Buy Tickets</button>
         </div>
+        {% endif %}
       </article>
       {% endfor %}
     </section>
@@ -170,21 +352,21 @@
     {% endif %}
   </main>
 
-  <div id="join-modal" class="fixed inset-0 z-50 hidden items-center justify-center overflow-y-auto px-4 py-8 sm:py-12" aria-hidden="true">
+  <div id="join-modal" class="fixed inset-0 z-50 hidden app-modal items-center justify-center overflow-hidden" aria-hidden="true">
     <div id="join-backdrop" class="absolute inset-0 bg-stone-900/40 opacity-0 backdrop-blur-md transition-opacity duration-300" data-join-dismiss></div>
     <div
       id="join-dialog"
       role="dialog"
       aria-modal="true"
       aria-labelledby="join-modal-title"
-      class="relative w-full max-w-lg scale-95 rounded-3xl border border-amber-100 bg-white/95 p-6 opacity-0 shadow-2xl shadow-orange-900/15 transition duration-300 sm:p-7"
+      class="app-dialog relative w-full max-w-lg scale-95 rounded-3xl border border-amber-100 bg-white/95 p-6 opacity-0 shadow-2xl shadow-orange-900/15 transition duration-300 sm:p-7"
     >
-      <div class="flex items-start justify-between gap-3">
+      <div class="app-modal-header flex items-start justify-between gap-3">
         <div>
           <h2 id="join-modal-title" class="font-display text-lg font-bold tracking-tight">Join as attendee</h2>
           <p class="mt-1 text-sm text-stone-500">Sign in as an existing customer or create a new customer account. This portal is for attendees only.</p>
         </div>
-        <button type="button" id="close-join-modal" class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-amber-200 bg-white text-stone-500 shadow-sm transition hover:border-amber-300 hover:bg-sand-50 hover:text-stone-800" aria-label="Close attendee form">
+        <button type="button" id="close-join-modal" class="app-modal-close inline-flex h-9 w-9 items-center justify-center rounded-full border border-amber-200 bg-white text-stone-500 shadow-sm transition hover:border-amber-300 hover:bg-sand-50 hover:text-stone-800" aria-label="Close attendee form">
           <span aria-hidden="true">✕</span>
         </button>
       </div>
@@ -230,21 +412,21 @@
     </div>
   </div>
 
-  <div id="ticket-modal" class="fixed inset-0 z-50 hidden items-center justify-center overflow-y-auto px-4 py-8 sm:py-12" aria-hidden="true">
+  <div id="ticket-modal" class="fixed inset-0 z-50 hidden app-modal items-center justify-center overflow-hidden" aria-hidden="true">
     <div id="ticket-backdrop" class="absolute inset-0 bg-stone-900/40 opacity-0 backdrop-blur-md transition-opacity duration-300" data-ticket-dismiss></div>
     <div
       id="ticket-dialog"
       role="dialog"
       aria-modal="true"
       aria-labelledby="ticket-modal-title"
-      class="relative w-full max-w-2xl scale-95 rounded-3xl border border-amber-100 bg-white/95 p-6 opacity-0 shadow-2xl shadow-orange-900/15 transition duration-300 sm:p-7"
+      class="app-dialog relative w-full max-w-3xl scale-95 rounded-3xl border border-amber-100 bg-white/95 p-6 opacity-0 shadow-2xl shadow-orange-900/15 transition duration-300 sm:p-7"
     >
-      <div class="flex items-start justify-between gap-3">
+      <div class="app-modal-header flex items-start justify-between gap-3">
         <div>
           <h2 id="ticket-modal-title" class="font-display text-lg font-bold tracking-tight">Buy Tickets</h2>
           <p id="ticket-event-title" class="mt-1 text-sm text-stone-500"></p>
         </div>
-        <button type="button" id="close-ticket-modal" class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-amber-200 bg-white text-stone-500 shadow-sm transition hover:border-amber-300 hover:bg-sand-50 hover:text-stone-800" aria-label="Close ticket form">
+        <button type="button" id="close-ticket-modal" class="app-modal-close inline-flex h-9 w-9 items-center justify-center rounded-full border border-amber-200 bg-white text-stone-500 shadow-sm transition hover:border-amber-300 hover:bg-sand-50 hover:text-stone-800" aria-label="Close ticket form">
           <span aria-hidden="true">✕</span>
         </button>
       </div>
@@ -254,14 +436,18 @@
         <div>
           <p class="block text-sm font-medium text-stone-700">Choose your seats</p>
           <p id="ticket-hall-label" class="mt-1 text-xs font-semibold uppercase tracking-wide text-clay-600"></p>
-          <div class="mt-3 rounded-2xl border border-amber-100 bg-sand-50/80 p-3 sm:p-4">
-            <div class="mb-3 rounded-xl bg-stone-800 px-3 py-1.5 text-center text-[11px] font-bold uppercase tracking-[0.28em] text-amber-100">Stage</div>
-            <div id="seat-map" class="hall-map max-h-72 overflow-auto py-1" role="group" aria-label="Hall seating map"></div>
-            <p id="ticket-seats-hint" class="mt-3 text-xs text-stone-500">Select open seats on the hall map.</p>
-            <div class="mt-3 flex flex-wrap items-center gap-3 text-[11px] font-semibold text-stone-500">
-              <span class="inline-flex items-center gap-1.5"><span class="hall-seat pointer-events-none" data-state="available">1</span> Available</span>
-              <span class="inline-flex items-center gap-1.5"><span class="hall-seat pointer-events-none" data-state="selected">2</span> Selected</span>
-              <span class="inline-flex items-center gap-1.5"><span class="hall-seat pointer-events-none" data-state="taken">3</span> Reserved</span>
+          <div class="hall-theater mt-3">
+            <div class="hall-stage">Stage</div>
+            <div class="hall-map-shell">
+              <div id="seat-map" class="hall-map py-1" role="group" aria-label="Hall seating map"></div>
+            </div>
+            <div class="hall-footer">
+              <p id="ticket-seats-hint" class="hall-hint">Select open seats on the hall map.</p>
+              <div class="hall-legend">
+                <span><span class="hall-seat pointer-events-none" data-state="available">1</span> Available</span>
+                <span><span class="hall-seat pointer-events-none" data-state="selected">2</span> Selected</span>
+                <span><span class="hall-seat pointer-events-none" data-state="taken">3</span> Reserved</span>
+              </div>
             </div>
           </div>
         </div>
@@ -519,28 +705,77 @@
       updateSeatHint();
     }
 
+    function aisleBreaks(data, key, fallbackKey) {
+      if (Array.isArray(data[key])) {
+        return data[key].map(Number).filter((value) => value > 0);
+      }
+      if (!fallbackKey) return [];
+      const aisleAfter = Number(data[fallbackKey] || 0);
+      return aisleAfter ? [aisleAfter] : [];
+    }
+
+    function appendAisle(parent) {
+      const aisle = document.createElement("span");
+      aisle.className = "hall-aisle";
+      aisle.setAttribute("aria-hidden", "true");
+      parent.append(aisle);
+    }
+
+    function appendRowLabel(parent, letter, ending) {
+      const label = document.createElement("span");
+      label.className = ending ? "hall-row-label is-end" : "hall-row-label";
+      label.textContent = letter || "";
+      parent.append(label);
+    }
+
+    function appendCrossAisle() {
+      const row = document.createElement("div");
+      row.className = "hall-row hall-cross-row";
+      appendRowLabel(row, "");
+      const aisle = document.createElement("span");
+      aisle.className = "hall-cross-aisle";
+      aisle.setAttribute("aria-hidden", "true");
+      row.append(aisle);
+      appendRowLabel(row, "", true);
+      seatMapEl.append(row);
+    }
+
     function renderSeatMap(data) {
       selectedSeats = [];
       seatMapEl.innerHTML = "";
-      seatMapEl.dataset.cols = String(data.cols || 10);
       const remaining = data.available_count;
       hallLabelEl.textContent = data.hall_label || `${data.capacity} seat hall`;
-      const aisleAfter = Number(data.aisle_after || 0);
+      const aisles = aisleBreaks(data, "aisles_after", "aisle_after");
+      const rowAisles = aisleBreaks(data, "row_aisles_after");
+      const sections = Array.isArray(data.sections) ? data.sections : [];
       const cols = Number(data.cols || 10);
       const rows = Number(data.rows || 1);
+      seatMapEl.dataset.cols = String(cols);
+      seatMapEl.style.setProperty("--hall-cols", String(cols));
+      seatMapEl.style.setProperty("--hall-aisle-count", String(aisles.length));
+      if (sections.length) {
+        const header = document.createElement("div");
+        header.className = "hall-row hall-section-row";
+        appendRowLabel(header, "");
+        sections.forEach((section, index) => {
+          if (index) appendAisle(header);
+          const label = document.createElement("span");
+          label.className = "hall-section-label";
+          label.textContent = section.name;
+          label.style.setProperty("--section-cols", String(section.cols || 0));
+          header.append(label);
+        });
+        appendRowLabel(header, "", true);
+        seatMapEl.append(header);
+      }
       for (let row = 0; row < rows; row += 1) {
         const rowEl = document.createElement("div");
         rowEl.className = "hall-row";
-        const label = document.createElement("span");
-        label.className = "hall-row-label";
-        label.textContent = String.fromCharCode(65 + row);
-        rowEl.append(label);
+        const letter = String.fromCharCode(65 + row);
+        appendRowLabel(rowEl, letter);
         for (let col = 0; col < cols; col += 1) {
-          if (aisleAfter && col === aisleAfter) {
-            const aisle = document.createElement("span");
-            aisle.className = "hall-aisle";
-            aisle.setAttribute("aria-hidden", "true");
-            rowEl.append(aisle);
+          if (aisles.includes(col)) {
+            appendAisle(rowEl);
           }
           const seat = (data.seats || [])[row * cols + col];
           if (!seat) continue;
@@ -556,13 +791,17 @@
           button.addEventListener("click", () => toggleSeat(button));
           rowEl.append(button);
         }
+        appendRowLabel(rowEl, letter, true);
         seatMapEl.append(rowEl);
+        if (rowAisles.includes(row + 1)) {
+          appendCrossAisle();
+        }
       }
       updateSeatHint(remaining);
     }
 
     async function loadSeatMap(eventId) {
-      seatMapEl.innerHTML = '<p class="py-6 text-center text-sm text-stone-400">Loading hall map…</p>';
+      seatMapEl.innerHTML = '<p class="py-6 text-center text-sm text-stone-300">Loading hall map…</p>';
       try {
         const response = await fetch(`/api/attendee/events/${encodeURIComponent(eventId)}/seats`, {
           credentials: "same-origin",
@@ -570,12 +809,12 @@
         });
         const data = await response.json().catch(() => ({}));
         if (!response.ok) {
-          seatMapEl.innerHTML = `<p class="py-6 text-center text-sm text-rose-700">${data.error || "Could not load the hall map."}</p>`;
+          seatMapEl.innerHTML = `<p class="py-6 text-center text-sm text-rose-300">${data.error || "Could not load the hall map."}</p>`;
           return;
         }
         renderSeatMap(data);
       } catch (_error) {
-        seatMapEl.innerHTML = '<p class="py-6 text-center text-sm text-rose-700">Could not load the hall map.</p>';
+        seatMapEl.innerHTML = '<p class="py-6 text-center text-sm text-rose-300">Could not load the hall map.</p>';
       }
     }
 
@@ -621,7 +860,7 @@
       card.setAttribute("data-remaining", String(open));
       card.classList.remove("event-card--open", "event-card--low", "event-card--sold");
       card.classList.add(open <= 0 ? "event-card--sold" : open <= 10 ? "event-card--low" : "event-card--open");
-      if (typeof window.syncSoldRibbon === "function") window.syncSoldRibbon(card, open <= 0);
+      if (typeof window.syncCardRibbon === "function") window.syncCardRibbon(card, open);
       const badgeRow = card.querySelector("[data-badge-row]");
       if (badgeRow) {
         badgeRow.querySelectorAll("[data-sold-out-badge], [data-last-seats-badge]").forEach((node) => node.remove());
@@ -631,22 +870,13 @@
           badge.className = "inline-flex rounded-full bg-stone-950 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white ring-2 ring-white/70 shadow-lg shadow-stone-950/40";
           badge.textContent = "Sold Out";
           badgeRow.append(badge);
-        } else if (open <= 10) {
-          const badge = document.createElement("span");
-          badge.setAttribute("data-last-seats-badge", "");
-          badge.className = "inline-flex animate-pulse rounded-full bg-rose-600 px-2.5 py-1 text-[11px] font-bold text-white ring-2 ring-white/70 shadow-lg shadow-rose-700/40";
-          badge.textContent = "Last seats!";
-          badgeRow.append(badge);
         }
       }
       const buyButton = card.querySelector("[data-buy-tickets]");
       if (open <= 0 && buyButton) {
-        const sold = document.createElement("button");
-        sold.type = "button";
-        sold.disabled = true;
-        sold.className = "inline-flex cursor-not-allowed items-center justify-center rounded-full bg-white/20 px-4 py-2 text-sm font-semibold text-white ring-1 ring-white/40";
-        sold.textContent = "Sold Out";
-        buyButton.replaceWith(sold);
+        const wrap = buyButton.closest(".event-card__cta");
+        if (wrap) wrap.remove();
+        else buyButton.remove();
       }
     }
 

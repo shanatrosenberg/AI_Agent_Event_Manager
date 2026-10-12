@@ -8,20 +8,50 @@ from sqlalchemy import inspect, text
 
 from extensions import db
 
-HALL_LAYOUTS: dict[int, dict[str, int]] = {
-    50: {"rows": 5, "cols": 10, "aisle_after": 5},
-    100: {"rows": 10, "cols": 10, "aisle_after": 5},
-    300: {"rows": 15, "cols": 20, "aisle_after": 10},
+HALL_LAYOUTS: dict[int, dict[str, object]] = {
+    50: {
+        "rows": 5,
+        "cols": 10,
+        "aisles_after": [5],
+        "sections": (("Left", 5), ("Right", 5)),
+    },
+    100: {
+        "rows": 10,
+        "cols": 10,
+        "aisles_after": [],
+        "row_aisles_after": [5],
+        "sections": (),
+    },
+    300: {
+        "rows": 15,
+        "cols": 20,
+        "aisles_after": [6, 14],
+        "row_aisles_after": [7],
+        "sections": (("Left", 6), ("Center", 8), ("Right", 6)),
+    },
 }
 
 
-def hall_layout(capacity: int | None) -> dict[str, int]:
+def hall_layout(capacity: int | None) -> dict[str, object]:
     if capacity in HALL_LAYOUTS:
-        return dict(HALL_LAYOUTS[capacity])
+        layout = dict(HALL_LAYOUTS[capacity])
+        aisles = list(layout.get("aisles_after") or [])
+        layout["aisles_after"] = aisles
+        layout["aisle_after"] = aisles[0] if aisles else 0
+        layout["row_aisles_after"] = list(layout.get("row_aisles_after") or [])
+        return layout
     total = max(0, int(capacity or 0))
     cols = 10
     rows = max(1, (total + cols - 1) // cols) if total else 1
-    return {"rows": rows, "cols": cols, "aisle_after": cols // 2}
+    aisle = cols // 2
+    return {
+        "rows": rows,
+        "cols": cols,
+        "aisles_after": [aisle],
+        "aisle_after": aisle,
+        "row_aisles_after": [rows // 2] if rows > 2 else [],
+        "sections": (("Left", aisle), ("Right", cols - aisle)),
+    }
 
 
 def seat_id(row_index: int, col_index: int) -> str:
@@ -32,8 +62,8 @@ def hall_seat_ids(capacity: int | None) -> list[str]:
     layout = hall_layout(capacity)
     seats: list[str] = []
     total = int(capacity or 0)
-    for row in range(layout["rows"]):
-        for col in range(layout["cols"]):
+    for row in range(int(layout["rows"])):
+        for col in range(int(layout["cols"])):
             if len(seats) >= total:
                 return seats
             seats.append(seat_id(row, col))
@@ -109,9 +139,10 @@ def seating_map_payload(event) -> dict[str, Any]:
     layout = hall_layout(event.capacity)
     taken = reserved_seat_ids(event)
     seats = []
+    cols = int(layout["cols"])
     for index, label in enumerate(hall_seat_ids(event.capacity)):
-        row = index // layout["cols"]
-        col = index % layout["cols"]
+        row = index // cols
+        col = index % cols
         seats.append(
             {
                 "id": label,
@@ -120,13 +151,22 @@ def seating_map_payload(event) -> dict[str, Any]:
                 "available": label not in taken,
             }
         )
+    aisles = [int(item) for item in (layout.get("aisles_after") or []) if int(item) > 0]
+    row_aisles = [int(item) for item in (layout.get("row_aisles_after") or []) if int(item) > 0]
+    sections = [
+        {"name": name, "cols": int(width)}
+        for name, width in (layout.get("sections") or ())
+    ]
     return {
         "event_id": event.id,
         "capacity": event.capacity,
         "hall_label": event.hall_label,
         "rows": layout["rows"],
         "cols": layout["cols"],
-        "aisle_after": layout["aisle_after"],
+        "aisle_after": aisles[0] if aisles else 0,
+        "aisles_after": aisles,
+        "row_aisles_after": row_aisles,
+        "sections": sections,
         "taken": sorted(taken),
         "available_count": event.remaining_seats,
         "seats": seats,

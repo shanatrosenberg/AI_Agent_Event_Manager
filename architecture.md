@@ -20,11 +20,11 @@ The system is built using a Python Flask backend, structured around clean archit
 * **Model Context Protocol (MCP):** An in-process MCP server/client (`mcp/`) exposes tools the Deep Agent can invoke. `tavily_web_speaker_search` runs a live Tavily query of speaker name + talk title (`services/tavily.py`, `TAVILY_API_KEY`) and stores snippets plus a "Verified via Tavily Web Search" badge on the proposal. `venue_capacity_validator` checks hall sizes (50/100/300) and schedule conflicts. `python scripts/run_mcp_server.py` serves the same tools over stdio JSON-RPC. Pytest stays offline.
 
 ## 5. Attendee Hall Seating
-* **Layout:** `services/seating.py` builds a grid from hall capacity (50 = 5×10, 100 = 10×10, 300 = 15×20) with labels such as `A1`.
+* **Layout:** `services/seating.py` builds a grid from hall capacity (50 = 5×10, 100 = 10×10 with a mid-house cross-aisle only, 300 = 15×20 in Left / Center / Right blocks with a mid-house cross-aisle) with labels such as `A1`.
 * **Read model:** `GET /api/attendee/events/<id>/seats` returns the map plus taken IDs from confirmed bookings.
 * **Command:** `RegisterAttendee` accepts `seat_ids`, rejects unknown or already reserved seats, stores them on `bookings.seat_labels`, and increments `events.seats_booked`. Quantity-only bookings auto-assign the next open seats. `SeatReserved` includes the seat IDs.
 
 ## 6. Event program states
-* Approved events stay on the attendee catalog. Remaining seats drive **Last seats!** (1–10 open) and **Sold Out** (0 open).
+* Approved events stay on the attendee catalog. Remaining seats drive a **LAST SEATS** ribbon (1–10 open) and **Sold Out** (0 open).
 * `events.status` also stores `cancelled` and `deleted`. Attendee browse hides both. Organizers keep them for history. `DELETE /api/organizer/events/<id>` is a soft delete (`status=deleted`) rather than a hard row remove.
 * `python scripts/seed.py --reset` (or `flask --app main seed`) loads a realistic program covering open, last-seat, sold-out, cancelled, and deleted sessions.

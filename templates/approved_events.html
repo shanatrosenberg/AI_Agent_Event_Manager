@@ -108,8 +108,8 @@
         if (typeof window.attachEventCover === "function") {
           window.attachEventCover(card, event.topic || event.title || "", event.id || event.title || "", event.description || "");
         }
-        if (typeof window.syncSoldRibbon === "function") {
-          window.syncSoldRibbon(card, remaining <= 0);
+        if (typeof window.syncCardRibbon === "function") {
+          window.syncCardRibbon(card, remaining);
         }
         const title = document.createElement("h3");
         title.className = "text-sm font-semibold text-stone-900";

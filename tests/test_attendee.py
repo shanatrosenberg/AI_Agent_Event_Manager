@@ -316,7 +316,8 @@ def test_browse_events_last_seats_and_sold_out_badges(client, attendee_headers, 
 
     page = client.get("/events")
     html = page.get_data(as_text=True)
-    assert "Last seats!" in html
+    assert "LAST SEATS" in html
+    assert "Last seats!" not in html
     assert "Only 3 left" not in html
     assert "seats open" not in html
     assert f"{last_seats['date']} | {last_seats['start_time']}" in html
@@ -552,6 +553,8 @@ def test_seat_map_matches_hall_capacity(client, created_event):
     assert body["seats"][0]["id"] == "A1"
     assert body["seats"][-1]["id"] == "E10"
     assert body["taken"] == []
+    assert body["aisles_after"] == [5]
+    assert [section["name"] for section in body["sections"]] == ["Left", "Right"]
     assert all(seat["available"] for seat in body["seats"])
 
 
@@ -650,5 +653,34 @@ def test_seat_map_for_large_hall(client, speaker_headers, event_payload):
     assert body["capacity"] == 300
     assert body["rows"] == 15
     assert body["cols"] == 20
+    assert body["aisles_after"] == [6, 14]
+    assert body["row_aisles_after"] == [7]
+    assert [section["name"] for section in body["sections"]] == ["Left", "Center", "Right"]
     assert len(body["seats"]) == 300
     assert body["seats"][-1]["id"] == "O20"
+
+
+def test_seat_map_for_medium_hall(client, speaker_headers, event_payload):
+    from tests.conftest import approve_talk_event
+
+    event = approve_talk_event(
+        client,
+        speaker_headers,
+        event_payload,
+        title="Studio Workshop",
+        date="2026-12-02",
+        start_time="11:00",
+        end_time="12:00",
+        capacity=100,
+    )
+    response = client.get(f"/api/attendee/events/{event['id']}/seats")
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["capacity"] == 100
+    assert body["rows"] == 10
+    assert body["cols"] == 10
+    assert body["aisles_after"] == []
+    assert body["row_aisles_after"] == [5]
+    assert body["sections"] == []
+    assert len(body["seats"]) == 100
+    assert body["seats"][-1]["id"] == "J10"
