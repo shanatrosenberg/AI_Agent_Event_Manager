@@ -266,6 +266,171 @@
   .event-card--photo .text-clay-700 { color: rgba(255,255,255,0.9) !important; }
   .event-card--photo [data-badge-row],
   .event-card--photo [data-sold-out-badge] { z-index: 3; }
+
+  .date-picker__pop {
+    position: fixed;
+    z-index: 80;
+    width: min(19.5rem, calc(100vw - 1.5rem));
+    padding: 0.85rem 0.85rem 0.7rem;
+    border-radius: 1.25rem;
+    border: 1px solid rgba(253, 186, 116, 0.55);
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(251,246,238,0.98) 100%);
+    box-shadow:
+      0 28px 54px -22px rgba(154, 52, 18, 0.38),
+      0 0 0 1px rgba(255,255,255,0.8) inset;
+    backdrop-filter: blur(16px);
+  }
+  .date-picker__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.65rem;
+  }
+  .date-picker__month {
+    margin: 0;
+    font-family: Fraunces, Georgia, serif;
+    font-size: 0.98rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: #1c1917;
+  }
+  .date-picker__nav {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 999px;
+    border: 1px solid #fde68a;
+    background: #fff;
+    color: #9a3412;
+    font-size: 1.05rem;
+    line-height: 1;
+    box-shadow: 0 1px 2px rgba(154, 52, 18, 0.06);
+    transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+  }
+  .date-picker__nav:hover {
+    background: #fffbeb;
+    border-color: #fbbf24;
+    transform: translateY(-1px);
+  }
+  .date-picker__weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    margin-bottom: 0.35rem;
+    text-align: center;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #a8a29e;
+  }
+  .date-picker__grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 0.12rem;
+  }
+  .date-picker__day {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    aspect-ratio: 1;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: #44403c;
+    font-size: 0.82rem;
+    font-weight: 600;
+    line-height: 1;
+    transition: background 0.16s ease, color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
+  }
+  .date-picker__day:hover {
+    background: #fff7ed;
+    color: #9a3412;
+  }
+  .date-picker__day.is-outside {
+    color: #d6d3d1;
+    font-weight: 500;
+  }
+  .date-picker__day.is-today:not(.is-selected) {
+    box-shadow: inset 0 0 0 1.5px #f59e0b;
+    color: #9a3412;
+  }
+  .date-picker__day.is-selected {
+    background: linear-gradient(180deg, #c2410c 0%, #9a3412 100%);
+    color: #fff;
+    box-shadow: 0 8px 16px -8px rgba(154, 52, 18, 0.55);
+  }
+  .date-picker__day.is-selected:hover {
+    background: linear-gradient(180deg, #c2410c 0%, #7c2d12 100%);
+    color: #fff;
+  }
+  .date-picker__footer {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 0.7rem;
+    padding-top: 0.55rem;
+    border-top: 1px solid rgba(253, 186, 116, 0.45);
+  }
+  .date-picker__today {
+    border: 0;
+    background: transparent;
+    color: #9a3412;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    padding: 0.2rem 0.15rem;
+  }
+  .date-picker__today:hover { text-decoration: underline; }
+
+  @keyframes btnSpin {
+    to { transform: rotate(360deg); }
+  }
+  .btn-busy {
+    position: relative !important;
+    pointer-events: none;
+  }
+  .btn-busy > * {
+    visibility: hidden;
+  }
+  .btn-busy::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: 1.05rem;
+    height: 1.05rem;
+    border-radius: 999px;
+    border: 2.2px solid rgba(154, 52, 18, 0.22);
+    border-top-color: #9a3412;
+    animation: btnSpin 0.7s linear infinite;
+  }
+  .btn-busy.bg-clay-600::after,
+  .btn-busy.from-clay-600::after,
+  .btn-busy.bg-rose-700::after,
+  .event-card__cta-btn.btn-busy::after,
+  button.btn-busy[class*="from-clay-600"]::after,
+  button.btn-busy[class*="bg-clay-600"]::after,
+  button.btn-busy[class*="bg-rose-"]::after {
+    border-color: rgba(255,255,255,0.28);
+    border-top-color: #fff;
+  }
+
+  [role="status"],
+  [role="alert"],
+  #status,
+  [id$="-status"],
+  [id$="-form-status"] {
+    transition: opacity 0.32s ease, transform 0.32s ease;
+  }
+  .status-leaving {
+    opacity: 0;
+    transform: translateY(-6px);
+    pointer-events: none;
+  }
 </style>
 <script>
   (function () {
@@ -362,5 +527,342 @@
     window.attachEventCover = attachEventCover;
     window.syncSoldRibbon = syncSoldRibbon;
     window.syncCardRibbon = syncCardRibbon;
+  })();
+</script>
+<script>
+  (function () {
+    const WEEKDAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+    const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+    function parseISO(value) {
+      const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value || "").trim());
+      if (!match) return null;
+      return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+    }
+    function toISO(date) {
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    }
+    function formatDisplay(date) {
+      return `${String(date.getDate()).padStart(2, "0")}/${String(date.getMonth() + 1).padStart(2, "0")}/${date.getFullYear()}`;
+    }
+    function sameDay(a, b) {
+      return a && b && a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+    }
+    function syncDisplay(root) {
+      const input = root.querySelector("[data-date-value]");
+      const label = root.querySelector("[data-date-label]");
+      if (!input || !label) return;
+      const selected = parseISO(input.value);
+      if (selected) {
+        label.textContent = formatDisplay(selected);
+        label.classList.remove("text-stone-400");
+        label.classList.add("text-stone-800");
+      } else {
+        label.textContent = "Select a date";
+        label.classList.add("text-stone-400");
+        label.classList.remove("text-stone-800");
+      }
+    }
+    function pickerPop(root) {
+      return (root && root._pop) || (root && root.querySelector(".date-picker__pop"));
+    }
+    function renderCalendar(root, viewDate) {
+      const pop = pickerPop(root);
+      const input = root.querySelector("[data-date-value]");
+      const selected = parseISO(input && input.value);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const year = viewDate.getFullYear();
+      const month = viewDate.getMonth();
+      const startOffset = new Date(year, month, 1).getDay();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const prevDays = new Date(year, month, 0).getDate();
+      const cells = [];
+      for (let i = 0; i < startOffset; i += 1) {
+        cells.push({ date: new Date(year, month - 1, prevDays - startOffset + 1 + i), outside: true });
+      }
+      for (let day = 1; day <= daysInMonth; day += 1) {
+        cells.push({ date: new Date(year, month, day), outside: false });
+      }
+      while (cells.length < 42) {
+        cells.push({ date: new Date(year, month + 1, cells.length - startOffset - daysInMonth + 1), outside: true });
+      }
+      pop.innerHTML = `
+        <div class="date-picker__chrome">
+          <div class="date-picker__header">
+            <button type="button" data-cal-nav="-1" class="date-picker__nav" aria-label="Previous month" data-no-spinner>&lsaquo;</button>
+            <p class="date-picker__month">${MONTHS[month]} ${year}</p>
+            <button type="button" data-cal-nav="1" class="date-picker__nav" aria-label="Next month" data-no-spinner>&rsaquo;</button>
+          </div>
+          <div class="date-picker__weekdays">${WEEKDAYS.map((day) => `<span>${day}</span>`).join("")}</div>
+          <div class="date-picker__grid">${cells.map((cell) => {
+            const iso = toISO(cell.date);
+            const classes = ["date-picker__day"];
+            if (cell.outside) classes.push("is-outside");
+            if (sameDay(cell.date, today)) classes.push("is-today");
+            if (selected && sameDay(cell.date, selected)) classes.push("is-selected");
+            return `<button type="button" class="${classes.join(" ")}" data-cal-day="${iso}" aria-label="${iso}" data-no-spinner>${cell.date.getDate()}</button>`;
+          }).join("")}</div>
+          <div class="date-picker__footer">
+            <button type="button" data-cal-today class="date-picker__today" data-no-spinner>Today</button>
+          </div>
+        </div>`;
+      pop._viewDate = new Date(year, month, 1);
+    }
+    function ownerRoot(pop) {
+      return pop && (pop._owner || pop.closest("[data-date-picker]"));
+    }
+    function closePickers(except) {
+      document.querySelectorAll(".date-picker__pop").forEach((pop) => {
+        const root = ownerRoot(pop);
+        if (!root || root === except) return;
+        root.classList.remove("is-open");
+        pop.hidden = true;
+        pop.classList.add("hidden");
+        if (pop._owner && pop.parentElement === document.body) {
+          pop._owner.appendChild(pop);
+        }
+        root.querySelector(".date-picker__trigger")?.setAttribute("aria-expanded", "false");
+      });
+    }
+    function placePop(trigger, pop) {
+      const rect = trigger.getBoundingClientRect();
+      const width = Math.min(312, window.innerWidth - 24);
+      pop.style.width = `${width}px`;
+      const popH = pop.offsetHeight || 340;
+      const left = Math.min(Math.max(12, rect.left), window.innerWidth - width - 12);
+      const below = rect.bottom + 8;
+      const above = rect.top - popH - 8;
+      const top = (below + popH > window.innerHeight - 12 && above > 12) ? above : Math.min(below, window.innerHeight - popH - 12);
+      pop.style.left = `${left}px`;
+      pop.style.top = `${Math.max(12, top)}px`;
+    }
+    function openPicker(root) {
+      closePickers(root);
+      const input = root.querySelector("[data-date-value]");
+      const pop = root.querySelector(".date-picker__pop");
+      const trigger = root.querySelector(".date-picker__trigger");
+      const selected = parseISO(input && input.value) || new Date();
+      pop._owner = root;
+      root._pop = pop;
+      document.body.appendChild(pop);
+      renderCalendar(root, new Date(selected.getFullYear(), selected.getMonth(), 1));
+      pop.hidden = false;
+      pop.classList.remove("hidden");
+      root.classList.add("is-open");
+      trigger?.setAttribute("aria-expanded", "true");
+      placePop(trigger, pop);
+    }
+    function selectDate(root, iso) {
+      const input = root.querySelector("[data-date-value]");
+      if (!input) return;
+      input.value = iso;
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+      syncDisplay(root);
+      closePickers();
+    }
+
+    document.addEventListener("click", (event) => {
+      const trigger = event.target.closest(".date-picker__trigger");
+      if (trigger) {
+        const root = trigger.closest("[data-date-picker]");
+        if (root.classList.contains("is-open")) closePickers();
+        else openPicker(root);
+        return;
+      }
+      const nav = event.target.closest("[data-cal-nav]");
+      if (nav) {
+        const pop = nav.closest(".date-picker__pop");
+        const root = ownerRoot(pop);
+        const current = pop._viewDate || new Date();
+        renderCalendar(root, new Date(current.getFullYear(), current.getMonth() + Number(nav.getAttribute("data-cal-nav")), 1));
+        placePop(root.querySelector(".date-picker__trigger"), pop);
+        return;
+      }
+      const todayBtn = event.target.closest("[data-cal-today]");
+      if (todayBtn) {
+        selectDate(ownerRoot(todayBtn.closest(".date-picker__pop")), toISO(new Date()));
+        return;
+      }
+      const dayBtn = event.target.closest("[data-cal-day]");
+      if (dayBtn) {
+        selectDate(ownerRoot(dayBtn.closest(".date-picker__pop")), dayBtn.getAttribute("data-cal-day"));
+        return;
+      }
+      if (!event.target.closest(".date-picker__pop") && !event.target.closest("[data-date-picker]")) {
+        closePickers();
+      }
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") closePickers();
+    });
+    document.addEventListener("reset", (event) => {
+      requestAnimationFrame(() => {
+        event.target.querySelectorAll("[data-date-picker]").forEach(syncDisplay);
+      });
+    });
+    window.addEventListener("resize", () => {
+      document.querySelectorAll("[data-date-picker].is-open").forEach((root) => {
+        placePop(root.querySelector(".date-picker__trigger"), root.querySelector(".date-picker__pop"));
+      });
+    });
+    document.querySelectorAll("[data-date-picker]").forEach(syncDisplay);
+
+    const nativeFetch = window.fetch.bind(window);
+    let armedButton = null;
+    let pendingFetches = 0;
+    function setButtonBusy(button, busy) {
+      if (!button) return;
+      button.classList.toggle("btn-busy", busy);
+      if (busy) {
+        button.setAttribute("aria-busy", "true");
+        if (button.dataset.wasDisabled == null) button.dataset.wasDisabled = button.disabled ? "1" : "0";
+        window.setTimeout(() => {
+          if (button.classList.contains("btn-busy")) button.disabled = true;
+        }, 0);
+      } else {
+        button.removeAttribute("aria-busy");
+        if (button.dataset.wasDisabled !== "1") button.disabled = false;
+        delete button.dataset.wasDisabled;
+      }
+    }
+    function isActionButton(button) {
+      if (!(button instanceof HTMLButtonElement) || button.disabled) return false;
+      if (button.hasAttribute("data-no-spinner") || button.closest("[data-date-picker], .date-picker__pop")) return false;
+      if (button.querySelector("[id$='-spinner']")) return false;
+      if (button.matches("[role='tab'], [data-tab], [data-kpi-tab], [data-invite-tab], [data-join-tab], [data-submission-filter], [data-event-filter]")) return false;
+      if (button.matches(".speaker-tab, .organizer-tab, .invite-tab, .join-customer-tab, .submission-filter, .event-log-filter, .app-modal-close")) return false;
+      const id = button.id || "";
+      if (/^(close-|cancel-|open-.*-chat|.*-chat-email-back|chat-alert-open|organizer-chat-alert-open|reset-filters)/.test(id)) return false;
+      const text = (button.textContent || "").replace(/\s+/g, " ").trim();
+      if (/^(More Details|← Inbox|Open chat|Today|All|Active|Rejected)$/i.test(text)) return false;
+      if (button.type === "submit") return true;
+      if (button.hasAttribute("data-buy-tickets") || button.classList.contains("event-card__cta-btn")) return true;
+      if (/(submit|send|search|confirm|approve|reject|restore|delete|cancel-event|book|reserve)/i.test(id)) return true;
+      return /^(Approve|Reject|Restore|Delete permanently|Cancel Event|Send reply|Send topic request|Submit Proposal|Buy Tickets|Continue|Sign in|Sign in to dashboard|Create account|Search talks|Book seats|Reserve)$/i.test(text);
+    }
+    window.fetch = function () {
+      const result = nativeFetch.apply(this, arguments);
+      if (armedButton && result && typeof result.finally === "function") {
+        pendingFetches += 1;
+        const button = armedButton;
+        result.finally(() => {
+          pendingFetches -= 1;
+          if (pendingFetches < 1 && armedButton === button) {
+            setButtonBusy(button, false);
+            armedButton = null;
+          }
+        });
+      }
+      return result;
+    };
+    document.addEventListener("click", (event) => {
+      const button = event.target.closest("button");
+      if (!isActionButton(button)) return;
+      armedButton = button;
+      pendingFetches = 0;
+      setButtonBusy(button, true);
+      window.setTimeout(() => {
+        if (pendingFetches > 0 || armedButton !== button) return;
+        setButtonBusy(button, false);
+        if (armedButton === button) armedButton = null;
+      }, 280);
+    }, true);
+    document.addEventListener("submit", (event) => {
+      const button = event.submitter || event.target.querySelector('button[type="submit"]');
+      if (button && isActionButton(button)) {
+        setButtonBusy(button, true);
+        armedButton = button;
+      }
+      window.setTimeout(() => {
+        if (event.defaultPrevented) {
+          event.target.dataset.jsHandled = "1";
+          if (pendingFetches < 1 && armedButton === button) {
+            window.setTimeout(() => {
+              if (pendingFetches < 1 && armedButton === button) {
+                setButtonBusy(button, false);
+                armedButton = null;
+              }
+            }, 160);
+          }
+          return;
+        }
+        armedButton = null;
+      }, 0);
+    }, true);
+    window.setButtonBusy = setButtonBusy;
+  })();
+</script>
+<script>
+  (function () {
+    const HOLD_MS = 6000;
+    const FADE_MS = 320;
+    const timers = new WeakMap();
+
+    function isBanner(el) {
+      if (!(el instanceof HTMLElement)) return false;
+      if (el.closest("[role='alertdialog'], [id$='-chat-alert-popup']")) return false;
+      return el.matches('[role="status"], [role="alert"], #status, [id$="-status"], [id$="-form-status"]');
+    }
+
+    function isVisible(el) {
+      if (!el || el.hidden || el.classList.contains("hidden") || el.classList.contains("status-leaving")) return false;
+      return Boolean(el.textContent && el.textContent.trim());
+    }
+
+    function hideBanner(el) {
+      const current = timers.get(el) || {};
+      current.pending = false;
+      el.classList.add("status-leaving");
+      const fade = window.setTimeout(() => {
+        el.hidden = true;
+        el.classList.add("hidden");
+        el.classList.remove("status-leaving");
+        el.setAttribute("aria-hidden", "true");
+      }, FADE_MS);
+      current.fade = fade;
+      timers.set(el, current);
+    }
+
+    function armStatusDismiss(el) {
+      if (!isBanner(el) || !isVisible(el)) return;
+      const text = el.textContent.trim();
+      const prior = timers.get(el);
+      if (prior && prior.pending && prior.text === text) return;
+      if (prior) {
+        window.clearTimeout(prior.hold);
+        window.clearTimeout(prior.fade);
+      }
+      el.classList.remove("status-leaving");
+      el.removeAttribute("aria-hidden");
+      const hold = window.setTimeout(() => hideBanner(el), HOLD_MS);
+      timers.set(el, { hold, fade: 0, text, pending: true });
+    }
+
+    function consider(node) {
+      if (node instanceof Element && isBanner(node)) armStatusDismiss(node);
+    }
+
+    window.armStatusDismiss = armStatusDismiss;
+    window.STATUS_DISMISS_MS = HOLD_MS;
+
+    const observer = new MutationObserver((records) => {
+      records.forEach((record) => {
+        if (record.type === "childList") {
+          record.addedNodes.forEach(consider);
+        }
+        if (record.type === "attributes") consider(record.target);
+        if (record.type === "characterData") consider(record.target.parentElement);
+      });
+    });
+    observer.observe(document.documentElement, {
+      subtree: true,
+      childList: true,
+      characterData: true,
+      attributes: true,
+      attributeFilter: ["hidden", "class"],
+    });
+    document.querySelectorAll('[role="status"], [role="alert"], #status, [id$="-status"], [id$="-form-status"]').forEach(armStatusDismiss);
   })();
 </script>

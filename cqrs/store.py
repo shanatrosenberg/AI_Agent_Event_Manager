@@ -15,8 +15,8 @@ from services.auth import ROLE_MODELS, create_account, find_account, get_account
 from services.scheduling import (
     APPROVED_STATUSES,
     BOOKABLE_STATUSES,
+    CANCELLED_STATUS,
     DELETED_STATUS,
-    ORGANIZER_EVENT_STATUSES,
     clocks_overlap,
     has_occurred,
 )
@@ -168,7 +168,7 @@ class EventStore:
         self.purge_expired_rejections()
         return (
             Event.query.filter_by(organizer_id=organizer_id)
-            .filter(Event.status.in_(ORGANIZER_EVENT_STATUSES))
+            .filter(Event.status.in_(APPROVED_STATUSES))
             .order_by(Event.date.asc(), Event.start_time.asc(), Event.title.asc())
             .all()
         )
@@ -217,15 +217,37 @@ class EventStore:
             .all()
         )
 
-    def speaker_event_payload(self, event: Event) -> dict:
+    def event_program_payload(self, event: Event) -> dict:
         payload = event.to_dict()
         submission = self.get_submission_by_event_id(event.id)
+        assessment = submission._assessment_payload() if submission else {}
+        sold = int(event.seats_booked or 0)
+        remaining = int(event.remaining_seats)
         payload["abstract"] = (
             (submission.abstract if submission and submission.abstract else None)
             or event.description
             or ""
         )
+        payload["topic"] = ((submission.category if submission else None) or "").strip()
+        payload["ai_summary"] = str(
+            assessment.get("uniqueness_summary") or assessment.get("summary") or ""
+        ).strip()
+        payload["innovation_score"] = assessment.get("innovation_score")
+        payload["innovation_badge"] = assessment.get("innovation_badge")
+        from services.seating import hall_configuration
+
+        payload["hall_configuration"] = hall_configuration(event.capacity)
+        payload["sold_seats"] = sold
+        payload["open_seats"] = remaining
+        payload["seats_label"] = f"{remaining} open / {sold} sold"
+        payload["speaker"] = {
+            "id": event.speaker_id,
+            "name": payload.get("speaker_name") or event.speaker_id,
+        }
         return payload
+
+    def speaker_event_payload(self, event: Event) -> dict:
+        return self.event_program_payload(event)
 
     def get_submission(self, submission_id: str) -> TalkSubmission | None:
         return db.session.get(TalkSubmission, submission_id)
@@ -268,6 +290,28 @@ class EventStore:
             .all()
         )
         return [row for row in rows if not row.is_expired]
+
+    def list_cancelled_events(self, organizer_id: str) -> list[Event]:
+        return (
+            Event.query.filter_by(organizer_id=organizer_id)
+            .filter(Event.status == CANCELLED_STATUS)
+            .order_by(Event.date.desc(), Event.title.asc())
+            .all()
+        )
+
+    def list_trash_items(self, organizer_id: str) -> list[dict]:
+        items = [row.to_dict() for row in self.list_rejected_submissions(organizer_id)]
+        seen_events = {item.get("event_id") for item in items if item.get("event_id")}
+        for event in self.list_cancelled_events(organizer_id):
+            if event.id in seen_events:
+                continue
+            payload = event.to_dict()
+            payload["kind"] = "cancelled_event"
+            payload["event_id"] = event.id
+            payload["display_status"] = "Cancelled"
+            payload["restores_to"] = None
+            items.append(payload)
+        return items
 
     def purge_expired_rejections(self) -> int:
         expired = [

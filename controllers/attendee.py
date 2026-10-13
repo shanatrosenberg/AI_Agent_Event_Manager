@@ -19,6 +19,7 @@ from extensions import db
 from models.event import Event
 from models.submission import TalkSubmission
 from services.auth import current_user, establish_session
+from services.chat import list_messages_for
 from services.embeddings import cosine_similarity, embed_text, proposal_document
 from services.event_covers import cover_image_url
 from services.seating import normalize_seat_ids, seating_map_payload
@@ -243,6 +244,19 @@ def _book_seats(attendee_id: str, event_id: str, seats: int, seat_ids: list[str]
             seat_ids=seat_ids or None,
         )
     )
+
+
+@attendee_bp.route("/messages", methods=["GET"])
+def list_messages():
+    attendee_id = _attendee_id()
+    if not attendee_id:
+        return _validation_error("Sign in as an attendee to view messages")
+    return jsonify(
+        {
+            "attendee_id": attendee_id,
+            "messages": list_messages_for(attendee_id, "attendee"),
+        }
+    ), 200
 
 
 @attendee_bp.route("/events", methods=["GET"])

@@ -48,6 +48,17 @@
     <p class="mt-4 text-sm font-medium text-stone-500">Signed in as {{ attendee_name }}.</p>
     {% endif %}
 
+    {% if messages %}
+    <section id="ticket-messages" class="mt-8 space-y-3" aria-label="Cancellation notices">
+      {% for note in messages %}
+      <article class="rounded-2xl border border-rose-200 bg-rose-50/80 px-5 py-4 text-sm text-rose-900">
+        <p class="text-[11px] font-semibold uppercase tracking-wide text-rose-700">Cancellation notice</p>
+        <p class="mt-1 leading-relaxed">{{ note.body }}</p>
+      </article>
+      {% endfor %}
+    </section>
+    {% endif %}
+
     {% if tickets %}
     <section id="tickets-grid" class="mt-10 grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
       {% for event in tickets %}

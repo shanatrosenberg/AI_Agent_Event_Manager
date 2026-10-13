@@ -3,6 +3,7 @@ from flask import Blueprint, current_app, jsonify, request
 from cqrs import (
     AssessPendingTalksCommand,
     ApproveTalkCommand,
+    CancelEventCommand,
     DeleteEventCommand,
     DeleteRejectedTalkCommand,
     DisapproveEventCommand,
@@ -22,6 +23,7 @@ from cqrs import (
     UpdateEventCommand,
     assess_pending_talks_handler,
     approve_talk_handler,
+    cancel_event_handler,
     delete_event_handler,
     delete_rejected_talk_handler,
     disapprove_event_handler,
@@ -46,6 +48,7 @@ from extensions import db
 from models.talk_request import AWAITING_STATUSES, CONFIRMED_STATUSES
 from controllers.search import run_semantic_search
 from services.auth import admin_organizer_id, current_user
+from services.chat import list_messages_for, list_thread, mark_messages_read, send_reply, unread_count_for
 
 organizer_bp = Blueprint("organizer", __name__, url_prefix="/api/organizer")
 
@@ -152,7 +155,20 @@ def list_events():
     events = list_organizer_events_handler.handle(
         ListOrganizerEventsQuery(organizer_id=organizer_id)
     )
-    return jsonify([event.to_dict() for event in events]), 200
+    return jsonify([event_store.event_program_payload(event) for event in events]), 200
+
+
+@organizer_bp.route("/events/<event_id>", methods=["GET"])
+def get_event(event_id: str):
+    organizer_id = _organizer_id()
+    if not organizer_id:
+        return _validation_error("organizer_id is required (sign in as admin, or send X-Organizer-Id in tests)")
+    event = event_store.get_event(str(event_id or "").strip())
+    if event is None:
+        return _validation_error("event not found", status=404)
+    if event.organizer_id != organizer_id:
+        return _validation_error("event does not belong to this organizer", status=403)
+    return jsonify(event_store.event_program_payload(event)), 200
 
 
 @organizer_bp.route("/event-log", methods=["GET"])
@@ -394,7 +410,7 @@ def reject_submission(submission_id: str):
 def list_trash():
     organizer_id = _organizer_id() or admin_organizer_id()
     items = list_trash_handler.handle(ListTrashQuery(organizer_id=organizer_id))
-    return jsonify([item.to_dict() for item in items]), 200
+    return jsonify([item if isinstance(item, dict) else item.to_dict() for item in items]), 200
 
 
 @organizer_bp.route("/trash/<submission_id>/restore", methods=["POST"])
@@ -421,6 +437,77 @@ def delete_trash(submission_id: str):
         db.session.rollback()
         return _validation_error(exc.message, status=exc.status)
     return jsonify(payload), 200
+
+
+@organizer_bp.route("/messages", methods=["GET"])
+def list_messages():
+    organizer_id = _organizer_id() or admin_organizer_id()
+    return jsonify(
+        {
+            "organizer_id": organizer_id,
+            "messages": list_messages_for(organizer_id, "organizer"),
+            "unread_count": unread_count_for(organizer_id, "organizer"),
+        }
+    ), 200
+
+
+@organizer_bp.route("/messages", methods=["POST"])
+def reply_to_message():
+    organizer_id = _organizer_id() or admin_organizer_id()
+    payload = request.get_json(silent=True) or {}
+    try:
+        row = send_reply(
+            organizer_id,
+            "organizer",
+            str(payload.get("body") or ""),
+            parent_id=str(payload.get("parent_id") or payload.get("message_id") or "").strip() or None,
+            event_id=str(payload.get("event_id") or "").strip() or None,
+        )
+    except ValueError as exc:
+        return _validation_error(str(exc))
+    db.session.commit()
+    thread_id = row.parent_id or row.id
+    return jsonify(
+        {
+            "organizer_id": organizer_id,
+            "message": row.to_dict(viewer_id=organizer_id, viewer_role="organizer"),
+            "thread": list_thread(thread_id, organizer_id, "organizer"),
+            "unread_count": unread_count_for(organizer_id, "organizer"),
+        }
+    ), 201
+
+
+@organizer_bp.route("/messages/read", methods=["POST"])
+def mark_messages_as_read():
+    organizer_id = _organizer_id() or admin_organizer_id()
+    payload = request.get_json(silent=True) or {}
+    message_id = str(payload.get("message_id") or payload.get("id") or "").strip() or None
+    marked = mark_messages_read(organizer_id, "organizer", message_id=message_id)
+    db.session.commit()
+    return jsonify(
+        {
+            "organizer_id": organizer_id,
+            "marked": marked,
+            "unread_count": unread_count_for(organizer_id, "organizer"),
+            "messages": list_messages_for(organizer_id, "organizer"),
+            "thread": list_thread(message_id, organizer_id, "organizer") if message_id else [],
+        }
+    ), 200
+
+
+@organizer_bp.route("/events/<event_id>/cancel", methods=["POST"])
+def cancel_event(event_id: str):
+    organizer_id = _organizer_id()
+    if not organizer_id:
+        return _validation_error("organizer_id is required (sign in as admin, or send X-Organizer-Id in tests)")
+    try:
+        event = cancel_event_handler.handle(
+            CancelEventCommand(organizer_id=str(organizer_id), event_id=str(event_id).strip())
+        )
+    except DomainError as exc:
+        db.session.rollback()
+        return _validation_error(exc.message, status=exc.status)
+    return jsonify(event.to_dict()), 200
 
 
 @organizer_bp.route("/events/<event_id>/reject", methods=["POST"])

@@ -3,6 +3,7 @@ from uuid import uuid4
 
 from models.booking import Booking
 from models.event import Event
+from services.scheduling import APPROVED_STATUSES, CANCELLED_STATUS, DELETED_STATUS
 from models.submission import (
     DEFAULT_REJECTION_MESSAGE,
     TalkSubmission,
@@ -850,6 +851,72 @@ class DeleteRejectedTalkHandler:
         except Exception:
             pass
         return payload
+
+
+@dataclass
+class CancelEventCommand:
+    event_id: str
+    organizer_id: str | None = None
+    speaker_id: str | None = None
+
+
+class CancelEventHandler:
+    def __init__(self, store: EventStore) -> None:
+        self._store = store
+
+    def handle(self, command: CancelEventCommand) -> Event:
+        event = self._store.get_event(command.event_id)
+        if event is None:
+            raise DomainError("event not found", status=404)
+        speaker_id = (command.speaker_id or "").strip()
+        if speaker_id:
+            if event.speaker_id != speaker_id:
+                raise DomainError("event does not belong to this speaker", status=403)
+            cancelled_by = "speaker"
+        else:
+            organizer_id = command.organizer_id or admin_organizer_id()
+            if event.organizer_id != organizer_id:
+                raise DomainError("event does not belong to this organizer", status=403)
+            cancelled_by = "organizer"
+        if event.status in {CANCELLED_STATUS, DELETED_STATUS}:
+            raise DomainError("event is already cancelled", status=409)
+        if event.status not in APPROVED_STATUSES:
+            raise DomainError("only approved events can be cancelled", status=409)
+
+        bookings = Booking.query.filter_by(event_id=event.id, status="confirmed").all()
+        attendee_ids = [booking.attendee_id for booking in bookings if booking.attendee_id]
+        refunded = 0
+        for booking in bookings:
+            booking.status = "refunded"
+            refunded += 1
+        event.status = CANCELLED_STATUS
+        event.seats_booked = 0
+        self._store.append("EventCancelled", event.to_dict())
+
+        from services.chat import notify_event_cancelled
+
+        notices = notify_event_cancelled(
+            event,
+            attendee_ids=attendee_ids,
+            speaker_id=event.speaker_id,
+            cancelled_by=cancelled_by,
+        )
+        self._store.append(
+            "ChatNotified",
+            {
+                "id": event.id,
+                "event_id": event.id,
+                "title": event.title,
+                "status": event.status,
+                "refunded_bookings": refunded,
+                "attendee_count": notices["attendee_count"],
+                "speaker_notified": notices["speaker_notified"],
+                "organizer_notified": notices.get("organizer_notified", False),
+                "cancelled_by": cancelled_by,
+            },
+        )
+        self._store.save_read_model(event)
+        return event
 
 
 @dataclass

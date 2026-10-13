@@ -10,7 +10,7 @@
 </head>
 <body class="min-h-screen bg-sand-50 font-sans text-stone-900 antialiased">
   <header class="sticky top-0 z-40 border-b border-amber-200/70 bg-sand-50/80 backdrop-blur-xl">
-    <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+    <div class="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
       <a href="{{ url_for('home') }}" class="flex items-center gap-3">
         <span class="flex h-10 w-10 items-center justify-center rounded-2xl bg-clay-600 text-white shadow-md shadow-orange-900/20">
           <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
@@ -27,7 +27,7 @@
     </div>
   </header>
 
-  <main class="mx-auto max-w-6xl px-6 py-10 sm:py-14">
+  <main class="mx-auto max-w-7xl px-6 py-10 sm:py-14">
     <p class="text-xs font-semibold uppercase tracking-[0.22em] text-clay-700">Program</p>
     <h1 class="font-display mt-3 text-3xl font-extrabold tracking-tight text-stone-900 sm:text-4xl">Approved events</h1>
     <p class="mt-3 max-w-2xl text-stone-600">
@@ -39,17 +39,17 @@
         No approved events yet.
       </p>
       <div id="approved-table-wrap" hidden class="hidden overflow-x-auto md:block">
-        <table class="min-w-full text-left">
+        <table class="w-full min-w-[64rem] table-auto text-left">
           <caption class="sr-only">Approved events</caption>
           <thead>
             <tr class="text-xs font-semibold uppercase tracking-wide text-stone-400">
-              <th scope="col" class="px-3 py-2 font-semibold">Event</th>
-              <th scope="col" class="px-3 py-2 font-semibold">Speaker</th>
-              <th scope="col" class="px-3 py-2 font-semibold">Date</th>
-              <th scope="col" class="px-3 py-2 font-semibold">Time</th>
-              <th scope="col" class="px-3 py-2 font-semibold">Hall</th>
-              <th scope="col" class="px-3 py-2 font-semibold">Open seats</th>
-              <th scope="col" class="px-3 py-2 font-semibold">Status</th>
+              <th scope="col" class="px-4 py-3 font-semibold">Event</th>
+              <th scope="col" class="whitespace-nowrap px-4 py-3 font-semibold">Speaker</th>
+              <th scope="col" class="w-[7.5rem] whitespace-nowrap px-4 py-3 font-semibold">Date</th>
+              <th scope="col" class="w-[9.5rem] whitespace-nowrap px-4 py-3 font-semibold">Time</th>
+              <th scope="col" class="whitespace-nowrap px-4 py-3 font-semibold">Hall</th>
+              <th scope="col" class="whitespace-nowrap px-4 py-3 font-semibold">Open/Sold Seats</th>
+              <th scope="col" class="whitespace-nowrap px-4 py-3 font-semibold">Status</th>
             </tr>
           </thead>
           <tbody id="approved-body" class="divide-y divide-amber-100"></tbody>
@@ -84,17 +84,28 @@
       cards.hidden = !hasEvents;
       events.forEach((event) => {
         const row = document.createElement("tr");
-        [
+        row.className = "align-middle";
+        const values = [
           event.title || "",
           event.speaker_name || event.speaker_id || "—",
           event.date || "",
           timeRange(event),
           event.hall_label || "",
-          String(event.remaining_seats ?? ""),
+          `${event.remaining_seats ?? 0} open / ${event.seats_booked ?? 0} sold`,
           event.display_status || "Approved",
-        ].forEach((value) => {
+        ];
+        const cellClasses = [
+          "min-w-[14rem] px-4 py-3.5 text-sm leading-5 text-stone-700",
+          "whitespace-nowrap px-4 py-3.5 text-sm text-stone-700",
+          "whitespace-nowrap px-4 py-3.5 text-sm tabular-nums text-stone-700",
+          "whitespace-nowrap px-4 py-3.5 text-sm tabular-nums text-stone-700",
+          "whitespace-nowrap px-4 py-3.5 text-sm text-stone-700",
+          "whitespace-nowrap px-4 py-3.5 text-sm text-stone-700",
+          "whitespace-nowrap px-4 py-3.5 text-sm text-stone-700",
+        ];
+        values.forEach((value, index) => {
           const cell = document.createElement("td");
-          cell.className = "px-3 py-3 text-sm text-stone-700";
+          cell.className = cellClasses[index];
           cell.textContent = value;
           row.append(cell);
         });

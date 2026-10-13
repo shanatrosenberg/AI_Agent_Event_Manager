@@ -1,5 +1,6 @@
 from flask import Blueprint, current_app, jsonify, request, session
 from cqrs import (
+    CancelEventCommand,
     ConfirmTalkCommand,
     ListSpeakerEventsQuery,
     ListSpeakerRequestsQuery,
@@ -7,6 +8,7 @@ from cqrs import (
     RespondToTalkRequestCommand,
     RestoreTalkCommand,
     SubmitTalkCommand,
+    cancel_event_handler,
     confirm_talk_handler,
     event_store,
     list_speaker_events_handler,
@@ -20,6 +22,13 @@ from cqrs.errors import DomainError
 from extensions import db
 from services.abstract_enhancer import enhance_abstract
 from services.auth import admin_organizer_id, current_user
+from services.chat import (
+    list_messages_for,
+    list_thread,
+    mark_messages_read,
+    send_reply,
+    unread_count_for,
+)
 from services.idea_hub import generate_talk_ideas, normalize_topic_query
 
 speaker_bp = Blueprint("speaker", __name__, url_prefix="/api/speaker")
@@ -221,6 +230,70 @@ def speaker_portal():
             "events": [event_store.speaker_event_payload(item) for item in events],
             "submissions": [item.to_dict() for item in submissions],
             "requests": [item.to_dict() for item in requests],
+            "messages": list_messages_for(speaker_id, "speaker"),
+            "unread_count": unread_count_for(speaker_id, "speaker"),
+        }
+    ), 200
+
+
+@speaker_bp.route("/messages", methods=["GET"])
+def list_messages():
+    speaker_id = _speaker_id()
+    if not speaker_id:
+        return _validation_error("Sign in as a speaker to view messages")
+    return jsonify(
+        {
+            "speaker_id": speaker_id,
+            "messages": list_messages_for(speaker_id, "speaker"),
+            "unread_count": unread_count_for(speaker_id, "speaker"),
+        }
+    ), 200
+
+
+@speaker_bp.route("/messages", methods=["POST"])
+def reply_to_message():
+    speaker_id = _speaker_id()
+    if not speaker_id:
+        return _validation_error("Sign in as a speaker to send a reply")
+    payload = request.get_json(silent=True) or {}
+    try:
+        row = send_reply(
+            speaker_id,
+            "speaker",
+            str(payload.get("body") or ""),
+            parent_id=str(payload.get("parent_id") or payload.get("message_id") or "").strip() or None,
+            event_id=str(payload.get("event_id") or "").strip() or None,
+        )
+    except ValueError as exc:
+        return _validation_error(str(exc))
+    db.session.commit()
+    thread_id = row.parent_id or row.id
+    return jsonify(
+        {
+            "speaker_id": speaker_id,
+            "message": row.to_dict(viewer_id=speaker_id, viewer_role="speaker"),
+            "thread": list_thread(thread_id, speaker_id, "speaker"),
+            "unread_count": unread_count_for(speaker_id, "speaker"),
+        }
+    ), 201
+
+
+@speaker_bp.route("/messages/read", methods=["POST"])
+def mark_messages_as_read():
+    speaker_id = _speaker_id()
+    if not speaker_id:
+        return _validation_error("Sign in as a speaker to update messages")
+    payload = request.get_json(silent=True) or {}
+    message_id = str(payload.get("message_id") or payload.get("id") or "").strip() or None
+    marked = mark_messages_read(speaker_id, "speaker", message_id=message_id)
+    db.session.commit()
+    return jsonify(
+        {
+            "speaker_id": speaker_id,
+            "marked": marked,
+            "unread_count": unread_count_for(speaker_id, "speaker"),
+            "messages": list_messages_for(speaker_id, "speaker"),
+            "thread": list_thread(message_id, speaker_id, "speaker") if message_id else [],
         }
     ), 200
 
@@ -237,6 +310,34 @@ def list_my_events():
             "events": [event_store.speaker_event_payload(item) for item in events],
         }
     ), 200
+
+
+@speaker_bp.route("/events/<event_id>", methods=["GET"])
+def get_my_event(event_id: str):
+    speaker_id = _speaker_id()
+    if not speaker_id:
+        return _validation_error("Sign in as a speaker to view confirmed events")
+    event = event_store.get_event(str(event_id or "").strip())
+    if event is None or event.speaker_id != speaker_id:
+        return _validation_error("event not found", status=404)
+    if event.status not in {"approved", "active"}:
+        return _validation_error("event not found", status=404)
+    return jsonify(event_store.speaker_event_payload(event)), 200
+
+
+@speaker_bp.route("/events/<event_id>/cancel", methods=["POST"])
+def cancel_my_event(event_id: str):
+    speaker_id = _speaker_id()
+    if not speaker_id:
+        return _validation_error("Sign in as a speaker to cancel an event")
+    try:
+        event = cancel_event_handler.handle(
+            CancelEventCommand(event_id=str(event_id).strip(), speaker_id=str(speaker_id))
+        )
+    except DomainError as exc:
+        db.session.rollback()
+        return _validation_error(exc.message, status=exc.status)
+    return jsonify(event_store.event_program_payload(event)), 200
 
 
 @speaker_bp.route("/submit", methods=["POST"])

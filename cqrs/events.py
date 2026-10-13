@@ -48,6 +48,7 @@ EVENT_LABELS = {
     "TalkRequestDeclined": "Invitation declined",
     "EventCreated": "Event created",
     "EventUpdated": "Event updated",
+    "EventCancelled": "Event cancelled",
     "EventDisapproved": "Event disapproved",
     "EventRestored": "Event restored",
     "EventDeleted": "Event deleted",
@@ -56,6 +57,7 @@ EVENT_LABELS = {
     "AccountRegistered": "Account registered",
     "UserLoggedIn": "User signed in",
     "SpeakerNotified": "Speaker notified",
+    "ChatNotified": "Cancellation notices sent",
 }
 
 

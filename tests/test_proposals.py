@@ -56,7 +56,7 @@ def test_pending_proposals_list_includes_details(client):
     assert match["category"] == "architecture"
     assert match["date"] == "2026-11-12"
     assert match["start_time"] == "11:00"
-    assert match["end_time"] == "12:00"
+    assert match["end_time"] == "12:30"
     assert match["capacity"] == 100
 
     detail = client.get(f"/api/organizer/proposals/{created['id']}")
@@ -255,8 +255,6 @@ def test_delete_event_removes_it_from_program(client):
     assert removed.status_code == 200
     assert removed.get_json()["id"] == event_id
     events = client.get("/api/organizer/events").get_json()
-    deleted = next(item for item in events if item["id"] == event_id)
-    assert deleted["status"] == "deleted"
-    assert deleted["display_status"] == "Deleted"
+    assert all(item["id"] != event_id for item in events)
     public = client.get("/api/attendee/approved").get_json()
     assert all(item["id"] != event_id for item in public)

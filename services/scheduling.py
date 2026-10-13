@@ -5,9 +5,9 @@ from datetime import date as date_cls, datetime, timezone
 
 HALL_CAPACITIES = (50, 100, 300)
 HALL_LABELS = {
-    50: "50 seats",
-    100: "100 seats",
-    300: "300 seats",
+    50: "Conference Room (50 seats)",
+    100: "Grand Hall (100 seats)",
+    300: "Main Auditorium (300 seats)",
 }
 BOOKABLE_STATUSES = ("active", "approved")
 APPROVED_STATUSES = ("approved", "active")
@@ -16,6 +16,10 @@ DELETED_STATUS = "deleted"
 REMOVED_STATUSES = (CANCELLED_STATUS, DELETED_STATUS)
 ORGANIZER_EVENT_STATUSES = APPROVED_STATUSES + REMOVED_STATUSES
 CLOCK_PATTERN = re.compile(r"^(\d{1,2}):(\d{2})(?::\d{2})?$")
+SLOT_MINUTES = 30
+SESSION_DURATION_MINUTES = 90
+FIRST_START_MINUTES = 8 * 60
+LAST_START_MINUTES = 22 * 60
 
 
 def hall_label(capacity: int | None) -> str:
@@ -39,6 +43,43 @@ def parse_clock(value: str, field_name: str) -> str:
 def clock_minutes(value: str) -> int:
     hour, minute = value.split(":", 1)
     return int(hour) * 60 + int(minute)
+
+
+def clock_from_minutes(total: int) -> str:
+    return f"{total // 60:02d}:{total % 60:02d}"
+
+
+def is_half_hour_slot(value: str) -> bool:
+    try:
+        return clock_minutes(parse_clock(value, "start_time")) % SLOT_MINUTES == 0
+    except ValueError:
+        return False
+
+
+def add_clock_minutes(value: str, minutes: int, field_name: str = "end_time") -> str:
+    total = clock_minutes(parse_clock(value, field_name)) + minutes
+    if total < 0 or total >= 24 * 60:
+        raise ValueError("end_time must stay on the same day")
+    return clock_from_minutes(total)
+
+
+def session_end_time(start_time: str) -> str:
+    start = parse_clock(start_time, "start_time")
+    if clock_minutes(start) % SLOT_MINUTES != 0:
+        raise ValueError("start_time must be on the hour or half hour.")
+    return add_clock_minutes(start, SESSION_DURATION_MINUTES)
+
+
+def start_time_slots() -> list[str]:
+    slots = []
+    for minutes in range(FIRST_START_MINUTES, LAST_START_MINUTES + 1, SLOT_MINUTES):
+        start = clock_from_minutes(minutes)
+        try:
+            session_end_time(start)
+        except ValueError:
+            continue
+        slots.append(start)
+    return slots
 
 
 def clocks_overlap(start_a: str, end_a: str, start_b: str, end_b: str) -> bool:
@@ -85,7 +126,7 @@ def normalize_schedule(date: str, start_time: str, end_time: str, capacity: int)
     if capacity not in HALL_CAPACITIES:
         raise ValueError("Hall capacity must be 50, 100, or 300 seats.")
     start = parse_clock(start_time, "start_time")
-    end = parse_clock(end_time, "end_time")
-    if clock_minutes(start) >= clock_minutes(end):
-        raise ValueError("end_time must be after start_time")
+    if clock_minutes(start) % SLOT_MINUTES != 0:
+        raise ValueError("start_time must be on the hour or half hour.")
+    end = session_end_time(start)
     return day, start, end, capacity

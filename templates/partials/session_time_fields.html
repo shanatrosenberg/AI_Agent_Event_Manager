@@ -1,0 +1,22 @@
+{% set start_id = start_id|default('start_time') %}
+{% set end_id = end_id|default('end_time') %}
+<div class="grid gap-4 sm:grid-cols-2">
+  <div>
+    <label for="{{ start_id }}" class="block text-sm font-medium text-stone-700">Start time</label>
+    <select id="{{ start_id }}" name="{{ start_id }}" required data-session-start class="mt-1.5 w-full appearance-none rounded-xl border border-amber-200 bg-sand-50 bg-[length:1rem] bg-[right_0.85rem_center] bg-no-repeat px-3.5 py-2.5 text-sm font-semibold tabular-nums text-stone-800 shadow-sm outline-none transition focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-100" style="background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23b45309'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='1.8' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E&quot;);">
+      <option value="">Select a start time</option>
+      {% for slot in start_time_slots %}
+      <option value="{{ slot }}">{{ slot }}</option>
+      {% endfor %}
+    </select>
+    <p class="mt-1 text-xs text-stone-400">Hours and half-hours only</p>
+  </div>
+  <div>
+    <label for="{{ end_id }}" class="block text-sm font-medium text-stone-700">End time</label>
+    <div class="mt-1.5 flex h-[42px] items-center justify-between gap-3 rounded-xl border border-amber-100 bg-gradient-to-r from-sand-50 to-amber-50/90 px-3.5 shadow-inner shadow-amber-900/5">
+      <span class="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-400">90 min</span>
+      <input id="{{ end_id }}" name="{{ end_id }}" type="text" readonly required tabindex="-1" data-session-end placeholder="—" aria-live="polite" class="w-24 cursor-default bg-transparent text-right text-sm font-bold tabular-nums text-clay-700 outline-none placeholder:font-medium placeholder:text-stone-300">
+    </div>
+    <p class="mt-1 text-xs text-stone-400">Set automatically from the start time</p>
+  </div>
+</div>

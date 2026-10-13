@@ -1,0 +1,27 @@
+{% set date_id = date_id|default('date') %}
+{% set date_name = date_name|default(date_id) %}
+{% set date_label = date_label|default('Date') %}
+{% set date_hint = date_hint|default('dd/mm/yyyy') %}
+<div class="date-picker relative" data-date-picker>
+  <label for="{{ date_id }}-trigger" class="block text-sm font-medium text-stone-700">{{ date_label }}</label>
+  <input type="hidden" id="{{ date_id }}" name="{{ date_name }}" required value="" data-date-value>
+  <button
+    type="button"
+    id="{{ date_id }}-trigger"
+    class="date-picker__trigger mt-1.5 flex w-full items-center gap-3 rounded-xl border border-amber-200 bg-sand-50 px-3 py-2 text-left text-sm outline-none transition hover:border-amber-300 hover:bg-white focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-100"
+    aria-haspopup="dialog"
+    aria-expanded="false"
+    aria-controls="{{ date_id }}-calendar"
+    data-no-spinner
+  >
+    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-amber-100 to-orange-100 text-clay-700 shadow-inner shadow-amber-900/5" aria-hidden="true">
+      <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8">
+        <rect x="3" y="5" width="18" height="16" rx="2"></rect>
+        <path d="M3 10h18M8 3v4M16 3v4"></path>
+      </svg>
+    </span>
+    <span class="date-picker__label min-w-0 flex-1 font-semibold tabular-nums text-stone-400" data-date-label>Select a date</span>
+    <span class="shrink-0 text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-400">{{ date_hint }}</span>
+  </button>
+  <div id="{{ date_id }}-calendar" class="date-picker__pop hidden" role="dialog" aria-label="Choose a date" hidden></div>
+</div>

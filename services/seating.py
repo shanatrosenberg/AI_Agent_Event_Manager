@@ -7,6 +7,7 @@ from typing import Any, Iterable
 from sqlalchemy import inspect, text
 
 from extensions import db
+from services.scheduling import hall_label
 
 HALL_LAYOUTS: dict[int, dict[str, object]] = {
     50: {
@@ -51,6 +52,37 @@ def hall_layout(capacity: int | None) -> dict[str, object]:
         "aisle_after": aisle,
         "row_aisles_after": [rows // 2] if rows > 2 else [],
         "sections": (("Left", aisle), ("Right", cols - aisle)),
+    }
+
+
+def hall_configuration(capacity: int | None) -> dict[str, Any]:
+    layout = hall_layout(capacity)
+    raw_sections = layout.get("sections") or ()
+    if raw_sections and isinstance(raw_sections[0], dict):
+        section_names = [str(item.get("name") or "").strip() for item in raw_sections if item.get("name")]
+    else:
+        section_names = [str(name).strip() for name, _width in raw_sections if name]
+    vertical = [int(item) for item in (layout.get("aisles_after") or []) if int(item) > 0]
+    cross = [int(item) for item in (layout.get("row_aisles_after") or []) if int(item) > 0]
+    parts = [hall_label(capacity), f"{layout['rows']}×{layout['cols']} grid"]
+    if section_names:
+        parts.append(f"{' / '.join(section_names)} sections")
+    if vertical:
+        parts.append("vertical aisles after columns " + ", ".join(str(item) for item in vertical))
+    else:
+        parts.append("no vertical aisles")
+    if cross:
+        after_rows = ", ".join(chr(ord("A") + item - 1) for item in cross if item > 0)
+        parts.append(f"mid-house cross-aisle after row {after_rows}" if after_rows else "mid-house cross-aisle")
+    return {
+        "capacity": capacity,
+        "hall_label": hall_label(capacity),
+        "rows": layout["rows"],
+        "cols": layout["cols"],
+        "sections": section_names,
+        "aisles_after": vertical,
+        "row_aisles_after": cross,
+        "description": " · ".join(parts),
     }
 
 

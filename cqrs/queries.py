@@ -126,8 +126,8 @@ class ListTrashHandler:
     def __init__(self, store: EventStore) -> None:
         self._store = store
 
-    def handle(self, query: ListTrashQuery) -> list[TalkSubmission]:
-        return self._store.list_rejected_submissions(query.organizer_id)
+    def handle(self, query: ListTrashQuery) -> list:
+        return self._store.list_trash_items(query.organizer_id)
 
 
 @dataclass

@@ -1,4 +1,4 @@
-from services.seating import assign_open_seats, hall_layout, hall_seat_ids, normalize_seat_ids
+from services.seating import assign_open_seats, hall_configuration, hall_layout, hall_seat_ids, normalize_seat_ids
 
 
 def test_hall_maps_match_standard_capacities():
@@ -20,6 +20,18 @@ def test_standard_halls_use_partitioned_aisles():
     assert arena["aisles_after"] == [6, 14]
     assert arena["row_aisles_after"] == [7]
     assert [section[0] for section in arena["sections"]] == ["Left", "Center", "Right"]
+
+
+def test_hall_configuration_describes_layout():
+    compact = hall_configuration(100)
+    assert compact["hall_label"] == "Grand Hall (100 seats)"
+    assert compact["rows"] == 10
+    assert compact["cols"] == 10
+    assert compact["aisles_after"] == []
+    assert "mid-house" in compact["description"]
+    arena = hall_configuration(300)
+    assert arena["sections"] == ["Left", "Center", "Right"]
+    assert "vertical aisles" in arena["description"]
 
 
 def test_nonstandard_capacity_still_fills_the_grid():

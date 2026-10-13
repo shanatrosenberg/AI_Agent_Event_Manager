@@ -24,7 +24,8 @@ from services.auth import (
     current_user,
 )
 from cqrs import OrganizerStatsQuery, organizer_stats_handler
-from services.scheduling import HALL_CAPACITIES, HALL_LABELS
+from services.scheduling import HALL_CAPACITIES, HALL_LABELS, start_time_slots
+from services.chat import ensure_chat_schema, list_messages_for
 from services.seating import ensure_booking_seat_schema
 
 DEFAULT_DATABASE_URL = "http://my-event-manager.somee.com"
@@ -196,6 +197,7 @@ def create_app(config: dict | None = None) -> Flask:
             speakers=speakers,
             hall_capacities=HALL_CAPACITIES,
             hall_labels=HALL_LABELS,
+            start_time_slots=start_time_slots(),
             kpi_attendees=stats["attendees"],
             kpi_events_held=stats["events_held"],
         )
@@ -233,6 +235,7 @@ def create_app(config: dict | None = None) -> Flask:
             selected_speaker=speaker,
             attendee_id=attendee_id,
             attendee_name=user.get("name") if user and user.get("role") == "attendee" else "",
+            hall_labels=HALL_LABELS,
         )
 
     @app.route("/my-events")
@@ -244,6 +247,7 @@ def create_app(config: dict | None = None) -> Flask:
         return render_template(
             "my_tickets.html",
             tickets=attendee_ticket_cards(attendee_id),
+            messages=list_messages_for(attendee_id, "attendee"),
             attendee_id=attendee_id,
             attendee_name=user.get("name") if user else "",
         )
@@ -257,11 +261,15 @@ def create_app(config: dict | None = None) -> Flask:
             speaker_name=session.get("speaker_name") or session.get("name") or session.get("user_id"),
             hall_capacities=HALL_CAPACITIES,
             hall_labels=HALL_LABELS,
+            start_time_slots=start_time_slots(),
         )
 
     from services.deep_agent import start_assessment_agent
+    from services.ollama import warm_ollama
 
     start_assessment_agent(app)
+    if not testing:
+        warm_ollama()
 
     @app.cli.command("seed")
     def seed_command() -> None:
@@ -288,5 +296,6 @@ if __name__ == "__main__":
         ensure_talk_portal_schema()
         ensure_event_store_schema()
         ensure_booking_seat_schema()
+        ensure_chat_schema()
         ensure_admin_organizer()
-    app.run(debug=True, port=5000)
+    app.run(debug=True, port=5000, threaded=True)

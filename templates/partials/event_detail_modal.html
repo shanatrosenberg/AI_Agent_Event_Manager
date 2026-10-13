@@ -1,0 +1,101 @@
+<div id="event-detail-modal" class="fixed inset-0 z-50 hidden app-modal items-center justify-center overflow-hidden" aria-hidden="true">
+  <div id="event-detail-backdrop" class="absolute inset-0 bg-stone-950/55 opacity-0 backdrop-blur-md transition-opacity duration-300" data-event-detail-dismiss></div>
+  <div
+    id="event-detail-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="event-detail-title"
+    class="app-dialog relative w-full max-w-xl scale-95 overflow-hidden rounded-[2rem] border border-amber-100/80 bg-gradient-to-b from-white via-sand-50 to-amber-50/80 p-7 opacity-0 shadow-2xl shadow-orange-950/25 transition duration-300 sm:p-8"
+  >
+    <div class="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-amber-200/40 blur-3xl"></div>
+    <div class="pointer-events-none absolute -left-10 bottom-0 h-32 w-32 rounded-full bg-rose-200/30 blur-3xl"></div>
+    <button type="button" id="close-event-detail-modal" class="app-modal-close inline-flex h-10 w-10 items-center justify-center rounded-full border border-amber-200 bg-white/90 text-lg font-semibold text-stone-600 shadow-sm transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700" aria-label="Close">
+      <span aria-hidden="true">✕</span>
+    </button>
+    <div class="app-modal-header relative pr-12">
+      <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-clay-600">Lecture summary</p>
+      <h3 id="event-detail-title" class="font-display mt-2 text-2xl font-bold tracking-tight text-stone-900">Event</h3>
+    </div>
+    <div id="event-detail-body" class="relative mt-6 min-h-0 flex-1 overflow-y-auto overscroll-contain"></div>
+  </div>
+</div>
+<script>
+  (function () {
+    const modal = document.getElementById("event-detail-modal");
+    const backdrop = document.getElementById("event-detail-backdrop");
+    const dialog = document.getElementById("event-detail-dialog");
+    const titleEl = document.getElementById("event-detail-title");
+    const bodyEl = document.getElementById("event-detail-body");
+    const closeBtn = document.getElementById("close-event-detail-modal");
+    let closeTimer = null;
+
+    function isOpen() {
+      return modal && !modal.classList.contains("hidden");
+    }
+
+    function lectureSummary(event) {
+      return (
+        (event && (event.abstract || event.ai_summary || event.description)) ||
+        "No lecture summary is available for this event."
+      );
+    }
+
+    function fill(event) {
+      titleEl.textContent = (event && event.title) || "Event";
+      bodyEl.replaceChildren();
+      const summary = document.createElement("p");
+      summary.id = "event-detail-summary";
+      summary.className = "text-base leading-8 text-stone-700";
+      summary.textContent = lectureSummary(event);
+      bodyEl.append(summary);
+    }
+
+    function openModal() {
+      if (!modal) return;
+      if (closeTimer) {
+        window.clearTimeout(closeTimer);
+        closeTimer = null;
+      }
+      modal.classList.remove("hidden");
+      modal.classList.add("flex");
+      modal.setAttribute("aria-hidden", "false");
+      document.body.classList.add("overflow-hidden");
+      window.requestAnimationFrame(() => {
+        backdrop.classList.remove("opacity-0");
+        backdrop.classList.add("opacity-100");
+        dialog.classList.remove("opacity-0", "scale-95");
+        dialog.classList.add("opacity-100", "scale-100");
+      });
+      window.setTimeout(() => closeBtn?.focus(), 180);
+    }
+
+    function closeModal() {
+      if (!modal || !isOpen()) return;
+      backdrop.classList.add("opacity-0");
+      backdrop.classList.remove("opacity-100");
+      dialog.classList.add("opacity-0", "scale-95");
+      dialog.classList.remove("opacity-100", "scale-100");
+      closeTimer = window.setTimeout(() => {
+        modal.classList.add("hidden");
+        modal.classList.remove("flex");
+        modal.setAttribute("aria-hidden", "true");
+        document.body.classList.remove("overflow-hidden");
+        closeTimer = null;
+      }, 200);
+    }
+
+    window.openEventDetail = function (event) {
+      fill(event || {});
+      openModal();
+    };
+    window.closeEventDetail = closeModal;
+
+    closeBtn?.addEventListener("click", closeModal);
+    modal?.addEventListener("click", (event) => {
+      if (event.target.closest("[data-event-detail-dismiss]")) closeModal();
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && isOpen()) closeModal();
+    });
+  })();
+</script>

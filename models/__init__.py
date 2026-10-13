@@ -1,5 +1,6 @@
 from models.attendee import Attendee
 from models.booking import Booking
+from models.chat_message import ChatMessage
 from models.embedding import TalkEmbedding
 from models.event import Event
 from models.organizer import Organizer
@@ -11,6 +12,7 @@ from models.talk_request import TalkRequest
 __all__ = [
     "Attendee",
     "Booking",
+    "ChatMessage",
     "Event",
     "Organizer",
     "Speaker",

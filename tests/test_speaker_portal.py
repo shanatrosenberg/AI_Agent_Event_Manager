@@ -1,6 +1,9 @@
 import json
 
+from uuid import uuid4
+
 from extensions import db
+from models.chat_message import ChatMessage
 from models.submission import TalkSubmission
 from services.auth import admin_organizer_id
 
@@ -74,13 +77,36 @@ def test_speaker_login_and_dashboard(client):
     assert b'id="events-table-wrap"' in response.data
     assert b'id="events-body"' in response.data
     assert b'id="events-cards"' in response.data
+    assert b"My Confirmed Events" in response.data
     assert b">Event</th>" in response.data
     assert b">Speaker</th>" in response.data
     assert b">Date</th>" in response.data
     assert b">Time</th>" in response.data
     assert b">Hall</th>" in response.data
-    assert b">Capacity</th>" in response.data
+    assert b"Conference Room (50 seats)" in response.data
+    assert b"Grand Hall (100 seats)" in response.data
+    assert b"Main Auditorium (300 seats)" in response.data
+    assert b">Open/Sold Seats</th>" in response.data
     assert b">Status</th>" in response.data
+    assert b"More Details" in response.data
+    assert b"Cancel Event" in response.data
+    assert b"Lecture summary" in response.data
+    assert b"Hall specifications" not in response.data
+    assert b"Tickets already purchased" not in response.data
+    assert b'id="open-speaker-chat"' in response.data
+    assert b'id="chat-unread-badge"' in response.data
+    assert b"-right-1 -top-1" in response.data
+    assert b"bg-emerald-500" in response.data
+    assert b"paintChatBadge" in response.data
+    assert b'id="speaker-chat-sidebar"' in response.data
+    assert b'id="chat-email-view"' in response.data
+    assert b'id="chat-reply-form"' in response.data
+    assert b'id="chat-reply-input"' in response.data
+    assert b'id="chat-alert-popup"' in response.data
+    assert b'id="speaker-messages"' in response.data
+    assert b"/api/speaker/events/" in response.data
+    assert b'id="event-detail-modal"' in response.data
+    assert 'id="event-detail-modal" class="fixed inset-0 z-50 hidden' in response.get_data(as_text=True)
     assert b'id="panel-submissions"' in response.data
     assert b'id="submissions-table-wrap"' in response.data
     assert b'id="submissions-body"' in response.data
@@ -107,13 +133,24 @@ def test_speaker_login_and_dashboard(client):
     assert b'id="enhance-abstract"' in response.data
     assert b"Enhance with AI" in response.data
     assert b'id="enhance-abstract-spinner"' in response.data
+    assert b"AbortController" in response.data
+    assert b"10000" in response.data
     assert b'id="category"' in response.data
     assert b'value="other"' in response.data
     assert b'id="custom-topic-input"' in response.data
     assert b'name="custom_topic"' in response.data
     assert b'id="date"' in response.data
+    assert b'data-date-picker' in response.data
+    assert b'date-picker__trigger' in response.data
+    assert b"btn-busy" in response.data
+    assert b"armStatusDismiss" in response.data
+    assert b"STATUS_DISMISS_MS" in response.data
     assert b'id="start_time"' in response.data
     assert b'id="end_time"' in response.data
+    assert b'value="09:30"' in response.data
+    assert b'value="15:30"' in response.data
+    assert b"90 min" in response.data
+    assert b'data-session-start' in response.data
     assert b'id="capacity"' in response.data
     assert b"Submit Proposal" in response.data
 
@@ -140,9 +177,9 @@ def test_submit_alias_uses_session_speaker(client):
     assert body["display_status"] == "Reviewed by AI"
     assert body["date"] == "2026-11-12"
     assert body["start_time"] == "09:00"
-    assert body["end_time"] == "10:00"
+    assert body["end_time"] == "10:30"
     assert body["capacity"] == 50
-    assert body["hall_label"] == "50 seats"
+    assert body["hall_label"] == "Conference Room (50 seats)"
 
 
 def test_submit_talk_saves_custom_topic(client):
@@ -222,7 +259,7 @@ def test_organizer_can_request_and_speaker_can_accept(client):
     request_body = incoming.get_json()["requests"][0]
     assert request_body["topic"] == "RAG for abstracts"
     assert request_body["start_time"] == "14:00"
-    assert request_body["hall_label"] == "100 seats"
+    assert request_body["hall_label"] == "Grand Hall (100 seats)"
 
     accepted = client.post(
         f"/api/speaker/requests/{request_id}/respond",
@@ -314,7 +351,7 @@ def test_speaker_confirmed_events_sort_and_pending_requests_only(client):
     assert [item["date"] for item in portal["events"]] == ["2026-11-05", "2026-12-20"]
     assert [item["id"] for item in portal["requests"]] == [leftover["id"]]
     assert all(item["status"] == "pending" for item in portal["requests"])
-    assert portal["events"][0]["hall_label"] == "100 seats"
+    assert portal["events"][0]["hall_label"] == "Grand Hall (100 seats)"
     assert "closest upcoming session" in portal["events"][0]["abstract"]
 
 
@@ -512,6 +549,11 @@ def test_enhance_abstract_uses_ollama_generate_api(client, app, monkeypatch):
     def fake_generate(prompt, **kwargs):
         captured["prompt"] = prompt
         captured["max_tokens"] = kwargs.get("max_tokens")
+        captured["timeout"] = kwargs.get("timeout")
+        captured["temperature"] = kwargs.get("temperature")
+        captured["stream"] = kwargs.get("stream")
+        captured["keep_alive"] = kwargs.get("keep_alive")
+        captured["num_ctx"] = kwargs.get("num_ctx")
         return "A polished conference abstract on CQRS for event organizers."
 
     monkeypatch.setattr("services.abstract_enhancer.generate", fake_generate)
@@ -528,9 +570,13 @@ def test_enhance_abstract_uses_ollama_generate_api(client, app, monkeypatch):
     assert body["abstract"] == "A polished conference abstract on CQRS for event organizers."
     assert body["enhanced_abstract"] == body["abstract"]
     assert body["model"] == "llama3"
-    assert captured["max_tokens"] == 400
-    assert "Act as a professional conference content writer" in captured["prompt"]
-    assert "3-4 sentences" in captured["prompt"]
+    assert captured["max_tokens"] == 100
+    assert captured["timeout"] == 9
+    assert captured["temperature"] == 0.3
+    assert captured["stream"] is True
+    assert captured["keep_alive"] == "30m"
+    assert captured["num_ctx"] == 512
+    assert "2-3 sentence" in captured["prompt"]
     assert "A practical walkthrough of commands and queries." in captured["prompt"]
     assert "This conference session covers" not in body["abstract"]
 
@@ -614,3 +660,90 @@ def test_enhance_abstract_falls_back_on_ollama_errors(client, monkeypatch):
     assert body["enhanced_abstract"] == "a practical walkthrough of commands and queries"
     assert "This conference session covers" not in body["enhanced_abstract"]
     assert "error" not in body
+
+
+def test_speaker_can_reply_to_admin_from_chat(client, app, speaker_headers, speaker_id):
+    with app.app_context():
+        notice = ChatMessage(
+            id=str(uuid4()),
+            recipient_id=speaker_id,
+            recipient_role="speaker",
+            sender_id=admin_organizer_id(),
+            sender_role="organizer",
+            subject="Event cancelled",
+            kind="event_cancelled",
+            body='Your event "Keynote" has been cancelled by the organizer.',
+        )
+        db.session.add(notice)
+        db.session.commit()
+        notice_id = notice.id
+
+    inbox = client.get("/api/speaker/messages", headers=speaker_headers)
+    assert inbox.status_code == 200
+    payload = inbox.get_json()
+    assert payload["unread_count"] == 1
+    assert payload["messages"][0]["subject"] == "Event cancelled"
+    assert payload["messages"][0]["from_label"] == "Event Organizer"
+
+    opened = client.post(
+        "/api/speaker/messages/read",
+        json={"message_id": notice_id},
+        headers=speaker_headers,
+    )
+    assert opened.status_code == 200
+    opened_body = opened.get_json()
+    assert opened_body["unread_count"] == 0
+    assert opened_body["thread"][0]["id"] == notice_id
+
+    reply = client.post(
+        "/api/speaker/messages",
+        json={"body": "Thanks, I will update my calendar.", "parent_id": notice_id},
+        headers=speaker_headers,
+    )
+    assert reply.status_code == 201
+    reply_body = reply.get_json()
+    assert reply_body["message"]["kind"] == "speaker_reply"
+    assert reply_body["message"]["recipient_id"] == admin_organizer_id()
+    assert reply_body["message"]["recipient_role"] == "organizer"
+    assert reply_body["message"]["from_label"] == "You"
+    assert any(
+        item["body"] == "Thanks, I will update my calendar." for item in reply_body["thread"]
+    )
+
+    with app.app_context():
+        stored = ChatMessage.query.filter_by(kind="speaker_reply", parent_id=notice_id).one()
+        assert stored.recipient_role == "organizer"
+        assert stored.sender_id == speaker_id
+
+    admin_headers = {"X-Organizer-Id": admin_organizer_id()}
+    admin_inbox = client.get("/api/organizer/messages", headers=admin_headers)
+    assert admin_inbox.status_code == 200
+    admin_payload = admin_inbox.get_json()
+    assert admin_payload["unread_count"] >= 1
+    assert any("calendar" in item["body"] for item in admin_payload["messages"])
+    assert any(item.get("peer_id") == speaker_id for item in admin_payload["messages"])
+    assert all(item.get("subject") != "Event cancelled" for item in admin_payload["messages"])
+    assert all(item.get("peer_name") for item in admin_payload["messages"])
+
+    admin_reply = client.post(
+        "/api/organizer/messages",
+        json={"body": "Understood, the refund is already in motion.", "parent_id": notice_id},
+        headers=admin_headers,
+    )
+    assert admin_reply.status_code == 201
+    admin_reply_body = admin_reply.get_json()
+    assert admin_reply_body["message"]["kind"] == "organizer_reply"
+    assert admin_reply_body["message"]["recipient_id"] == speaker_id
+    assert admin_reply_body["message"]["from_label"] == "You"
+    assert any("refund is already in motion" in item["body"] for item in admin_reply_body["thread"])
+
+    speaker_followup = client.get("/api/speaker/messages", headers=speaker_headers).get_json()
+    assert speaker_followup["unread_count"] >= 1
+    thread = client.post(
+        "/api/speaker/messages/read",
+        json={"message_id": notice_id},
+        headers=speaker_headers,
+    ).get_json()["thread"]
+    bodies = [item["body"] for item in thread]
+    assert "Thanks, I will update my calendar." in bodies
+    assert "Understood, the refund is already in motion." in bodies

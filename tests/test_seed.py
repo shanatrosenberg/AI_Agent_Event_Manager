@@ -41,12 +41,14 @@ def test_seeded_removed_events_stay_off_the_attendee_catalog(client, app):
     assert low["last_seats"] is True
 
 
-def test_organizer_program_keeps_cancelled_and_deleted_history(client, app):
+def test_organizer_my_events_hides_cancelled_and_deleted(client, app):
     with app.app_context():
         seed_database(reset=True)
     from services.auth import admin_organizer_id
 
     events = client.get("/api/organizer/events", headers={"X-Organizer-Id": admin_organizer_id()}).get_json()
-    by_id = {item["id"]: item for item in events}
-    assert by_id["evt-cancelled-mixer"]["display_status"] == "Cancelled"
-    assert by_id["evt-deleted-walkthrough"]["display_status"] == "Deleted"
+    ids = {item["id"] for item in events}
+    assert "evt-open-keynote" in ids
+    assert "evt-cancelled-mixer" not in ids
+    assert "evt-deleted-walkthrough" not in ids
+    assert all(item["status"] in {"approved", "active"} for item in events)

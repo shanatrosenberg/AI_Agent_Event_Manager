@@ -117,6 +117,8 @@ def test_organizer_dashboard_allows_signed_in_admin(client):
     response = client.get("/organizer")
     assert response.status_code == 200
     assert b"Manage your program" in response.data
+    assert b"Approve a pending proposal to publish it immediately in My Events." not in response.data
+    assert b"Speaker invitations stay pending until the speaker confirms." not in response.data
     assert admin_organizer_id().encode() in response.data
     assert admin_organizer_username().encode() in response.data
     assert b'id="open-invite-modal"' in response.data
@@ -128,18 +130,50 @@ def test_organizer_dashboard_allows_signed_in_admin(client):
     assert b'id="invite_topic"' in response.data
     assert b'id="invite_details"' in response.data
     assert b'id="invite_date"' in response.data
+    assert b'data-date-picker' in response.data
+    assert b'date-picker__trigger' in response.data
+    assert b"btn-busy" in response.data
+    assert b"STATUS_DISMISS_MS" in response.data
+    assert b"6000" in response.data
+    assert b"armStatusDismiss" in response.data
+    assert b"status-leaving" in response.data
     assert b'id="invite_start_time"' in response.data
     assert b'id="invite_end_time"' in response.data
+    assert b'value="09:00"' in response.data
+    assert b'value="09:30"' in response.data
+    assert b'value="15:30"' in response.data
+    assert b"90 min" in response.data
+    assert b'data-session-start' in response.data
+    assert b'data-session-end' in response.data
     assert b'id="invite_capacity"' in response.data
+    assert b"Conference Room (50 seats)" in response.data
+    assert b"Grand Hall (100 seats)" in response.data
+    assert b"Main Auditorium (300 seats)" in response.data
+    assert b">50 seats<" not in response.data
     assert b"Select a speaker" in response.data
+    assert "${name} (${id})" not in response.get_data(as_text=True)
+    assert "option.value = speaker.id" in response.get_data(as_text=True)
     assert b"CQRS in production" in response.data
     assert b'id="create-event-form"' not in response.data
     assert b"Create Event" not in response.data
     assert b"Request Speaker" in response.data
     assert b"Pending Proposals" in response.data
     assert b"Manage Proposals" in response.data
+    assert b"Verified via Tavily" not in response.data
+    assert b"tavilyPanel" not in response.data
+    assert b"data-tavily-badge" not in response.data
     assert b"My Events" in response.data
-    assert b"Trash / Disapproved Events" in response.data
+    assert b">Open/Sold Seats</th>" in response.data
+    assert b"More Details" in response.data
+    assert b"Cancel Event" in response.data
+    assert b'id="event-detail-modal"' in response.data
+    assert b"Lecture summary" in response.data
+    assert b"Hall specifications" not in response.data
+    assert b"Tickets already purchased" not in response.data
+    assert b"Trash / Recycling Bin" in response.data
+    assert b">When</th>" in response.data
+    assert 'toLocaleString("en-US"' in response.get_data(as_text=True)
+    assert b"data-event-when" in response.data
     assert b'id="organizer-tabs"' in response.data
     assert b'id="panel-create"' not in response.data
     assert b'id="panel-request"' in response.data

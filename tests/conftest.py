@@ -67,7 +67,7 @@ def event_payload():
         "description": "Talks on autonomous agents and event systems",
         "date": "2026-10-01",
         "start_time": "09:00",
-        "end_time": "10:00",
+        "end_time": "10:30",
         "capacity": 50,
     }
 
@@ -80,7 +80,7 @@ def talk_payload():
         "category": "architecture",
         "date": "2026-11-12",
         "start_time": "09:00",
-        "end_time": "10:00",
+        "end_time": "10:30",
         "capacity": 50,
     }
 

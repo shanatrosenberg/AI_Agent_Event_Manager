@@ -19,14 +19,26 @@ def test_submit_talk_rejects_invalid_hall(client, speaker_headers, talk_payload)
     assert response.get_json()["error"] == "Hall capacity must be 50, 100, or 300 seats."
 
 
-def test_submit_talk_rejects_end_before_start(client, speaker_headers, talk_payload):
+def test_submit_talk_rejects_off_slot_start(client, speaker_headers, talk_payload):
     response = client.post(
         "/api/speaker/submit",
-        json={**talk_payload, "start_time": "11:00", "end_time": "10:00"},
+        json={**talk_payload, "start_time": "11:05", "end_time": "12:35"},
         headers=speaker_headers,
     )
     assert response.status_code == 400
-    assert "end_time" in response.get_json()["error"]
+    assert "half hour" in response.get_json()["error"]
+
+
+def test_submit_talk_sets_ninety_minute_end(client, speaker_headers, talk_payload):
+    response = client.post(
+        "/api/speaker/submit",
+        json={**talk_payload, "start_time": "15:30", "end_time": "16:00"},
+        headers=speaker_headers,
+    )
+    assert response.status_code == 201
+    body = response.get_json()
+    assert body["start_time"] == "15:30"
+    assert body["end_time"] == "17:00"
 
 
 def test_approve_rejects_hall_time_conflict(client, speaker_headers, event_payload):
@@ -59,8 +71,8 @@ def test_approve_allows_adjacent_slot_and_other_hall(client, speaker_headers, ev
         speaker_headers,
         event_payload,
         title="Next slot",
-        start_time="10:00",
-        end_time="11:00",
+        start_time="10:30",
+        end_time="12:00",
     )
     other_hall = approve_talk_event(
         client,
@@ -69,7 +81,8 @@ def test_approve_allows_adjacent_slot_and_other_hall(client, speaker_headers, ev
         title="Other hall",
         capacity=100,
     )
-    assert adjacent["start_time"] == "10:00"
+    assert adjacent["start_time"] == "10:30"
+    assert adjacent["end_time"] == "12:00"
     assert other_hall["capacity"] == 100
 
 

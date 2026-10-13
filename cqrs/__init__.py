@@ -3,6 +3,8 @@ from cqrs.commands import (
     AssessPendingTalksHandler,
     ApproveTalkCommand,
     ApproveTalkHandler,
+    CancelEventCommand,
+    CancelEventHandler,
     ConfirmTalkCommand,
     ConfirmTalkHandler,
     CreateEventCommand,
@@ -98,6 +100,7 @@ disapprove_event_handler = DisapproveEventHandler(event_store, reject_talk_handl
 restore_talk_handler = RestoreTalkHandler(event_store)
 delete_rejected_talk_handler = DeleteRejectedTalkHandler(event_store)
 delete_event_handler = DeleteEventHandler(event_store)
+cancel_event_handler = CancelEventHandler(event_store)
 list_pending_proposals_handler = ListPendingProposalsHandler(event_store)
 list_trash_handler = ListTrashHandler(event_store)
 organizer_stats_handler = OrganizerStatsHandler(event_store)
@@ -114,6 +117,8 @@ __all__ = [
     "AssessPendingTalksHandler",
     "ApproveTalkCommand",
     "ApproveTalkHandler",
+    "CancelEventCommand",
+    "CancelEventHandler",
     "CreateEventCommand",
     "CreateEventHandler",
     "LoginCommand",
@@ -177,6 +182,7 @@ __all__ = [
     "PublishTalkCommand",
     "PublishTalkHandler",
     "approve_talk_handler",
+    "cancel_event_handler",
     "confirm_talk_handler",
     "publish_talk_handler",
     "create_event_handler",

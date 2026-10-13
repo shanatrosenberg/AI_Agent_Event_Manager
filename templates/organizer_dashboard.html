@@ -73,7 +73,7 @@
   </div>
 
   <header class="sticky top-0 z-40 border-b border-amber-200/70 bg-sand-50/80 backdrop-blur-xl">
-    <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+    <div class="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
       <a href="{{ url_for('home') }}" class="flex items-center gap-3">
         <span class="flex h-10 w-10 items-center justify-center rounded-2xl bg-clay-600 text-white shadow-md shadow-orange-900/20">
           <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
@@ -96,12 +96,9 @@
     </div>
   </header>
 
-  <main class="mx-auto max-w-6xl px-6 py-10 sm:py-14" data-organizer-id="{{ organizer_id }}">
+  <main class="mx-auto max-w-7xl px-6 py-10 sm:py-14" data-organizer-id="{{ organizer_id }}">
     <p class="text-xs font-semibold uppercase tracking-[0.22em] text-clay-700">Event Organizer</p>
     <h1 class="font-display mt-3 text-3xl font-extrabold tracking-tight text-stone-900 sm:text-4xl">Manage your program</h1>
-    <p class="mt-3 max-w-2xl text-stone-600">
-      Approve a pending proposal to publish it immediately in My Events. Speaker invitations stay pending until the speaker confirms.
-    </p>
 
     <section id="kpi-bar" class="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <button type="button" data-kpi-tab="events" class="group rounded-3xl border border-amber-100 bg-white/55 p-5 text-left shadow-lg shadow-amber-900/5 backdrop-blur-xl transition duration-300 hover:scale-[1.03] hover:shadow-xl hover:shadow-amber-500/10">
@@ -189,7 +186,7 @@
         <span id="tab-proposals-count" class="ml-2 hidden h-5 min-w-5 items-center justify-center rounded-full bg-amber-400 px-1.5 text-[10px] font-bold text-amber-950">0</span>
       </button>
       <button type="button" role="tab" id="tab-trash" data-tab="trash" aria-controls="panel-trash" aria-selected="false" class="organizer-tab inline-flex items-center justify-center rounded-full px-4 py-2.5 text-sm font-semibold text-stone-600 transition duration-300 hover:bg-white/80 hover:text-clay-700">
-        Trash / Disapproved Events
+        Trash / Recycling Bin
       </button>
       <button type="button" role="tab" id="tab-audit" data-tab="audit" aria-controls="panel-audit" aria-selected="false" class="organizer-tab inline-flex items-center justify-center rounded-full px-4 py-2.5 text-sm font-semibold text-stone-600 transition duration-300 hover:bg-white/80 hover:text-clay-700">
         Event Log
@@ -198,42 +195,26 @@
 
     <div class="mt-6">
     <section id="panel-events" role="tabpanel" aria-labelledby="tab-events" class="organizer-panel space-y-6">
-      <section id="events" class="rounded-3xl border border-amber-100 bg-white/80 p-6 shadow-xl shadow-amber-900/5 backdrop-blur-xl sm:p-7">
-        <div class="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 class="font-display text-lg font-bold tracking-tight">My Events</h2>
-            <p class="mt-1 text-sm text-stone-500">Approved sessions on the official program, with hall, schedule, and booking counts. Rejecting a talk moves it to trash for 7 days.</p>
-          </div>
-          <div class="flex flex-wrap items-center gap-3">
-            <a href="{{ url_for('approved_events') }}" class="text-sm font-semibold text-clay-700 hover:text-clay-700">Open public view</a>
-            <button
-              id="refresh-events"
-              type="button"
-              class="inline-flex items-center justify-center rounded-full border border-amber-200 bg-white px-4 py-2 text-sm font-semibold text-stone-700 transition duration-300 hover:-translate-y-0.5 hover:border-amber-200 hover:text-clay-700 hover:shadow-md"
-            >
-              Refresh
-            </button>
-          </div>
-        </div>
+      <section id="events" class="rounded-3xl border border-amber-200 bg-white p-6 shadow-sm sm:p-7">
+        <h2 class="font-display text-lg font-bold tracking-tight">My Events</h2>
 
         <p id="events-empty" class="mt-6 rounded-2xl border border-dashed border-amber-200 bg-sand-50/80 px-4 py-8 text-center text-sm text-stone-500">
           No approved events yet. Approve a pending proposal or wait for a speaker to confirm an invitation.
         </p>
 
         <div id="events-table-wrap" hidden class="mt-6 hidden overflow-x-auto md:block">
-          <table class="min-w-full text-left">
+          <table class="w-full min-w-[76rem] table-auto text-left">
             <caption class="sr-only">Events for the current organizer</caption>
             <thead>
               <tr class="text-xs font-semibold uppercase tracking-wide text-stone-400">
-                <th scope="col" class="px-3 py-2 font-semibold">Event</th>
-                <th scope="col" class="px-3 py-2 font-semibold">Speaker</th>
-                <th scope="col" class="px-3 py-2 font-semibold">Date</th>
-                <th scope="col" class="px-3 py-2 font-semibold">Time</th>
-                <th scope="col" class="px-3 py-2 font-semibold">Hall</th>
-                <th scope="col" class="px-3 py-2 font-semibold">Booked</th>
-                <th scope="col" class="px-3 py-2 font-semibold">Open</th>
-                <th scope="col" class="px-3 py-2 font-semibold">Status</th>
-                <th scope="col" class="px-3 py-2 font-semibold"><span class="sr-only">Actions</span></th>
+                <th scope="col" class="px-4 py-3 font-semibold">Event</th>
+                <th scope="col" class="whitespace-nowrap px-4 py-3 font-semibold">Speaker</th>
+                <th scope="col" class="w-[7.5rem] whitespace-nowrap px-4 py-3 font-semibold">Date</th>
+                <th scope="col" class="w-[9.5rem] whitespace-nowrap px-4 py-3 font-semibold">Time</th>
+                <th scope="col" class="whitespace-nowrap px-4 py-3 font-semibold">Hall</th>
+                <th scope="col" class="whitespace-nowrap px-4 py-3 font-semibold">Open/Sold Seats</th>
+                <th scope="col" class="whitespace-nowrap px-4 py-3 font-semibold">Status</th>
+                <th scope="col" class="whitespace-nowrap px-4 py-3 font-semibold"><span class="sr-only">Actions</span></th>
               </tr>
             </thead>
             <tbody id="events-body" class="divide-y divide-amber-100"></tbody>
@@ -288,8 +269,8 @@
 
     <section id="panel-trash" role="tabpanel" aria-labelledby="tab-trash" hidden class="organizer-panel">
       <div class="rounded-3xl border border-amber-100 bg-white/80 p-6 shadow-xl shadow-amber-900/5 backdrop-blur-xl sm:p-7">
-        <h2 class="font-display text-lg font-bold tracking-tight">Trash / Disapproved Events</h2>
-        <p class="mt-1 text-sm text-stone-500">Rejected talks stay here for 7 days with a daily countdown. Restore one before it expires, or delete it permanently.</p>
+        <h2 class="font-display text-lg font-bold tracking-tight">Trash / Recycling Bin</h2>
+        <p class="mt-1 text-sm text-stone-500">Cancelled events move here immediately and leave the active program. Rejected talks stay for 7 days. Restore a rejected proposal before it expires, or delete an item permanently.</p>
         <p id="trash-empty" class="mt-6 rounded-2xl border border-dashed border-amber-200 bg-sand-50/80 px-4 py-8 text-center text-sm text-stone-500">Trash is empty.</p>
         <div id="trash-list" class="mt-6 space-y-3"></div>
       </div>
@@ -375,23 +356,15 @@
           <label for="invite_details" class="block text-sm font-medium text-stone-700">Details</label>
           <textarea id="invite_details" rows="3" placeholder="What you want them to cover" class="mt-1.5 w-full rounded-xl border border-amber-200 bg-sand-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-100"></textarea>
         </div>
+        {% set date_id = "invite_date" %}
+        {% set date_name = "invite_date" %}
+        {% set date_label = "Proposed date" %}
+        {% include "partials/date_picker.html" %}
+        {% set start_id = "invite_start_time" %}
+        {% set end_id = "invite_end_time" %}
+        {% include "partials/session_time_fields.html" %}
         <div>
-          <label for="invite_date" class="block text-sm font-medium text-stone-700">Proposed date</label>
-          <input id="invite_date" type="date" required lang="en-GB" placeholder="dd/mm/yyyy" class="mt-1.5 w-full rounded-xl border border-amber-200 bg-sand-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-100">
-          <p class="mt-1 text-xs text-stone-400">dd/mm/yyyy</p>
-        </div>
-        <div class="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label for="invite_start_time" class="block text-sm font-medium text-stone-700">Start time</label>
-            <input id="invite_start_time" type="time" required class="mt-1.5 w-full rounded-xl border border-amber-200 bg-sand-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-100">
-          </div>
-          <div>
-            <label for="invite_end_time" class="block text-sm font-medium text-stone-700">End time</label>
-            <input id="invite_end_time" type="time" required class="mt-1.5 w-full rounded-xl border border-amber-200 bg-sand-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-100">
-          </div>
-        </div>
-        <div>
-          <label for="invite_capacity" class="block text-sm font-medium text-stone-700">Hall capacity</label>
+          <label for="invite_capacity" class="block text-sm font-medium text-stone-700">Hall</label>
           <select id="invite_capacity" required class="mt-1.5 w-full rounded-xl border border-amber-200 bg-sand-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-100">
             <option value="">Select a hall</option>
             {% for seats in hall_capacities %}
@@ -411,8 +384,58 @@
     </div>
   </div>
 
+  <aside id="organizer-chat-dock">
+    <button type="button" id="open-organizer-chat" class="fixed right-2 top-28 z-50 flex h-14 w-12 items-center justify-center rounded-l-2xl border border-r-0 border-amber-200 bg-white/95 text-clay-700 shadow-lg shadow-amber-900/10 transition-all duration-300 hover:bg-sand-50" aria-controls="organizer-chat-sidebar" aria-expanded="false" aria-label="Open chat">
+      <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+        <path d="M4 6h16v10H7l-3 3V6z"></path>
+      </svg>
+      <span id="organizer-chat-unread-badge" class="absolute -right-1 -top-1 hidden h-5 min-w-5 items-center justify-center rounded-full bg-emerald-500 px-1 text-[10px] font-bold text-white ring-2 ring-white shadow-sm" aria-live="polite">0</span>
+    </button>
+    <section id="organizer-chat-sidebar" class="pointer-events-none invisible fixed inset-y-0 right-0 z-40 flex h-full w-[min(100vw,24rem)] translate-x-full flex-col border-l border-amber-100 bg-white/95 shadow-2xl shadow-orange-950/15 backdrop-blur-xl transition-transform duration-300" aria-hidden="true">
+      <div class="flex items-center justify-between border-b border-amber-100 px-4 py-4">
+        <div>
+          <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-clay-600">Inbox</p>
+          <h2 id="organizer-chat-title" class="font-display text-lg font-bold tracking-tight text-stone-900">Organizer chat</h2>
+        </div>
+        <button type="button" id="close-organizer-chat" class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-amber-200 bg-white text-stone-500 transition hover:border-amber-300 hover:text-stone-800" aria-label="Close chat">✕</button>
+      </div>
+      <div id="organizer-chat-inbox" class="min-h-0 flex-1 overflow-y-auto">
+        <div id="organizer-messages" class="divide-y divide-amber-50" hidden></div>
+        <p id="organizer-messages-empty" class="px-4 py-10 text-center text-sm text-stone-500">No chat messages yet.</p>
+      </div>
+      <article id="organizer-chat-email-view" class="hidden min-h-0 flex-1 flex-col overflow-hidden border-t border-amber-100 bg-sand-50/70">
+        <button type="button" id="organizer-chat-email-back" class="px-4 pt-3 text-left text-xs font-semibold text-clay-700 hover:underline">← Inbox</button>
+        <div class="min-h-0 flex-1 overflow-y-auto px-4 pb-3">
+          <p id="organizer-chat-email-subject" class="font-display mt-2 text-lg font-bold text-stone-900"></p>
+          <p id="organizer-chat-email-meta" class="mt-1 text-xs text-stone-500"></p>
+          <div id="organizer-chat-email-thread" class="mt-4 space-y-3"></div>
+        </div>
+        <form id="organizer-chat-reply-form" class="border-t border-amber-100 bg-white p-3">
+          <label for="organizer-chat-reply-input" class="sr-only">Type a message</label>
+          <textarea id="organizer-chat-reply-input" name="reply" rows="3" maxlength="2000" placeholder="Type a message…" autocomplete="off" class="w-full rounded-2xl border border-amber-200 bg-sand-50/80 px-3 py-2 text-sm text-stone-800 outline-none ring-clay-500/20 placeholder:text-stone-400 focus:border-clay-400 focus:ring"></textarea>
+          <div class="mt-2 flex justify-end">
+            <button id="organizer-chat-reply-send" type="submit" class="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-clay-600 to-amber-700 px-4 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:shadow-md">Send reply</button>
+          </div>
+        </form>
+      </article>
+    </section>
+  </aside>
+
+  <div id="organizer-chat-alert-popup" class="fixed inset-0 z-[60] hidden items-center justify-center" aria-hidden="true">
+    <div class="absolute inset-0 bg-stone-900/50 backdrop-blur-sm" data-org-chat-alert-dismiss></div>
+    <div role="alertdialog" aria-labelledby="organizer-chat-alert-title" aria-describedby="organizer-chat-alert-body" class="relative mx-4 w-full max-w-md rounded-3xl border border-rose-200 bg-white p-6 shadow-2xl shadow-rose-900/20">
+      <p class="text-xs font-semibold uppercase tracking-[0.18em] text-rose-700">Unread notification</p>
+      <h3 id="organizer-chat-alert-title" class="font-display mt-2 text-xl font-bold tracking-tight text-stone-900">New chat message</h3>
+      <p id="organizer-chat-alert-body" class="mt-2 text-sm leading-relaxed text-stone-700"></p>
+      <div class="mt-5 flex justify-end gap-2">
+        <button type="button" id="organizer-chat-alert-open" class="inline-flex items-center justify-center rounded-full bg-rose-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-rose-800">Open chat</button>
+      </div>
+    </div>
+  </div>
+
+  {% include 'partials/event_detail_modal.html' %}
+
   <script>
-    const refreshButton = document.getElementById("refresh-events");
     const statusEl = document.getElementById("status");
     const emptyEl = document.getElementById("events-empty");
     const tableWrap = document.getElementById("events-table-wrap");
@@ -420,9 +443,17 @@
     const cardList = document.getElementById("events-cards");
     const TAB_ACTIVE = "organizer-tab inline-flex items-center justify-center rounded-full bg-gradient-to-r from-clay-600 to-amber-700 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-orange-900/20 transition duration-300";
     const TAB_INACTIVE = "organizer-tab inline-flex items-center justify-center rounded-full px-4 py-2.5 text-sm font-semibold text-stone-600 transition duration-300 hover:bg-white/80 hover:text-clay-700";
-    const TAB_ALIASES = { approved: "events", "approved-events": "events", "my-events": "events", mine: "events", invite: "request", submissions: "proposals", pending: "proposals", create: "proposals", confirmation: "proposals", confirm: "proposals", awaiting: "proposals", disapproved: "trash", log: "audit", "event-log": "audit", eventsourcing: "audit", "event-sourcing": "audit" };
+    const TAB_ALIASES = { approved: "events", "approved-events": "events", "my-events": "events", mine: "events", invite: "request", submissions: "proposals", pending: "proposals", create: "proposals", confirmation: "proposals", confirm: "proposals", awaiting: "proposals", disapproved: "trash", recycle: "trash", recycling: "trash", "recycling-bin": "trash", log: "audit", "event-log": "audit", eventsourcing: "audit", "event-sourcing": "audit" };
     const BTN_PRIMARY = "inline-flex items-center justify-center rounded-full bg-clay-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm shadow-orange-900/15 transition hover:bg-clay-700";
+    const BTN_GHOST = "inline-flex items-center justify-center rounded-full border border-amber-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-stone-700 transition hover:border-amber-300 hover:text-clay-700";
     const BTN_DANGER = "inline-flex items-center justify-center rounded-full border border-rose-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-rose-700 transition hover:border-rose-300 hover:bg-rose-50";
+    const BTN_CANCEL = "inline-flex items-center justify-center rounded-full bg-rose-700 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-rose-800";
+    const HALL_LABELS = {{ hall_labels|tojson }};
+
+    function hallDisplayName(capacity) {
+      if (capacity == null || capacity === "") return "—";
+      return HALL_LABELS[capacity] || HALL_LABELS[String(capacity)] || `${capacity} seats`;
+    }
     const CARD_CLASS = "animate-fade-up rounded-2xl border border-amber-100 bg-white/90 p-5 shadow-lg shadow-amber-900/5 backdrop-blur-sm transition duration-300 hover:-translate-y-1.5 hover:shadow-xl hover:shadow-orange-900/10";
     const dashboardStats = {
       events: 0,
@@ -430,6 +461,23 @@
       eventsHeld: Number(document.getElementById("kpi-held")?.textContent || 0),
       pending: 0,
     };
+    const orgChatOpenButton = document.getElementById("open-organizer-chat");
+    const orgChatSidebar = document.getElementById("organizer-chat-sidebar");
+    const orgChatBadge = document.getElementById("organizer-chat-unread-badge");
+    const orgChatInbox = document.getElementById("organizer-chat-inbox");
+    const orgMessages = document.getElementById("organizer-messages");
+    const orgMessagesEmpty = document.getElementById("organizer-messages-empty");
+    const orgEmailView = document.getElementById("organizer-chat-email-view");
+    const orgEmailSubject = document.getElementById("organizer-chat-email-subject");
+    const orgEmailMeta = document.getElementById("organizer-chat-email-meta");
+    const orgEmailThread = document.getElementById("organizer-chat-email-thread");
+    const orgReplyForm = document.getElementById("organizer-chat-reply-form");
+    const orgReplyInput = document.getElementById("organizer-chat-reply-input");
+    const orgChatAlert = document.getElementById("organizer-chat-alert-popup");
+    const orgChatAlertBody = document.getElementById("organizer-chat-alert-body");
+    let orgChatItems = [];
+    let orgSelectedChatId = "";
+    let orgChatAlertShown = false;
 
     function showTab(name, { updateHash = true } = {}) {
       const tabName = TAB_ALIASES[name] || name || "events";
@@ -498,8 +546,10 @@
         info: "mt-6 rounded-2xl border border-amber-200 bg-amber-50/90 px-4 py-3 text-sm font-medium text-clay-700 shadow-sm backdrop-blur-sm",
       };
       statusEl.hidden = false;
+      statusEl.classList.remove("hidden", "status-leaving");
       statusEl.className = styles[kind] || styles.info;
       statusEl.textContent = message;
+      if (typeof window.armStatusDismiss === "function") window.armStatusDismiss(statusEl);
     }
 
     function applyEnter(el, index) {
@@ -547,7 +597,7 @@
 
     function renderEvents(events) {
       events = (events || [])
-        .filter((item) => ["approved", "active", "cancelled", "deleted"].includes(item.status))
+        .filter((item) => item.status === "approved" || item.status === "active")
         .slice()
         .sort((left, right) => eventScheduleKey(left).localeCompare(eventScheduleKey(right)));
       tableBody.replaceChildren();
@@ -565,60 +615,42 @@
 
       events.forEach((event, index) => {
         const row = document.createElement("tr");
-        row.className = "align-top transition hover:bg-amber-50/60";
+        row.className = "align-middle transition hover:bg-amber-50/60";
         applyEnter(row, index);
 
         const titleCell = document.createElement("td");
-        titleCell.className = "px-3 py-3";
-        const title = document.createElement("div");
-        title.className = "text-sm font-semibold text-stone-900";
-        title.textContent = event.title || "";
-        const description = document.createElement("div");
-        description.className = "mt-1 max-w-xs text-sm text-stone-500";
-        description.textContent = event.description || "";
-        titleCell.append(title, description);
+        titleCell.className = "min-w-[14rem] px-4 py-3.5 text-sm leading-5 text-stone-700";
+        titleCell.textContent = event.title || "";
 
         const speakerCell = document.createElement("td");
-        speakerCell.className = "px-3 py-3 text-sm text-stone-700";
+        speakerCell.className = "whitespace-nowrap px-4 py-3.5 text-sm text-stone-700";
         speakerCell.textContent = event.speaker_name || event.speaker_id || "—";
 
         const dateCell = document.createElement("td");
-        dateCell.className = "px-3 py-3 text-sm text-stone-700";
+        dateCell.className = "whitespace-nowrap px-4 py-3.5 text-sm tabular-nums text-stone-700";
         dateCell.textContent = event.date || "";
 
         const timeCell = document.createElement("td");
-        timeCell.className = "px-3 py-3 text-sm text-stone-700";
+        timeCell.className = "whitespace-nowrap px-4 py-3.5 text-sm tabular-nums text-stone-700";
         timeCell.textContent = eventTime(event);
 
         const hallCell = document.createElement("td");
-        hallCell.className = "px-3 py-3 text-sm text-stone-700";
-        hallCell.textContent = event.hall_label || String(event.capacity ?? "");
+        hallCell.className = "whitespace-nowrap px-4 py-3.5 text-sm text-stone-700";
+        hallCell.textContent = event.hall_label || hallDisplayName(event.capacity);
 
-        const bookedCell = document.createElement("td");
-        bookedCell.className = "px-3 py-3 text-sm text-stone-700";
-        bookedCell.textContent = String(event.seats_booked ?? 0);
-
-        const openCell = document.createElement("td");
-        openCell.className = "px-3 py-3 text-sm text-stone-700";
-        openCell.textContent = String(event.remaining_seats ?? "");
+        const seatsCell = document.createElement("td");
+        seatsCell.className = "whitespace-nowrap px-4 py-3.5 text-sm text-stone-700";
+        seatsCell.textContent = event.seats_label || `${event.open_seats ?? event.remaining_seats ?? 0} open / ${event.sold_seats ?? event.seats_booked ?? 0} sold`;
 
         const statusCell = document.createElement("td");
-        statusCell.className = "px-3 py-3";
+        statusCell.className = "whitespace-nowrap px-4 py-3.5";
         statusCell.append(statusBadge(event.status, event.display_status));
 
         const editCell = document.createElement("td");
-        editCell.className = "px-3 py-3";
-        const actions = document.createElement("div");
-        actions.className = "flex flex-wrap items-center gap-3";
-        const rejectButton = document.createElement("button");
-        rejectButton.type = "button";
-        rejectButton.className = BTN_DANGER;
-        rejectButton.textContent = "Reject";
-        rejectButton.addEventListener("click", () => rejectEvent(event));
-        actions.append(rejectButton);
-        editCell.append(actions);
+        editCell.className = "min-w-[13.5rem] whitespace-nowrap px-4 py-3.5";
+        editCell.append(eventActionButtons(event));
 
-        row.append(titleCell, speakerCell, dateCell, timeCell, hallCell, bookedCell, openCell, statusCell, editCell);
+        row.append(titleCell, speakerCell, dateCell, timeCell, hallCell, seatsCell, statusCell, editCell);
         tableBody.append(row);
 
         const card = document.createElement("article");
@@ -641,41 +673,12 @@
         const cardTitle = document.createElement("h3");
         cardTitle.className = "text-sm font-semibold text-stone-900";
         cardTitle.textContent = event.title || "";
-        const cardDescription = document.createElement("p");
-        cardDescription.className = "mt-1 text-sm text-stone-500";
-        cardDescription.textContent = event.description || "";
-        const meta = document.createElement("dl");
-        meta.className = "mt-3 grid grid-cols-2 gap-2 text-sm text-stone-700";
-        [
-          ["Speaker", event.speaker_name || event.speaker_id || "—"],
-          ["Date", event.date || ""],
-          ["Time", eventTime(event)],
-          ["Hall", event.hall_label || String(event.capacity ?? "")],
-          ["Booked", String(event.seats_booked ?? 0)],
-          ["Open seats", String(event.remaining_seats ?? "")],
-        ].forEach(([label, value]) => {
-          const wrap = document.createElement("div");
-          const dt = document.createElement("dt");
-          dt.className = "text-xs font-medium uppercase tracking-wide text-stone-400";
-          dt.textContent = label;
-          const dd = document.createElement("dd");
-          dd.className = "mt-0.5";
-          dd.textContent = value;
-          wrap.append(dt, dd);
-          meta.append(wrap);
-        });
-        const badgeRow = document.createElement("div");
-        badgeRow.className = "mt-3";
-        badgeRow.append(statusBadge(event.status, event.display_status));
-        const cardActions = document.createElement("div");
-        cardActions.className = "mt-3 flex flex-wrap items-center gap-3";
-        const cardReject = document.createElement("button");
-        cardReject.type = "button";
-        cardReject.className = BTN_DANGER;
-        cardReject.textContent = "Reject";
-        cardReject.addEventListener("click", () => rejectEvent(event));
-        cardActions.append(cardReject);
-        card.append(cardTitle, cardDescription, meta, badgeRow, cardActions);
+        const meta = document.createElement("p");
+        meta.className = "mt-1 text-sm text-stone-500";
+        meta.textContent = `${event.date || ""} · ${eventTime(event)} · ${event.hall_label || ""} · ${event.seats_label || `${event.open_seats ?? event.remaining_seats ?? 0} open / ${event.sold_seats ?? event.seats_booked ?? 0} sold`}`;
+        const cardActions = eventActionButtons(event);
+        cardActions.className = "mt-3 flex flex-nowrap items-center gap-3";
+        card.append(cardTitle, meta, cardActions);
         cardList.append(card);
       });
     }
@@ -692,8 +695,7 @@
 
     function speakerLabel(speaker) {
       const name = (speaker.name || "").trim();
-      const id = speaker.id || "";
-      return name && name !== id ? `${name} (${id})` : id;
+      return name || speaker.id || "";
     }
 
     function fillSpeakerSelect(select, speakers, selected) {
@@ -744,7 +746,6 @@
         return false;
       }
 
-      refreshButton.disabled = true;
       try {
         const response = await fetch("/api/organizer/events", {
           headers: {
@@ -771,15 +772,8 @@
         renderEvents([]);
         showStatus("Could not reach the organizer API.", "error");
         return false;
-      } finally {
-        refreshButton.disabled = false;
       }
     }
-
-    refreshButton.addEventListener("click", () => {
-      loadEvents();
-      loadStats();
-    });
 
     async function loadStats() {
       const id = organizerId();
@@ -800,6 +794,25 @@
 
     const inviteForm = document.getElementById("invite-speaker-form");
     const inviteSpeaker = document.getElementById("invite_speaker_id");
+
+    function bindSessionTimes(startId, endId) {
+      const startEl = document.getElementById(startId);
+      const endEl = document.getElementById(endId);
+      if (!startEl || !endEl) return;
+      const sync = () => {
+        if (!startEl.value) {
+          endEl.value = "";
+          return;
+        }
+        const [hour, minute] = startEl.value.split(":").map(Number);
+        const total = hour * 60 + minute + 90;
+        endEl.value = `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+      };
+      startEl.addEventListener("change", sync);
+      startEl.form?.addEventListener("reset", () => setTimeout(sync, 0));
+      sync();
+    }
+    bindSessionTimes("invite_start_time", "invite_end_time");
     const inviteModal = document.getElementById("invite-modal");
     const inviteBackdrop = document.getElementById("invite-backdrop");
     const inviteDialog = document.getElementById("invite-dialog");
@@ -991,33 +1004,6 @@
       return wrap;
     }
 
-    function isCannedTavilySnippet(text) {
-      return /public conference listings and topic pages mention/i.test(String(text || ""));
-    }
-
-    function tavilyPanel(item, assessment) {
-      const web = assessment.web_check || {};
-      const wrap = document.createElement("div");
-      wrap.className = "mt-3";
-      wrap.setAttribute("data-tavily-panel", "true");
-      const badge = document.createElement("span");
-      badge.setAttribute("data-tavily-badge", "true");
-      badge.className = "inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-800";
-      badge.textContent = item.tavily_badge || assessment.tavily_badge || web.verification_badge || "Verified via Tavily";
-      wrap.append(badge);
-      const liveSnippet = [web.summary, web.answer, ...(Array.isArray(web.results) ? web.results.map((hit) => hit && hit.snippet) : [])]
-        .map((text) => String(text || "").trim())
-        .find((text) => text && !isCannedTavilySnippet(text) && !web.fallback);
-      if (liveSnippet) {
-        const snippet = document.createElement("p");
-        snippet.className = "mt-2 text-sm text-stone-600";
-        snippet.setAttribute("data-tavily-summary", "true");
-        snippet.textContent = liveSnippet;
-        wrap.append(snippet);
-      }
-      return wrap;
-    }
-
     function scoreRationaleFallback(badge, notable) {
       const top = notable && notable[0];
       const title = top && (top.title || top.id);
@@ -1087,7 +1073,6 @@
       if (notable.length) {
         box.append(overlapHoverChip(notable, badgeLabel));
       }
-      box.append(tavilyPanel(item, assessment));
       return box;
     }
 
@@ -1099,7 +1084,7 @@
         ["Talk title", item.title || "—"],
         ["Category", item.category || "—"],
         ["Date / time", [item.date, item.start_time && item.end_time ? `${item.start_time}–${item.end_time}` : ""].filter(Boolean).join(" · ") || "—"],
-        ["Requested capacity", item.hall_label || (item.capacity != null ? `${item.capacity} seats` : "—")],
+        ["Hall", item.hall_label || hallDisplayName(item.capacity)],
       ].forEach(([label, value]) => {
         const wrap = document.createElement("div");
         const dt = document.createElement("dt");
@@ -1171,17 +1156,21 @@
         const row = document.createElement("div");
         row.className = "mt-3 flex flex-wrap items-center gap-2";
         row.append(talkBadge(item.display_status || item.status));
-        const restoreButton = document.createElement("button");
-        restoreButton.type = "button";
-        restoreButton.className = BTN_PRIMARY;
-        restoreButton.textContent = "Restore";
-        restoreButton.addEventListener("click", () => restoreTrash(item.id));
+        const cancelledEvent = item.kind === "cancelled_event" || item.status === "cancelled" || item.status === "deleted";
+        if (!cancelledEvent) {
+          const restoreButton = document.createElement("button");
+          restoreButton.type = "button";
+          restoreButton.className = BTN_PRIMARY;
+          restoreButton.textContent = "Restore";
+          restoreButton.addEventListener("click", () => restoreTrash(item.id));
+          row.append(restoreButton);
+        }
         const deleteButton = document.createElement("button");
         deleteButton.type = "button";
         deleteButton.className = BTN_DANGER;
         deleteButton.textContent = "Delete permanently";
-        deleteButton.addEventListener("click", () => deleteTrash(item.id, item.title));
-        row.append(restoreButton, deleteButton);
+        deleteButton.addEventListener("click", () => deleteTrash(item.id, item.title, item));
+        row.append(deleteButton);
         card.append(title, proposalDetails(item, { retention: retentionBadge(item) }), row);
         trashList.append(card);
       });
@@ -1246,8 +1235,15 @@
     function formatEventWhen(value) {
       if (!value) return "—";
       const stamp = new Date(value.includes("T") ? value : value.replace(" ", "T"));
-      if (Number.isNaN(stamp.getTime())) return value.replace("T", " ");
-      return stamp.toLocaleString([], { dateStyle: "medium", timeStyle: "short" });
+      if (Number.isNaN(stamp.getTime())) return String(value).replace("T", " ");
+      return stamp.toLocaleString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      });
     }
 
     function eventBadge(item) {
@@ -1275,6 +1271,8 @@
         applyEnter(row, index);
         const when = document.createElement("td");
         when.className = "whitespace-nowrap px-3 py-2.5 text-stone-500";
+        when.setAttribute("data-event-when", "true");
+        when.lang = "en";
         when.textContent = formatEventWhen(item.occurred_at);
         const type = document.createElement("td");
         type.className = "px-3 py-2.5";
@@ -1405,12 +1403,16 @@
       showTab(restoredToEvents ? "events" : "proposals");
     }
 
-    async function deleteTrash(id, title) {
+    async function deleteTrash(id, title, item) {
       if (!window.confirm(`Permanently delete "${title || "this proposal"}"?`)) return;
-      const response = await fetch(`/api/organizer/trash/${id}`, {
+      const cancelledEvent = item && (item.kind === "cancelled_event" || item.status === "cancelled" || item.status === "deleted");
+      const response = await fetch(
+        cancelledEvent ? `/api/organizer/events/${item.event_id || id}` : `/api/organizer/trash/${id}`,
+        {
         method: "DELETE",
         headers: { Accept: "application/json" },
-      });
+        },
+      );
       const data = await readBody(response);
       if (!response.ok) {
         showStatus(data.error || "Could not delete the proposal.", "error");
@@ -1420,19 +1422,50 @@
       await Promise.all([loadTalkWorkflow(), loadEvents({ announce: false }), loadStats(), loadEventLog()]);
     }
 
-    async function rejectEvent(event) {
-      const response = await fetch(`/api/organizer/events/${event.id}/reject`, {
+    function eventActionButtons(event) {
+      const actions = document.createElement("div");
+      actions.className = "flex flex-nowrap items-center gap-3";
+      const detailsButton = document.createElement("button");
+      detailsButton.type = "button";
+      detailsButton.className = BTN_GHOST;
+      detailsButton.textContent = "More Details";
+      detailsButton.addEventListener("click", () => {
+        if (typeof window.openEventDetail === "function") window.openEventDetail(event);
+      });
+      actions.append(detailsButton);
+      const live = event.status === "approved" || event.status === "active";
+      if (live) {
+        const cancelButton = document.createElement("button");
+        cancelButton.type = "button";
+        cancelButton.className = BTN_CANCEL;
+        cancelButton.textContent = "Cancel Event";
+        cancelButton.addEventListener("click", () => cancelEvent(event));
+        actions.append(cancelButton);
+      }
+      return actions;
+    }
+
+    window.EVENT_DETAIL_CAN_CANCEL = function (event) {
+      if (typeof window.closeEventDetail === "function") window.closeEventDetail();
+      return cancelEvent(event);
+    };
+
+    async function cancelEvent(event) {
+      if (!window.confirm(`Cancel "${event.title || "this event"}"? Ticket holders will be notified of a full refund, and the lecturer will be notified.`)) {
+        return;
+      }
+      const response = await fetch(`/api/organizer/events/${event.id}/cancel`, {
         method: "POST",
         headers: { Accept: "application/json", "Content-Type": "application/json" },
         body: JSON.stringify({}),
       });
       const data = await readBody(response);
       if (!response.ok) {
-        showStatus(data.error || "Could not reject the event.", "error");
+        showStatus(data.error || "Could not cancel the event.", "error");
         return;
       }
-      showStatus(`Rejected "${event.title}". It was moved to trash for 7 days.`, "info");
-      await Promise.all([loadTalkWorkflow(), loadEvents({ announce: false }), loadStats(), loadEventLog()]);
+      showStatus(`Cancelled "${event.title}". It was moved to the recycling bin, and the lecturer was notified.`, "success");
+      await Promise.all([loadTalkWorkflow(), loadEvents({ announce: false }), loadStats(), loadEventLog(), loadOrganizerChat()]);
       showTab("trash");
     }
 
@@ -1481,11 +1514,261 @@
       showTab("request");
     });
 
+    function paintOrgChatBadge(count) {
+      const unread = Number(count) || 0;
+      if (!orgChatBadge) return;
+      orgChatBadge.textContent = unread > 99 ? "99+" : String(unread);
+      orgChatBadge.classList.toggle("hidden", unread < 1);
+      orgChatBadge.classList.toggle("inline-flex", unread > 0);
+      orgChatOpenButton?.setAttribute(
+        "aria-label",
+        unread > 0 ? `Open chat, ${unread} unread` : "Open chat",
+      );
+    }
+
+    function isOrgChatOpen() {
+      return orgChatSidebar && orgChatSidebar.getAttribute("aria-hidden") === "false";
+    }
+
+    function conversationTitle(item) {
+      const name = (item && (item.peer_name || item.title || "")).trim();
+      if (name && name.toLowerCase() !== "event cancelled") return name;
+      return "Lecturer";
+    }
+
+    function showOrgChatInbox() {
+      orgSelectedChatId = "";
+      if (orgChatInbox) orgChatInbox.hidden = false;
+      if (orgEmailView) {
+        orgEmailView.classList.add("hidden");
+        orgEmailView.classList.remove("flex");
+      }
+      if (orgReplyInput) {
+        orgReplyInput.value = "";
+        orgReplyInput.defaultValue = "";
+      }
+    }
+
+    function hideOrgChatAlert() {
+      if (!orgChatAlert) return;
+      orgChatAlert.classList.add("hidden");
+      orgChatAlert.classList.remove("flex");
+      orgChatAlert.setAttribute("aria-hidden", "true");
+    }
+
+    function showOrgChatAlert(message) {
+      if (!orgChatAlert || !message) return;
+      orgChatAlertBody.textContent = message;
+      orgChatAlert.classList.remove("hidden");
+      orgChatAlert.classList.add("flex");
+      orgChatAlert.setAttribute("aria-hidden", "false");
+    }
+
+    function openOrgChat(message) {
+      if (!orgChatSidebar) return;
+      orgChatSidebar.classList.remove("translate-x-full", "pointer-events-none", "invisible");
+      orgChatSidebar.classList.add("translate-x-0");
+      orgChatSidebar.setAttribute("aria-hidden", "false");
+      orgChatOpenButton?.setAttribute("aria-expanded", "true");
+      orgChatOpenButton?.classList.add("right-[min(100vw,24rem)]");
+      orgChatOpenButton?.classList.remove("right-2", "right-0");
+      if (message && message.id) {
+        openOrgChatEmail(message);
+      } else {
+        paintOrgChatBadge(0);
+        showOrgChatInbox();
+        markOrgChatRead();
+      }
+    }
+
+    function closeOrgChat() {
+      if (!orgChatSidebar || !isOrgChatOpen()) return;
+      orgChatSidebar.classList.add("translate-x-full", "pointer-events-none", "invisible");
+      orgChatSidebar.classList.remove("translate-x-0");
+      orgChatSidebar.setAttribute("aria-hidden", "true");
+      orgChatOpenButton?.setAttribute("aria-expanded", "false");
+      orgChatOpenButton?.classList.remove("right-[min(100vw,24rem)]");
+      orgChatOpenButton?.classList.add("right-2");
+      showOrgChatInbox();
+    }
+
+    async function markOrgChatRead(messageId) {
+      const response = await fetch("/api/organizer/messages/read", {
+        method: "POST",
+        headers: { Accept: "application/json", "Content-Type": "application/json" },
+        body: JSON.stringify({ message_id: messageId || "" }),
+      });
+      const body = await readBody(response);
+      if (response.ok) {
+        paintOrgChatBadge(body.unread_count || 0);
+        renderOrgMessages(Array.isArray(body.messages) ? body.messages : orgChatItems);
+        return Array.isArray(body.thread) ? body.thread : [];
+      }
+      return [];
+    }
+
+    function renderOrgEmailThread(items, fallback) {
+      if (!orgEmailThread) return;
+      orgEmailThread.replaceChildren();
+      const thread = Array.isArray(items) && items.length ? items : (fallback ? [fallback] : []);
+      thread.forEach((item) => {
+        const bubble = document.createElement("article");
+        const outgoing = (item.sender_role || "") === "organizer" || item.from_label === "You";
+        bubble.className = outgoing
+          ? "ml-6 rounded-2xl border border-amber-200 bg-white px-4 py-3 text-sm text-stone-800 shadow-sm"
+          : "mr-4 rounded-2xl border border-rose-100 bg-white px-4 py-3 text-sm text-stone-800 shadow-sm";
+        const from = document.createElement("p");
+        from.className = "text-[11px] font-semibold uppercase tracking-wide text-clay-700";
+        from.textContent = item.from_label || (outgoing ? "You" : "Lecturer");
+        const when = document.createElement("p");
+        when.className = "text-[11px] text-stone-400";
+        when.textContent = item.created_at || "";
+        const body = document.createElement("p");
+        body.className = "mt-2 whitespace-pre-wrap leading-relaxed";
+        body.textContent = item.body || "";
+        bubble.append(from, when, body);
+        orgEmailThread.append(bubble);
+      });
+    }
+
+    async function openOrgChatEmail(message) {
+      if (!message || !message.id || !orgEmailView) return;
+      orgSelectedChatId = message.id;
+      if (orgChatInbox) orgChatInbox.hidden = true;
+      orgEmailView.classList.remove("hidden");
+      orgEmailView.classList.add("flex");
+      if (orgReplyInput) {
+        orgReplyInput.value = "";
+        orgReplyInput.defaultValue = "";
+      }
+      if (orgEmailSubject) orgEmailSubject.textContent = conversationTitle(message);
+      if (orgEmailMeta) orgEmailMeta.textContent = "Type a message below to reply";
+      renderOrgEmailThread([], message);
+      const thread = await markOrgChatRead(message.id);
+      if (orgSelectedChatId === message.id) renderOrgEmailThread(thread, message);
+      if (orgReplyInput) orgReplyInput.focus();
+    }
+
+    async function sendOrgChatReply(event) {
+      event.preventDefault();
+      const message = orgChatItems.find((item) => item.id === orgSelectedChatId);
+      const body = (orgReplyInput?.value || "").trim();
+      if (!message) {
+        showStatus("Open a message before sending a reply.", "error");
+        return;
+      }
+      if (body.length < 2) {
+        showStatus("Add a short reply before sending.", "error");
+        return;
+      }
+      const response = await fetch("/api/organizer/messages", {
+        method: "POST",
+        headers: { Accept: "application/json", "Content-Type": "application/json" },
+        body: JSON.stringify({
+          body,
+          parent_id: message.id,
+          event_id: message.event_id || "",
+        }),
+      });
+      const data = await readBody(response);
+      if (!response.ok) {
+        showStatus(data.error || "Could not send the reply.", "error");
+        return;
+      }
+      if (orgReplyInput) orgReplyInput.value = "";
+      renderOrgEmailThread(Array.isArray(data.thread) ? data.thread : [], message);
+      showStatus("Reply sent to the lecturer.", "success");
+    }
+
+    function renderOrgMessages(items) {
+      if (!orgMessages) return;
+      orgMessages.replaceChildren();
+      const messages = Array.isArray(items) ? items : [];
+      orgChatItems = messages;
+      orgMessages.hidden = messages.length === 0;
+      if (orgMessagesEmpty) orgMessagesEmpty.hidden = messages.length > 0;
+      messages.forEach((item) => {
+        const note = document.createElement("button");
+        note.type = "button";
+        note.className = item.unread
+          ? "flex w-full items-start gap-3 bg-rose-50/80 px-4 py-3 text-left transition hover:bg-rose-50"
+          : "flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-sand-50";
+        const unreadDot = document.createElement("span");
+        unreadDot.className = item.unread
+          ? "mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-500"
+          : "mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-amber-200";
+        const copy = document.createElement("span");
+        copy.className = "min-w-0 flex-1";
+        const label = document.createElement("p");
+        label.className = item.unread
+          ? "text-[11px] font-semibold uppercase tracking-wide text-emerald-700"
+          : "text-[11px] font-semibold uppercase tracking-wide text-stone-400";
+        label.textContent = item.unread ? "Unread" : "Lecturer";
+        const subject = document.createElement("p");
+        subject.className = "truncate text-sm font-semibold text-stone-900";
+        subject.textContent = conversationTitle(item);
+        const preview = document.createElement("p");
+        preview.className = "mt-0.5 truncate text-xs text-stone-500";
+        preview.textContent = item.body || "";
+        copy.append(label, subject, preview);
+        note.append(unreadDot, copy);
+        note.addEventListener("click", () => openOrgChatEmail(item));
+        orgMessages.append(note);
+      });
+    }
+
+    async function loadOrganizerChat() {
+      const response = await fetch("/api/organizer/messages", { headers: { Accept: "application/json" } });
+      const body = await readBody(response);
+      if (!response.ok) {
+        renderOrgMessages([]);
+        paintOrgChatBadge(0);
+        return;
+      }
+      renderOrgMessages(Array.isArray(body.messages) ? body.messages : []);
+      paintOrgChatBadge(body.unread_count);
+      const unread = Array.isArray(body.messages) ? body.messages.filter((item) => item.unread) : [];
+      if (unread.length && !orgChatAlertShown) {
+        orgChatAlertShown = true;
+        showOrgChatAlert(`${conversationTitle(unread[0])}: ${unread[0].body || "New message"}`);
+      }
+    }
+
+    orgChatOpenButton?.addEventListener("click", () => {
+      hideOrgChatAlert();
+      if (isOrgChatOpen()) closeOrgChat();
+      else openOrgChat();
+    });
+    document.getElementById("close-organizer-chat")?.addEventListener("click", closeOrgChat);
+    document.getElementById("organizer-chat-email-back")?.addEventListener("click", showOrgChatInbox);
+    document.getElementById("organizer-chat-alert-open")?.addEventListener("click", () => {
+      hideOrgChatAlert();
+      const unread = orgChatItems.find((item) => item.unread) || orgChatItems[0];
+      openOrgChat(unread);
+    });
+    orgChatAlert?.addEventListener("click", (event) => {
+      if (event.target.closest("[data-org-chat-alert-dismiss]")) hideOrgChatAlert();
+    });
+    orgReplyForm?.addEventListener("submit", sendOrgChatReply);
+    document.addEventListener("keydown", (event) => {
+      if (event.key !== "Escape") return;
+      if (orgChatAlert && !orgChatAlert.classList.contains("hidden")) {
+        hideOrgChatAlert();
+        return;
+      }
+      if (orgEmailView && !orgEmailView.classList.contains("hidden")) {
+        showOrgChatInbox();
+        return;
+      }
+      if (isOrgChatOpen()) closeOrgChat();
+    });
+
     loadSpeakers();
     loadEvents({ announce: false });
     loadTalkWorkflow();
     loadStats();
     loadEventLog();
+    loadOrganizerChat();
   </script>
 </body>
 </html>
