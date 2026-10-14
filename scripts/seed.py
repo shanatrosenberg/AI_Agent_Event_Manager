@@ -357,6 +357,7 @@ def main() -> None:
             ensure_talk_portal_schema,
         )
         from services.seating import ensure_booking_seat_schema
+        from services.waitlist import ensure_waitlist_schema
 
         db.create_all()
         ensure_password_hash_columns()
@@ -365,6 +366,7 @@ def main() -> None:
         ensure_talk_portal_schema()
         ensure_event_store_schema()
         ensure_booking_seat_schema()
+        ensure_waitlist_schema()
         summary = seed_database(reset=True)
         print("Seeded conference program:")
         for key, value in summary.items():

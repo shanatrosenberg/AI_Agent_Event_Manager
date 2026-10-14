@@ -25,8 +25,15 @@ from services.auth import (
 )
 from cqrs import OrganizerStatsQuery, organizer_stats_handler
 from services.scheduling import HALL_CAPACITIES, HALL_LABELS, start_time_slots
+from services.topics import ensure_topics_schema, list_topic_payloads
 from services.chat import ensure_chat_schema, list_messages_for
 from services.seating import ensure_booking_seat_schema
+from services.waitlist import (
+    WAITLIST_MAX_SEATS,
+    enrich_waitlist_messages,
+    ensure_waitlist_schema,
+    waitlist_cards,
+)
 
 DEFAULT_DATABASE_URL = "http://my-event-manager.somee.com"
 
@@ -154,7 +161,6 @@ def create_app(config: dict | None = None) -> Flask:
         attendee_ticket_cards,
         browse_event_cards,
         browse_filter_options,
-        search_browse_event_cards,
     )
     from controllers.auth import auth_bp
     from controllers.organizer import organizer_bp
@@ -198,6 +204,7 @@ def create_app(config: dict | None = None) -> Flask:
             hall_capacities=HALL_CAPACITIES,
             hall_labels=HALL_LABELS,
             start_time_slots=start_time_slots(),
+            topics=list_topic_payloads(),
             kpi_attendees=stats["attendees"],
             kpi_events_held=stats["events_held"],
         )
@@ -211,31 +218,24 @@ def create_app(config: dict | None = None) -> Flask:
     def browse_events():
         user = current_user()
         attendee_id = user.get("user_id") if user and user.get("role") == "attendee" else ""
-        search_query = (request.args.get("q") or request.args.get("query") or "").strip()
         topic = (request.args.get("topic") or request.args.get("category") or "").strip()
         speaker = (request.args.get("speaker") or request.args.get("speaker_id") or "").strip()
         all_events = browse_event_cards()
-        if search_query:
-            events = search_browse_event_cards(
-                search_query,
-                topic=topic or None,
-                speaker=speaker or None,
-            )
-        elif topic or speaker:
-            events = browse_event_cards(topic=topic or None, speaker=speaker or None)
-        else:
-            events = all_events
+        events = (
+            browse_event_cards(topic=topic or None, speaker=speaker or None)
+            if topic or speaker
+            else all_events
+        )
         return render_template(
             "browse_events.html",
             events=events,
-            all_events=all_events,
             filter_options=browse_filter_options(all_events),
-            search_query=search_query,
             selected_topic=topic,
             selected_speaker=speaker,
             attendee_id=attendee_id,
             attendee_name=user.get("name") if user and user.get("role") == "attendee" else "",
             hall_labels=HALL_LABELS,
+            waitlist_max_seats=WAITLIST_MAX_SEATS,
         )
 
     @app.route("/my-events")
@@ -247,9 +247,11 @@ def create_app(config: dict | None = None) -> Flask:
         return render_template(
             "my_tickets.html",
             tickets=attendee_ticket_cards(attendee_id),
-            messages=list_messages_for(attendee_id, "attendee"),
+            messages=enrich_waitlist_messages(list_messages_for(attendee_id, "attendee"), attendee_id),
+            waitlist=waitlist_cards(attendee_id),
             attendee_id=attendee_id,
             attendee_name=user.get("name") if user else "",
+            waitlist_max_seats=WAITLIST_MAX_SEATS,
         )
 
     @app.route("/speaker")
@@ -262,6 +264,7 @@ def create_app(config: dict | None = None) -> Flask:
             hall_capacities=HALL_CAPACITIES,
             hall_labels=HALL_LABELS,
             start_time_slots=start_time_slots(),
+            topics=list_topic_payloads(),
         )
 
     from services.deep_agent import start_assessment_agent
@@ -297,5 +300,7 @@ if __name__ == "__main__":
         ensure_event_store_schema()
         ensure_booking_seat_schema()
         ensure_chat_schema()
+        ensure_topics_schema()
+        ensure_waitlist_schema()
         ensure_admin_organizer()
     app.run(debug=True, port=5000, threaded=True)

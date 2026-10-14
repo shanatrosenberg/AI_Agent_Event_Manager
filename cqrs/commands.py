@@ -1,8 +1,10 @@
 from dataclasses import dataclass
 from uuid import uuid4
 
+from extensions import db
 from models.booking import Booking
 from models.event import Event
+from models.waitlist import WaitlistEntry
 from services.scheduling import APPROVED_STATUSES, CANCELLED_STATUS, DELETED_STATUS
 from models.submission import (
     DEFAULT_REJECTION_MESSAGE,
@@ -262,9 +264,7 @@ class RegisterAttendeeHandler:
         if event.status not in BOOKABLE_STATUSES:
             raise DomainError("event is not active", status=409)
 
-        if self._store.has_booking(command.attendee_id, command.event_id):
-            raise DomainError("attendee is already registered for this event", status=409)
-
+        existing = self._store.get_confirmed_booking(command.attendee_id, command.event_id)
         requested = normalize_seat_ids(command.seat_ids)
         if requested:
             if command.seats and command.seats != len(requested):
@@ -283,11 +283,15 @@ class RegisterAttendeeHandler:
             )
 
         taken = reserved_seat_ids(event)
+        owned = set(existing.seat_ids) if existing is not None else set()
         valid = set(hall_seat_ids(event.capacity))
         if requested:
             unknown = [seat for seat in requested if seat not in valid]
             if unknown:
                 raise DomainError(f"unknown seat(s): {', '.join(unknown)}")
+            mine = [seat for seat in requested if seat in owned]
+            if mine:
+                raise DomainError(f"you already hold seat(s): {', '.join(mine)}", status=409)
             conflict = [seat for seat in requested if seat in taken]
             if conflict:
                 raise DomainError(f"seat(s) already reserved: {', '.join(conflict)}", status=409)
@@ -312,8 +316,29 @@ class RegisterAttendeeHandler:
                 "seat_ids": labels,
                 "seats_booked": event.seats_booked,
                 "remaining_seats": event.remaining_seats,
+                "additional": existing is not None,
             },
         )
+
+        if existing is not None:
+            existing.seat_labels = list(existing.seat_ids) + labels
+            existing.seats = len(existing.seat_ids)
+            existing.added_seat_ids = labels
+            existing.additional = True
+            self._store.append(
+                "AdditionalSeatsPurchased",
+                {
+                    "booking_id": existing.id,
+                    "event_id": event.id,
+                    "attendee_id": command.attendee_id,
+                    "seats": seats,
+                    "seat_ids": labels,
+                    "seats_booked": event.seats_booked,
+                    "remaining_seats": event.remaining_seats,
+                },
+            )
+            self._store.save_booking(existing)
+            return existing
 
         booking = Booking(
             id=str(uuid4()),
@@ -323,7 +348,211 @@ class RegisterAttendeeHandler:
             seat_labels=labels,
             status="confirmed",
         )
+        booking.added_seat_ids = labels
+        booking.additional = False
         self._store.append("AttendeeRegistered", booking.to_dict())
+        self._store.save_booking(booking)
+        return booking
+
+
+@dataclass
+class CancelAttendeeRegistrationCommand:
+    booking_id: str
+    attendee_id: str
+    seat_ids: list[str] | None = None
+
+
+class CancelAttendeeRegistrationHandler:
+    def __init__(self, store: EventStore) -> None:
+        self._store = store
+
+    def handle(self, command: CancelAttendeeRegistrationCommand) -> Booking:
+        from services.scheduling import CANCELLATION_POLICY, registration_cancellable
+        from services.seating import normalize_seat_ids
+
+        booking = self._store.get_booking(command.booking_id)
+        if booking is None:
+            raise DomainError("booking not found", status=404)
+        if booking.attendee_id != command.attendee_id:
+            raise DomainError("booking does not belong to this attendee", status=403)
+        if booking.status != "confirmed":
+            raise DomainError("registration is already cancelled", status=409)
+
+        event = self._store.get_event(booking.event_id)
+        if event is None:
+            raise DomainError("event not found", status=404)
+        if not registration_cancellable(event.date, event.start_time):
+            raise DomainError(CANCELLATION_POLICY, status=403)
+
+        held = booking.seat_ids
+        requested = normalize_seat_ids(command.seat_ids)
+        if requested:
+            unknown = [seat for seat in requested if seat not in held]
+            if unknown:
+                raise DomainError(f"seat(s) not on this registration: {', '.join(unknown)}")
+            released_ids = requested
+            remaining = [seat for seat in held if seat not in set(released_ids)]
+            released = len(released_ids)
+            booking.seat_labels = remaining
+            booking.seats = len(remaining)
+            if not remaining:
+                booking.status = "cancelled"
+        else:
+            released_ids = list(held)
+            remaining = []
+            released = len(released_ids) or max(0, booking.seats or 0)
+            booking.status = "cancelled"
+
+        event.seats_booked = max(0, (event.seats_booked or 0) - released)
+        self._store.save_read_model(event)
+        self._store.append(
+            "SeatReleased",
+            {
+                "booking_id": booking.id,
+                "event_id": event.id,
+                "attendee_id": command.attendee_id,
+                "seats": released,
+                "seat_ids": released_ids,
+                "remaining_seat_ids": remaining,
+                "seats_booked": event.seats_booked,
+                "remaining_seats": event.remaining_seats,
+            },
+        )
+        if booking.status == "cancelled":
+            self._store.append("BookingCancelled", booking.to_dict())
+        self._store.save_booking(booking)
+        if released > 0:
+            from services.waitlist import notify_seats_released
+
+            notices = notify_seats_released(event, released)
+            if notices.get("notified"):
+                self._store.append(
+                    "WaitlistNotified",
+                    {
+                        "event_id": event.id,
+                        "released": released,
+                        "available": notices.get("available"),
+                        "notified": notices.get("notified"),
+                    },
+                )
+                self._store.save_read_model(event)
+        return booking
+
+
+@dataclass
+class JoinWaitlistCommand:
+    attendee_id: str
+    event_id: str
+    seats: int = 1
+
+
+class JoinWaitlistHandler:
+    def __init__(self, store: EventStore) -> None:
+        self._store = store
+
+    def handle(self, command: JoinWaitlistCommand) -> WaitlistEntry:
+        from services.scheduling import BOOKABLE_STATUSES
+        from services.waitlist import get_active_entry, waitlist_seat_cap
+
+        event = self._store.get_event(command.event_id)
+        if event is None:
+            raise DomainError("event not found", status=404)
+        if event.status not in BOOKABLE_STATUSES:
+            raise DomainError("event is not active", status=409)
+        if event.remaining_seats > 0:
+            raise DomainError("event still has open seats — buy tickets instead", status=409)
+        if self._store.has_booking(command.attendee_id, command.event_id):
+            raise DomainError("attendee is already registered for this event", status=409)
+        if get_active_entry(command.attendee_id, command.event_id) is not None:
+            raise DomainError("attendee is already on the waitlist for this event", status=409)
+
+        cap = waitlist_seat_cap(event.capacity)
+        try:
+            seats = int(command.seats)
+        except (TypeError, ValueError) as exc:
+            raise DomainError("seats must be an integer") from exc
+        if seats < 1:
+            raise DomainError("seats must be at least 1")
+        if seats > cap:
+            raise DomainError(f"waitlist seats cannot exceed {cap}", status=409)
+
+        self._store.ensure_attendee(command.attendee_id)
+        entry = WaitlistEntry(
+            id=str(uuid4()),
+            event_id=event.id,
+            attendee_id=command.attendee_id,
+            seats_requested=seats,
+            status="waiting",
+        )
+        db.session.add(entry)
+        self._store.append(
+            "WaitlistJoined",
+            {
+                "id": entry.id,
+                "event_id": event.id,
+                "attendee_id": command.attendee_id,
+                "seats_requested": seats,
+            },
+        )
+        self._store.save_read_model(event)
+        return entry
+
+
+@dataclass
+class ClaimWaitlistSeatsCommand:
+    attendee_id: str
+    event_id: str
+    seats: int = 1
+
+
+class ClaimWaitlistSeatsHandler:
+    def __init__(self, store: EventStore, register_handler: RegisterAttendeeHandler) -> None:
+        self._store = store
+        self._register = register_handler
+
+    def handle(self, command: ClaimWaitlistSeatsCommand) -> Booking:
+        from services.waitlist import get_active_entry
+
+        entry = get_active_entry(command.attendee_id, command.event_id)
+        if entry is None:
+            raise DomainError("waitlist entry not found", status=404)
+
+        event = self._store.get_event(command.event_id)
+        if event is None:
+            raise DomainError("event not found", status=404)
+        remaining = event.remaining_seats
+        if remaining < 1:
+            raise DomainError("those seats were already claimed", status=409)
+
+        try:
+            requested = int(command.seats)
+        except (TypeError, ValueError) as exc:
+            raise DomainError("seats must be an integer") from exc
+        if requested < 1:
+            raise DomainError("seats must be at least 1")
+        seats = min(requested, entry.seats_requested, remaining)
+
+        booking = self._register.handle(
+            RegisterAttendeeCommand(
+                attendee_id=command.attendee_id,
+                event_id=command.event_id,
+                seats=seats,
+            )
+        )
+        entry.status = "claimed"
+        entry.claimed_seats = booking.seats
+        self._store.append(
+            "WaitlistClaimed",
+            {
+                "id": entry.id,
+                "event_id": event.id,
+                "attendee_id": command.attendee_id,
+                "seats": booking.seats,
+                "seat_ids": booking.seat_ids,
+                "seats_booked": event.seats_booked,
+                "remaining_seats": event.remaining_seats,
+            },
+        )
         self._store.save_booking(booking)
         return booking
 
@@ -870,9 +1099,7 @@ class CancelEventHandler:
             raise DomainError("event not found", status=404)
         speaker_id = (command.speaker_id or "").strip()
         if speaker_id:
-            if event.speaker_id != speaker_id:
-                raise DomainError("event does not belong to this speaker", status=403)
-            cancelled_by = "speaker"
+            raise DomainError("Lecturers cannot cancel events.", status=403)
         else:
             organizer_id = command.organizer_id or admin_organizer_id()
             if event.organizer_id != organizer_id:
@@ -895,6 +1122,9 @@ class CancelEventHandler:
 
         from services.chat import notify_event_cancelled
 
+        from services.waitlist import cancel_event_waitlist
+
+        cancel_event_waitlist(event.id)
         notices = notify_event_cancelled(
             event,
             attendee_ids=attendee_ids,

@@ -51,7 +51,7 @@
         <form method="post" action="{{ url_for('auth.speaker_login') }}" class="mt-6 space-y-4" novalidate>
           <input type="hidden" name="next" value="{{ next_url or '/speaker' }}">
           <div>
-            <label for="user_id" class="block text-sm font-medium text-stone-700">Your profile</label>
+            <label for="user_id" class="block text-sm font-medium text-stone-700">User Name</label>
             {% if speakers %}
             <select
               id="user_id"

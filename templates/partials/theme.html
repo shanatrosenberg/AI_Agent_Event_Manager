@@ -60,7 +60,7 @@
     z-index: 50;
   }
   .overlap-cloud {
-    max-height: min(85vh, 22rem);
+    max-height: 12rem;
     overflow-y: auto;
     overscroll-behavior: contain;
   }
@@ -386,6 +386,200 @@
   }
   .date-picker__today:hover { text-decoration: underline; }
 
+  .time-picker__trigger {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 0.75rem;
+    border-radius: 0.75rem;
+    border: 1px solid #fde68a;
+    background: #faf6ef;
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+    outline: none;
+    box-shadow: 0 1px 2px rgba(154, 52, 18, 0.04);
+    transition: border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+  }
+  .time-picker__trigger:hover {
+    border-color: #fcd34d;
+    background: #fff;
+  }
+  .time-picker__trigger:focus,
+  .time-picker.is-open > .time-picker__trigger {
+    border-color: #fbbf24;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(253, 230, 138, 0.62);
+  }
+  .time-picker__trigger--readonly {
+    cursor: default;
+    border-color: #fde68a;
+    background: linear-gradient(90deg, #faf6ef 0%, rgba(255, 247, 237, 0.92) 100%);
+    box-shadow: inset 0 1px 2px rgba(154, 52, 18, 0.04);
+  }
+  .time-picker__trigger--readonly:hover,
+  .time-picker__trigger--readonly:focus {
+    border-color: #fde68a;
+    background: linear-gradient(90deg, #faf6ef 0%, rgba(255, 247, 237, 0.92) 100%);
+    box-shadow: inset 0 1px 2px rgba(154, 52, 18, 0.04);
+  }
+  .time-picker__icon {
+    display: inline-flex;
+    height: 2rem;
+    width: 2rem;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.5rem;
+    background: linear-gradient(180deg, #fde68a 0%, #fed7aa 100%);
+    color: #9a3412;
+    box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.55);
+  }
+  .time-picker__icon--sm {
+    height: 1.7rem;
+    width: 1.7rem;
+    border-radius: 0.45rem;
+  }
+  .time-picker__label {
+    min-width: 0;
+    flex: 1;
+    font-size: 0.875rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: #a8a29e;
+  }
+  .time-picker__label.is-filled { color: #292524; }
+  .time-picker__caret {
+    display: inline-flex;
+    flex-shrink: 0;
+    color: #b45309;
+    transition: transform 0.18s ease;
+  }
+  .time-picker.is-open .time-picker__caret { transform: rotate(180deg); }
+  .time-picker__end-value {
+    min-width: 0;
+    flex: 1;
+    cursor: default;
+    background: transparent;
+    border: 0;
+    font-size: 0.875rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: #9a3412;
+    outline: none;
+  }
+  .time-picker__end-value::placeholder {
+    font-weight: 500;
+    color: #d6d3d1;
+  }
+  .time-picker__badge {
+    flex-shrink: 0;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.72);
+    padding: 0.2rem 0.5rem;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #a8a29e;
+  }
+  .time-picker__pop {
+    position: fixed;
+    z-index: 80;
+    width: min(18.5rem, calc(100vw - 1.5rem));
+    padding: 0.75rem 0.7rem 0.65rem;
+    border-radius: 1.25rem;
+    border: 1px solid rgba(253, 186, 116, 0.55);
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.97) 0%, rgba(251,246,238,0.98) 100%);
+    box-shadow:
+      0 28px 54px -22px rgba(154, 52, 18, 0.38),
+      0 0 0 1px rgba(255,255,255,0.8) inset;
+    backdrop-filter: blur(16px);
+  }
+  .time-picker__header {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    margin-bottom: 0.7rem;
+    padding: 0 0.15rem 0.65rem;
+    border-bottom: 1px solid rgba(253, 186, 116, 0.4);
+  }
+  .time-picker__title {
+    margin: 0;
+    font-family: Fraunces, Georgia, serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: #1c1917;
+  }
+  .time-picker__hint {
+    margin: 0.1rem 0 0;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: #a8a29e;
+  }
+  .time-picker__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.4rem;
+    max-height: 16.75rem;
+    overflow-y: auto;
+    padding: 0.1rem 0.2rem 0.15rem 0.05rem;
+    scrollbar-width: thin;
+    scrollbar-color: #f0c48a transparent;
+  }
+  .time-picker__grid::-webkit-scrollbar { width: 6px; }
+  .time-picker__grid::-webkit-scrollbar-track { background: transparent; }
+  .time-picker__grid::-webkit-scrollbar-thumb {
+    background: #f0c48a;
+    border-radius: 999px;
+  }
+  .time-picker__group {
+    grid-column: 1 / -1;
+    margin: 0.45rem 0.1rem 0.05rem;
+    font-size: 0.64rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #a8a29e;
+  }
+  .time-picker__group:first-child { margin-top: 0; }
+  .time-picker__slot {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.6rem;
+    padding: 0.6rem 0.5rem;
+    border: 1px solid transparent;
+    border-radius: 0.85rem;
+    background: rgba(255, 255, 255, 0.78);
+    color: #44403c;
+    font-size: 0.88rem;
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    transition: background 0.16s ease, color 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
+  }
+  .time-picker__slot:hover {
+    background: #fff7ed;
+    border-color: #fde68a;
+    color: #9a3412;
+    transform: translateY(-1px);
+  }
+  .time-picker__slot.is-selected,
+  .time-picker__slot[aria-selected="true"] {
+    background: linear-gradient(180deg, #c2410c 0%, #9a3412 100%);
+    border-color: transparent;
+    color: #fff;
+    box-shadow: 0 8px 16px -8px rgba(154, 52, 18, 0.55);
+  }
+  .time-picker__slot.is-selected:hover,
+  .time-picker__slot[aria-selected="true"]:hover {
+    background: linear-gradient(180deg, #c2410c 0%, #7c2d12 100%);
+    color: #fff;
+  }
+
   @keyframes btnSpin {
     to { transform: rotate(360deg); }
   }
@@ -424,7 +618,7 @@
   #status,
   [id$="-status"],
   [id$="-form-status"] {
-    transition: opacity 0.32s ease, transform 0.32s ease;
+    transition: opacity 0.4s ease, transform 0.4s ease;
   }
   .status-leaving {
     opacity: 0;
@@ -666,6 +860,7 @@
     document.addEventListener("click", (event) => {
       const trigger = event.target.closest(".date-picker__trigger");
       if (trigger) {
+        closeTimePickers();
         const root = trigger.closest("[data-date-picker]");
         if (root.classList.contains("is-open")) closePickers();
         else openPicker(root);
@@ -709,6 +904,123 @@
     });
     document.querySelectorAll("[data-date-picker]").forEach(syncDisplay);
 
+    function timePickerPop(root) {
+      return (root && root._pop) || (root && root.querySelector(".time-picker__pop"));
+    }
+    function timeOwnerRoot(pop) {
+      return pop && (pop._owner || pop.closest("[data-time-picker]"));
+    }
+    function syncTimeDisplay(root) {
+      const input = root.querySelector("[data-time-value]");
+      const label = root.querySelector("[data-time-label]");
+      if (!input || !label) return;
+      if (input.value) {
+        label.textContent = input.value;
+        label.classList.add("is-filled");
+      } else {
+        label.textContent = "Select a start time";
+        label.classList.remove("is-filled");
+      }
+      const pop = timePickerPop(root);
+      if (!pop) return;
+      pop.querySelectorAll("[data-time-slot]").forEach((slot) => {
+        const selected = slot.getAttribute("data-time-slot") === input.value;
+        slot.classList.toggle("is-selected", selected);
+        slot.setAttribute("aria-selected", selected ? "true" : "false");
+      });
+    }
+    function closeTimePickers(except) {
+      document.querySelectorAll(".time-picker__pop").forEach((pop) => {
+        const root = timeOwnerRoot(pop);
+        if (!root || root === except) return;
+        root.classList.remove("is-open");
+        pop.hidden = true;
+        pop.classList.add("hidden");
+        if (pop._owner && pop.parentElement === document.body) {
+          pop._owner.appendChild(pop);
+        }
+        root.querySelector(".time-picker__trigger")?.setAttribute("aria-expanded", "false");
+      });
+    }
+    function placeTimePop(trigger, pop) {
+      const rect = trigger.getBoundingClientRect();
+      const width = Math.min(296, window.innerWidth - 24);
+      pop.style.width = `${width}px`;
+      const popH = pop.offsetHeight || 360;
+      const left = Math.min(Math.max(12, rect.left), window.innerWidth - width - 12);
+      const below = rect.bottom + 8;
+      const above = rect.top - popH - 8;
+      const top = (below + popH > window.innerHeight - 12 && above > 12) ? above : Math.min(below, window.innerHeight - popH - 12);
+      pop.style.left = `${left}px`;
+      pop.style.top = `${Math.max(12, top)}px`;
+    }
+    function openTimePicker(root) {
+      closePickers();
+      closeTimePickers(root);
+      const pop = root.querySelector(".time-picker__pop");
+      const trigger = root.querySelector(".time-picker__trigger");
+      if (!pop || !trigger) return;
+      pop._owner = root;
+      root._pop = pop;
+      document.body.appendChild(pop);
+      syncTimeDisplay(root);
+      pop.hidden = false;
+      pop.classList.remove("hidden");
+      root.classList.add("is-open");
+      trigger.setAttribute("aria-expanded", "true");
+      placeTimePop(trigger, pop);
+      const selected = pop.querySelector(".time-picker__slot.is-selected");
+      if (selected) selected.scrollIntoView({ block: "nearest" });
+    }
+    function selectTime(root, value) {
+      const input = root.querySelector("[data-time-value]");
+      if (!input) return;
+      input.value = value;
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+      syncTimeDisplay(root);
+      closeTimePickers();
+    }
+
+    document.addEventListener("click", (event) => {
+      const trigger = event.target.closest("[data-time-picker] > .time-picker__trigger");
+      if (trigger) {
+        const root = trigger.closest("[data-time-picker]");
+        if (root.classList.contains("is-open")) closeTimePickers();
+        else openTimePicker(root);
+        return;
+      }
+      const slot = event.target.closest("[data-time-slot]");
+      if (slot) {
+        selectTime(timeOwnerRoot(slot.closest(".time-picker__pop")), slot.getAttribute("data-time-slot"));
+        return;
+      }
+      if (!event.target.closest(".time-picker__pop") && !event.target.closest("[data-time-picker]")) {
+        closeTimePickers();
+      }
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") closeTimePickers();
+    });
+    document.addEventListener("reset", (event) => {
+      requestAnimationFrame(() => {
+        event.target.querySelectorAll("[data-time-picker]").forEach(syncTimeDisplay);
+      });
+    });
+    window.addEventListener("resize", () => {
+      document.querySelectorAll("[data-time-picker].is-open").forEach((root) => {
+        placeTimePop(root.querySelector(".time-picker__trigger"), timePickerPop(root));
+      });
+    });
+    document.querySelectorAll("[data-time-picker]").forEach((root) => {
+      syncTimeDisplay(root);
+      root.querySelector("[data-time-value]")?.addEventListener("invalid", (event) => {
+        event.preventDefault();
+        openTimePicker(root);
+        root.querySelector(".time-picker__trigger")?.focus();
+      });
+    });
+
     const nativeFetch = window.fetch.bind(window);
     let armedButton = null;
     let pendingFetches = 0;
@@ -729,7 +1041,7 @@
     }
     function isActionButton(button) {
       if (!(button instanceof HTMLButtonElement) || button.disabled) return false;
-      if (button.hasAttribute("data-no-spinner") || button.closest("[data-date-picker], .date-picker__pop")) return false;
+      if (button.hasAttribute("data-no-spinner") || button.closest("[data-date-picker], .date-picker__pop, [data-time-picker], .time-picker__pop")) return false;
       if (button.querySelector("[id$='-spinner']")) return false;
       if (button.matches("[role='tab'], [data-tab], [data-kpi-tab], [data-invite-tab], [data-join-tab], [data-submission-filter], [data-event-filter]")) return false;
       if (button.matches(".speaker-tab, .organizer-tab, .invite-tab, .join-customer-tab, .submission-filter, .event-log-filter, .app-modal-close")) return false;
@@ -740,7 +1052,7 @@
       if (button.type === "submit") return true;
       if (button.hasAttribute("data-buy-tickets") || button.classList.contains("event-card__cta-btn")) return true;
       if (/(submit|send|search|confirm|approve|reject|restore|delete|cancel-event|book|reserve)/i.test(id)) return true;
-      return /^(Approve|Reject|Restore|Delete permanently|Cancel Event|Send reply|Send topic request|Submit Proposal|Buy Tickets|Continue|Sign in|Sign in to dashboard|Create account|Search talks|Book seats|Reserve)$/i.test(text);
+      return /^(Approve|Reject|Restore|Delete permanently|Cancel Event|Cancel Registration|Cancel ticket|Cancel all seats|Join Waitlist|Claim seats|Seat us together|Accept layout|Send reply|Send topic request|Submit Proposal|Buy Tickets|Buy more tickets|Continue|Sign in|Sign in to dashboard|Create account|Search talks|Book seats|Reserve)$/i.test(text);
     }
     window.fetch = function () {
       const result = nativeFetch.apply(this, arguments);
@@ -796,9 +1108,9 @@
 </script>
 <script>
   (function () {
+    const SUCCESS_HOLD_MS = 6000;
     const HOLD_MS = 6000;
-    const FADE_MS = 320;
-    const timers = new WeakMap();
+    const FADE_MS = 400;
 
     function isBanner(el) {
       if (!(el instanceof HTMLElement)) return false;
@@ -806,63 +1118,80 @@
       return el.matches('[role="status"], [role="alert"], #status, [id$="-status"], [id$="-form-status"]');
     }
 
-    function isVisible(el) {
-      if (!el || el.hidden || el.classList.contains("hidden") || el.classList.contains("status-leaving")) return false;
-      return Boolean(el.textContent && el.textContent.trim());
+    function bannerKind(el, options) {
+      return String((options && options.kind) || el.dataset.statusKind || "").toLowerCase();
     }
 
-    function hideBanner(el) {
-      const current = timers.get(el) || {};
-      current.pending = false;
-      el.classList.add("status-leaving");
-      const fade = window.setTimeout(() => {
-        el.hidden = true;
-        el.classList.add("hidden");
-        el.classList.remove("status-leaving");
-        el.setAttribute("aria-hidden", "true");
-      }, FADE_MS);
-      current.fade = fade;
-      timers.set(el, current);
+    function holdMsFor(kind) {
+      return kind === "success" ? SUCCESS_HOLD_MS : HOLD_MS;
     }
 
-    function armStatusDismiss(el) {
-      if (!isBanner(el) || !isVisible(el)) return;
-      const text = el.textContent.trim();
-      const prior = timers.get(el);
-      if (prior && prior.pending && prior.text === text) return;
-      if (prior) {
-        window.clearTimeout(prior.hold);
-        window.clearTimeout(prior.fade);
-      }
-      el.classList.remove("status-leaving");
+    function armStatusDismiss(el, options) {
+      if (!(el instanceof HTMLElement)) return;
+      if (el.closest("[role='alertdialog'], [id$='-chat-alert-popup']")) return;
+      if (!String(el.textContent || "").trim()) return;
+      const kind = bannerKind(el, options);
+      if (kind) el.dataset.statusKind = kind;
+      const signature = `${kind}|${String(el.textContent || "").trim()}`;
+      const token = String((Number(el.dataset.dismissToken || 0) + 1));
+      el.dataset.dismissToken = token;
+      el.dataset.dismissSig = signature;
+      el.hidden = false;
+      el.classList.remove("hidden", "status-leaving");
       el.removeAttribute("aria-hidden");
-      const hold = window.setTimeout(() => hideBanner(el), HOLD_MS);
-      timers.set(el, { hold, fade: 0, text, pending: true });
-    }
-
-    function consider(node) {
-      if (node instanceof Element && isBanner(node)) armStatusDismiss(node);
+      window.clearTimeout(Number(el.dataset.dismissHold || 0));
+      window.clearTimeout(Number(el.dataset.dismissFade || 0));
+      const hold = window.setTimeout(() => {
+        if (el.dataset.dismissToken !== token) return;
+        el.classList.add("status-leaving");
+        const fade = window.setTimeout(() => {
+          if (el.dataset.dismissToken !== token) return;
+          el.hidden = true;
+          el.classList.add("hidden");
+          el.classList.remove("status-leaving");
+          el.setAttribute("aria-hidden", "true");
+        }, FADE_MS);
+        el.dataset.dismissFade = String(fade);
+      }, holdMsFor(kind));
+      el.dataset.dismissHold = String(hold);
     }
 
     window.armStatusDismiss = armStatusDismiss;
     window.STATUS_DISMISS_MS = HOLD_MS;
+    window.SUCCESS_HOLD_MS = SUCCESS_HOLD_MS;
+
+    function maybeArm(el) {
+      if (!isBanner(el) || el.hidden || el.classList.contains("hidden")) return;
+      if (!String(el.textContent || "").trim()) return;
+      const kind = bannerKind(el);
+      const signature = `${kind}|${String(el.textContent || "").trim()}`;
+      if (el.dataset.dismissSig === signature && el.dataset.dismissHold) return;
+      armStatusDismiss(el, { kind });
+    }
+
+    document.querySelectorAll('[role="status"], [role="alert"], #status, [id$="-status"], [id$="-form-status"]').forEach(maybeArm);
 
     const observer = new MutationObserver((records) => {
+      const seen = new Set();
       records.forEach((record) => {
-        if (record.type === "childList") {
-          record.addedNodes.forEach(consider);
-        }
-        if (record.type === "attributes") consider(record.target);
-        if (record.type === "characterData") consider(record.target.parentElement);
+        const nodes = [record.target, ...record.addedNodes];
+        nodes.forEach((node) => {
+          if (!(node instanceof HTMLElement)) return;
+          if (isBanner(node)) seen.add(node);
+          else {
+            const parent = node.closest('[role="status"], [role="alert"], #status, [id$="-status"], [id$="-form-status"]');
+            if (parent) seen.add(parent);
+          }
+        });
       });
+      seen.forEach(maybeArm);
     });
     observer.observe(document.documentElement, {
       subtree: true,
       childList: true,
       characterData: true,
       attributes: true,
-      attributeFilter: ["hidden", "class"],
+      attributeFilter: ["hidden", "class", "data-status-kind"],
     });
-    document.querySelectorAll('[role="status"], [role="alert"], #status, [id$="-status"], [id$="-form-status"]').forEach(armStatusDismiss);
   })();
 </script>

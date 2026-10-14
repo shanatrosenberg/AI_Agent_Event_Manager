@@ -75,6 +75,7 @@
           </fieldset>
           {% endif %}
 
+          {% if locked_role != "attendee" %}
           <div>
             <label for="name" class="block text-sm font-medium text-stone-700">Display name</label>
             <input
@@ -87,9 +88,10 @@
               class="mt-1.5 w-full rounded-xl border border-amber-200 bg-sand-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-100"
             >
           </div>
+          {% endif %}
 
           <div>
-            <label for="user_id" class="block text-sm font-medium text-stone-700">User id</label>
+            <label for="user_id" class="block text-sm font-medium text-stone-700">User Name</label>
             <input
               id="user_id"
               name="user_id"

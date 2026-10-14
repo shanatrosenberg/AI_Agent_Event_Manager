@@ -159,6 +159,22 @@ def reserved_seat_ids(event) -> set[str]:
     return taken
 
 
+def owned_seat_ids(event, attendee_id: str | None) -> set[str]:
+    user = str(attendee_id or "").strip()
+    if not user or event is None:
+        return set()
+    owned: set[str] = set()
+    for booking in event.bookings or []:
+        if (booking.status or "confirmed") != "confirmed":
+            continue
+        if str(booking.attendee_id or "").strip() != user:
+            continue
+        labels = normalize_seat_ids(getattr(booking, "seat_labels", None))
+        if labels:
+            owned.update(labels)
+    return owned
+
+
 def assign_open_seats(capacity: int | None, taken: Iterable[str], count: int) -> list[str]:
     reserved = {str(item).upper() for item in taken}
     open_seats = [seat for seat in hall_seat_ids(capacity) if seat not in reserved]
@@ -167,9 +183,10 @@ def assign_open_seats(capacity: int | None, taken: Iterable[str], count: int) ->
     return open_seats[:count]
 
 
-def seating_map_payload(event) -> dict[str, Any]:
+def seating_map_payload(event, attendee_id: str | None = None) -> dict[str, Any]:
     layout = hall_layout(event.capacity)
     taken = reserved_seat_ids(event)
+    owned = owned_seat_ids(event, attendee_id)
     seats = []
     cols = int(layout["cols"])
     for index, label in enumerate(hall_seat_ids(event.capacity)):
@@ -181,6 +198,7 @@ def seating_map_payload(event) -> dict[str, Any]:
                 "row": chr(ord("A") + row),
                 "number": col + 1,
                 "available": label not in taken,
+                "owned": label in owned,
             }
         )
     aisles = [int(item) for item in (layout.get("aisles_after") or []) if int(item) > 0]
@@ -200,6 +218,8 @@ def seating_map_payload(event) -> dict[str, Any]:
         "row_aisles_after": row_aisles,
         "sections": sections,
         "taken": sorted(taken),
+        "owned": sorted(owned),
+        "owned_count": len(owned),
         "available_count": event.remaining_seats,
         "seats": seats,
     }

@@ -49,11 +49,17 @@ EVENT_LABELS = {
     "EventCreated": "Event created",
     "EventUpdated": "Event updated",
     "EventCancelled": "Event cancelled",
+    "EventCancellationRequested": "Cancellation requested",
     "EventDisapproved": "Event disapproved",
     "EventRestored": "Event restored",
     "EventDeleted": "Event deleted",
     "SeatReserved": "Seat reserved",
+    "SeatReleased": "Seat released",
     "AttendeeRegistered": "Attendee registered",
+    "BookingCancelled": "Registration cancelled",
+    "WaitlistJoined": "Joined waitlist",
+    "WaitlistNotified": "Waitlist notified",
+    "WaitlistClaimed": "Waitlist seats claimed",
     "AccountRegistered": "Account registered",
     "UserLoggedIn": "User signed in",
     "SpeakerNotified": "Speaker notified",
@@ -84,8 +90,10 @@ def infer_aggregate_type(event_name: str | None, payload: dict[str, Any] | None 
         return "talk"
     if name.startswith("Event"):
         return "event"
-    if name in {"SeatReserved", "AttendeeRegistered"}:
+    if name in {"SeatReserved", "SeatReleased", "AttendeeRegistered", "BookingCancelled"}:
         return "booking"
+    if name.startswith("Waitlist"):
+        return "waitlist"
     if name in {"AccountRegistered", "UserLoggedIn"}:
         return "account"
     if name.startswith("TalkRequest"):
@@ -97,7 +105,9 @@ def infer_aggregate_id(payload: dict[str, Any] | None, event_name: str | None = 
     payload = payload or {}
     name = canonicalize(event_name)
     preferred = ("id", "submission_id", "event_id", "request_id", "user_id")
-    if name in {"SeatReserved", "AttendeeRegistered"}:
+    if name in {"SeatReserved", "SeatReleased", "AttendeeRegistered", "BookingCancelled"}:
+        preferred = ("event_id", "id", "attendee_id", "booking_id")
+    elif name.startswith("Waitlist"):
         preferred = ("event_id", "id", "attendee_id")
     elif name in {"AccountRegistered", "UserLoggedIn"}:
         preferred = ("user_id", "id")

@@ -138,38 +138,28 @@ def test_cannot_cancel_deleted_event(client, speaker_headers, event_payload):
     assert cancelled.status_code == 409
 
 
-def test_lecturer_can_cancel_approved_event_and_notify_buyers(
-    client, app, speaker_headers, event_payload, attendee_headers
-):
+def test_lecturer_cannot_cancel_or_request_cancellation(client, speaker_headers, event_payload):
     event = approve_talk_event(client, speaker_headers, event_payload, title="Lecturer cancel talk")
-    booked = client.post(
-        "/api/attendee/register",
-        json={"event_id": event["id"], "seats": 1},
-        headers=attendee_headers,
-    )
-    assert booked.status_code == 201
-
     cancelled = client.post(
         f"/api/speaker/events/{event['id']}/cancel",
         headers=speaker_headers,
     )
-    assert cancelled.status_code == 200
-    assert cancelled.get_json()["status"] == "cancelled"
-
-    notes = client.get("/api/attendee/messages", headers=attendee_headers).get_json()["messages"]
-    assert any("full refund" in item["body"].lower() for item in notes)
-    admin_notes = client.get("/api/organizer/messages", headers=_admin_headers())
-    assert admin_notes.status_code == 200
-    admin_payload = admin_notes.get_json()
-    assert admin_payload["unread_count"] >= 1
-    assert any("cancelled" in item["body"].lower() for item in admin_payload["messages"])
-    trash = client.get("/api/organizer/trash", headers=_admin_headers()).get_json()
-    assert any(item.get("kind") == "cancelled_event" and item.get("id") == event["id"] for item in trash)
-    assert all(
-        item["id"] != event["id"]
+    requested = client.post(
+        f"/api/speaker/events/{event['id']}/cancel-request",
+        headers=speaker_headers,
+    )
+    assert cancelled.status_code == 403
+    assert requested.status_code == 403
+    assert "cannot cancel" in cancelled.get_json()["error"].lower()
+    assert "cannot cancel" in requested.get_json()["error"].lower()
+    assert any(
+        item["id"] == event["id"]
         for item in client.get("/api/speaker/events", headers=speaker_headers).get_json()["events"]
     )
-    assert all(item["id"] != event["id"] for item in client.get("/api/organizer/events", headers=_admin_headers()).get_json())
+    assert any(
+        item["id"] == event["id"]
+        for item in client.get("/api/organizer/events", headers=_admin_headers()).get_json()
+    )
 
 
 def test_organizer_dashboard_exposes_cancel_action(client):

@@ -39,7 +39,7 @@
     </div>
   </header>
 
-  <main class="mx-auto max-w-7xl px-6 py-10 sm:py-14 lg:pr-24" data-speaker-id="{{ speaker_id }}" data-speaker-name="{{ speaker_name }}">
+  <main class="mx-auto max-w-7xl px-6 py-10 sm:py-14 lg:pr-24" data-user-role="speaker" data-speaker-id="{{ speaker_id }}" data-speaker-name="{{ speaker_name }}">
     <p class="text-xs font-semibold uppercase tracking-[0.22em] text-clay-700">Speaker portal</p>
     <h1 class="font-display mt-3 text-3xl font-extrabold tracking-tight text-stone-900 sm:text-4xl">Your talks</h1>
     <p class="mt-3 max-w-2xl text-stone-600">
@@ -106,9 +106,6 @@
       <button type="button" role="tab" id="tab-submissions" data-tab="submissions" aria-controls="panel-submissions" aria-selected="false" class="speaker-tab inline-flex items-center justify-center rounded-full px-4 py-2.5 text-sm font-semibold text-stone-600 transition duration-300 hover:bg-white/80 hover:text-clay-700">
         Your Submissions
       </button>
-      <button type="button" role="tab" id="tab-ideas" data-tab="ideas" aria-controls="panel-ideas" aria-selected="false" class="speaker-tab inline-flex items-center justify-center rounded-full px-4 py-2.5 text-sm font-semibold text-stone-600 transition duration-300 hover:bg-white/80 hover:text-clay-700">
-        AI Innovation Ideas Hub
-      </button>
       <button type="button" role="tab" id="tab-requests" data-tab="requests" aria-controls="panel-requests" aria-selected="false" class="speaker-tab inline-flex items-center justify-center rounded-full px-4 py-2.5 text-sm font-semibold text-stone-600 transition duration-300 hover:bg-white/80 hover:text-clay-700">
         Organizer Requests
         <span id="tab-requests-count" class="ml-2 hidden h-5 min-w-5 items-center justify-center rounded-full bg-amber-400 px-1.5 text-[10px] font-bold text-amber-950">0</span>
@@ -120,16 +117,15 @@
         <h2 class="font-display text-lg font-bold tracking-tight">My Confirmed Events</h2>
         <p id="events-empty" class="mt-6 rounded-2xl border border-dashed border-amber-200 bg-sand-50/80 px-4 py-8 text-center text-sm text-stone-500">No approved events yet. Accept an organizer request or wait for a proposal to be approved.</p>
         <div id="events-table-wrap" hidden class="mt-6 hidden overflow-x-auto md:block">
-          <table class="w-full min-w-[76rem] table-auto text-left">
+          <table class="w-full min-w-[68rem] table-auto text-left">
             <caption class="sr-only">Confirmed events for the signed-in speaker</caption>
             <thead>
               <tr class="text-xs font-semibold uppercase tracking-wide text-stone-400">
                 <th scope="col" class="px-4 py-3 font-semibold">Event</th>
                 <th scope="col" class="whitespace-nowrap px-4 py-3 font-semibold">Speaker</th>
-                <th scope="col" class="w-[7.5rem] whitespace-nowrap px-4 py-3 font-semibold">Date</th>
-                <th scope="col" class="w-[9.5rem] whitespace-nowrap px-4 py-3 font-semibold">Time</th>
+                <th scope="col" class="w-[8.75rem] min-w-[8.75rem] whitespace-nowrap px-5 py-3 font-semibold">Date</th>
+                <th scope="col" class="w-[11.5rem] min-w-[11.5rem] whitespace-nowrap px-5 py-3 font-semibold">Time</th>
                 <th scope="col" class="whitespace-nowrap px-4 py-3 font-semibold">Hall</th>
-                <th scope="col" class="whitespace-nowrap px-4 py-3 font-semibold">Open/Sold Seats</th>
                 <th scope="col" class="whitespace-nowrap px-4 py-3 font-semibold">Status</th>
                 <th scope="col" class="whitespace-nowrap px-4 py-3 font-semibold"><span class="sr-only">Actions</span></th>
               </tr>
@@ -162,16 +158,16 @@
         <p id="submissions-empty" class="mt-6 rounded-2xl border border-dashed border-amber-200 bg-sand-50/80 px-4 py-8 text-center text-sm text-stone-500">No proposals yet.</p>
         <div id="active-submissions-block">
         <div id="submissions-table-wrap" hidden class="mt-6 hidden overflow-x-auto md:block">
-          <table class="min-w-full text-left">
+          <table class="w-full min-w-[68rem] table-auto text-left">
             <caption class="sr-only">Talk proposals submitted by the signed-in speaker</caption>
             <thead>
               <tr class="text-xs font-semibold uppercase tracking-wide text-stone-400">
-                <th scope="col" class="px-3 py-2 font-semibold">Talk Title</th>
-                <th scope="col" class="px-3 py-2 font-semibold">Topic</th>
-                <th scope="col" class="px-3 py-2 font-semibold">Date</th>
-                <th scope="col" class="px-3 py-2 font-semibold">Time</th>
-                <th scope="col" class="px-3 py-2 font-semibold">Hall</th>
-                <th scope="col" class="px-3 py-2 font-semibold">Status</th>
+                <th scope="col" class="px-4 py-3 font-semibold">Talk Title</th>
+                <th scope="col" class="whitespace-nowrap px-4 py-3 font-semibold">Topic</th>
+                <th scope="col" class="w-[8.75rem] min-w-[8.75rem] whitespace-nowrap px-5 py-3 font-semibold">Date</th>
+                <th scope="col" class="w-[11.5rem] min-w-[11.5rem] whitespace-nowrap px-5 py-3 font-semibold">Time</th>
+                <th scope="col" class="whitespace-nowrap px-4 py-3 font-semibold">Hall</th>
+                <th scope="col" class="whitespace-nowrap px-4 py-3 font-semibold">Status</th>
               </tr>
             </thead>
             <tbody id="submissions-body" class="divide-y divide-amber-100"></tbody>
@@ -190,16 +186,16 @@
           </div>
           <p id="rejected-empty" class="mt-5 rounded-2xl border border-dashed border-rose-200 bg-rose-50/60 px-4 py-8 text-center text-sm text-rose-800/80">No declined submissions.</p>
           <div id="rejected-table-wrap" hidden class="mt-5 hidden overflow-x-auto md:block">
-            <table class="min-w-full text-left">
+            <table class="w-full min-w-[68rem] table-auto text-left">
               <caption class="sr-only">Rejected talk proposals for the signed-in speaker</caption>
               <thead>
                 <tr class="text-xs font-semibold uppercase tracking-wide text-rose-300">
-                  <th scope="col" class="px-3 py-2 font-semibold">Talk Title</th>
-                  <th scope="col" class="px-3 py-2 font-semibold">Topic</th>
-                  <th scope="col" class="px-3 py-2 font-semibold">Date</th>
-                  <th scope="col" class="px-3 py-2 font-semibold">Time</th>
-                  <th scope="col" class="px-3 py-2 font-semibold">Hall</th>
-                  <th scope="col" class="px-3 py-2 font-semibold">Status</th>
+                  <th scope="col" class="px-4 py-3 font-semibold">Talk Title</th>
+                  <th scope="col" class="whitespace-nowrap px-4 py-3 font-semibold">Topic</th>
+                  <th scope="col" class="w-[8.75rem] min-w-[8.75rem] whitespace-nowrap px-5 py-3 font-semibold">Date</th>
+                  <th scope="col" class="w-[11.5rem] min-w-[11.5rem] whitespace-nowrap px-5 py-3 font-semibold">Time</th>
+                  <th scope="col" class="whitespace-nowrap px-4 py-3 font-semibold">Hall</th>
+                  <th scope="col" class="whitespace-nowrap px-4 py-3 font-semibold">Status</th>
                 </tr>
               </thead>
               <tbody id="rejected-body" class="divide-y divide-rose-100"></tbody>
@@ -207,51 +203,6 @@
           </div>
           <div id="rejected-cards" hidden class="mt-5 space-y-3 md:hidden"></div>
         </div>
-      </section>
-
-      <section id="panel-ideas" role="tabpanel" aria-labelledby="tab-ideas" hidden class="speaker-panel rounded-3xl border border-amber-100 bg-white/80 p-6 shadow-xl shadow-amber-900/5 backdrop-blur-xl sm:p-7">
-        <div class="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h2 class="font-display text-lg font-bold tracking-tight">AI Innovation Ideas Hub</h2>
-            <p class="mt-1 text-sm text-stone-500">Search any topic—AI Agents, Cloud Security, Microservices—and a local Ollama model drafts tailored talk concepts. Convert one into a proposal when it fits your session.</p>
-          </div>
-        </div>
-        <form id="ideas-search-form" class="mt-5 flex flex-col gap-3 sm:flex-row sm:items-end" role="search">
-          <div class="min-w-0 flex-1">
-            <label for="ideas-query" class="block text-sm font-medium text-stone-700">Topic or keyword</label>
-            <input
-              id="ideas-query"
-              name="query"
-              type="search"
-              maxlength="128"
-              placeholder="Cloud Security, AI Agents, Microservices"
-              class="mt-1.5 w-full rounded-xl border border-amber-200 bg-sand-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-100"
-            >
-          </div>
-          <div class="flex flex-wrap gap-2">
-            <button
-              id="ideas-search-submit"
-              type="submit"
-              class="inline-flex items-center justify-center gap-1.5 rounded-full bg-gradient-to-r from-clay-600 to-amber-700 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-orange-900/15 transition hover:-translate-y-0.5 hover:shadow-xl"
-            >
-              <svg id="refresh-ideas-spinner" class="hidden h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" class="opacity-25"></circle>
-                <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
-              </svg>
-              Find ideas
-            </button>
-            <button
-              id="refresh-ideas"
-              type="button"
-              class="inline-flex items-center justify-center rounded-full border border-amber-200 bg-white px-4 py-2.5 text-sm font-semibold text-stone-700 transition duration-300 hover:-translate-y-0.5 hover:border-amber-200 hover:text-clay-700 hover:shadow-md"
-            >
-              Surprise me
-            </button>
-          </div>
-        </form>
-        <p id="ideas-status" hidden class="mt-4 rounded-2xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-sm text-clay-800"></p>
-        <p id="ideas-empty" class="mt-6 rounded-2xl border border-dashed border-amber-200 bg-sand-50/80 px-4 py-8 text-center text-sm text-stone-500">Generating talk concepts…</p>
-        <div id="ideas-grid" class="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3"></div>
       </section>
 
       <section id="panel-requests" role="tabpanel" aria-labelledby="tab-requests" hidden class="speaker-panel rounded-3xl border border-amber-100 bg-white/80 p-6 shadow-xl shadow-amber-900/5 backdrop-blur-xl sm:p-7">
@@ -263,16 +214,16 @@
         </div>
         <p id="requests-empty" class="mt-6 rounded-2xl border border-dashed border-amber-200 bg-sand-50/80 px-4 py-8 text-center text-sm text-stone-500">No pending organizer requests.</p>
         <div id="requests-table-wrap" hidden class="mt-6 hidden overflow-x-auto md:block">
-          <table class="min-w-full text-left">
+          <table class="w-full min-w-[68rem] table-auto text-left">
             <caption class="sr-only">Pending organizer invitations for the signed-in speaker</caption>
             <thead>
               <tr class="text-xs font-semibold uppercase tracking-wide text-stone-400">
-                <th scope="col" class="px-3 py-2 font-semibold">Talk Title</th>
-                <th scope="col" class="px-3 py-2 font-semibold">Topic</th>
-                <th scope="col" class="px-3 py-2 font-semibold">Date</th>
-                <th scope="col" class="px-3 py-2 font-semibold">Time</th>
-                <th scope="col" class="px-3 py-2 font-semibold">Hall</th>
-                <th scope="col" class="px-3 py-2 font-semibold">Status</th>
+                <th scope="col" class="px-4 py-3 font-semibold">Talk Title</th>
+                <th scope="col" class="whitespace-nowrap px-4 py-3 font-semibold">Topic</th>
+                <th scope="col" class="w-[8.75rem] min-w-[8.75rem] whitespace-nowrap px-5 py-3 font-semibold">Date</th>
+                <th scope="col" class="w-[11.5rem] min-w-[11.5rem] whitespace-nowrap px-5 py-3 font-semibold">Time</th>
+                <th scope="col" class="whitespace-nowrap px-4 py-3 font-semibold">Hall</th>
+                <th scope="col" class="whitespace-nowrap px-4 py-3 font-semibold">Status</th>
               </tr>
             </thead>
             <tbody id="requests-body" class="divide-y divide-amber-100"></tbody>
@@ -313,10 +264,14 @@
         <div>
           <label for="category" class="block text-sm font-medium text-stone-700">Topic</label>
           <select id="category" name="category" required class="mt-1.5 w-full rounded-xl border border-amber-200 bg-sand-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-100">
+            {% for topic in (topics or []) %}
+            <option value="{{ topic.slug }}">{{ topic.name }}</option>
+            {% else %}
             <option value="architecture">Architecture</option>
             <option value="ai">AI</option>
             <option value="community">Community</option>
             <option value="product">Product</option>
+            {% endfor %}
             <option value="other">Other...</option>
           </select>
           <input
@@ -324,11 +279,12 @@
             id="custom-topic-input"
             name="custom_topic"
             maxlength="128"
-            placeholder="Enter custom topic"
+            placeholder="Enter a topic that is not listed"
             autocomplete="off"
             style="display: none;"
             class="mt-2 w-full rounded-xl border border-amber-200 bg-sand-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-100"
           >
+          <p class="mt-1.5 text-xs text-stone-400">Choose a topic from the catalog, or Other for a one-off label on this talk only.</p>
         </div>
         <div>
           <div class="flex flex-wrap items-center justify-between gap-2">
@@ -470,10 +426,9 @@
     const eventsCards = document.getElementById("events-cards");
     const CARD_CLASS = "animate-fade-up rounded-2xl border border-amber-100 bg-white/90 p-5 shadow-lg shadow-amber-900/5 backdrop-blur-sm transition duration-300 hover:-translate-y-1.5 hover:shadow-xl hover:shadow-orange-900/10";
     const BTN_GHOST = "inline-flex items-center justify-center rounded-full border border-amber-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-stone-700 transition hover:border-amber-300 hover:text-clay-700";
-    const BTN_CANCEL = "inline-flex items-center justify-center rounded-full bg-rose-700 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-rose-800";
     const TAB_ACTIVE = "speaker-tab inline-flex items-center justify-center rounded-full bg-gradient-to-r from-clay-600 to-amber-700 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-orange-900/20 transition duration-300";
     const TAB_INACTIVE = "speaker-tab inline-flex items-center justify-center rounded-full px-4 py-2.5 text-sm font-semibold text-stone-600 transition duration-300 hover:bg-white/80 hover:text-clay-700";
-    const TAB_ALIASES = { confirmed: "events", "my-events": "events", invitations: "requests", invite: "requests", proposals: "submissions", rejected: "submissions", declined: "submissions", hub: "ideas", innovation: "ideas", "idea-hub": "ideas" };
+    const TAB_ALIASES = { confirmed: "events", "my-events": "events", invitations: "requests", invite: "requests", proposals: "submissions", rejected: "submissions", declined: "submissions" };
     const PENDING_SUBMISSION_STATUSES = new Set(["pending", "pending_assessment", "under_review"]);
     const dashboardStats = { events: 0, submissions: 0, requests: 0 };
 
@@ -560,6 +515,9 @@
       el.style.animationDelay = `${Math.min(index, 8) * 45}ms`;
     }
 
+    const viewerRole = (document.querySelector("main")?.dataset.userRole || "").trim();
+    const showSeatCounts = viewerRole === "organizer";
+
     function signedInSpeakerName() {
       return (document.querySelector("main")?.dataset.speakerName || "").trim();
     }
@@ -569,6 +527,7 @@
     }
 
     const HALL_LABELS = {{ hall_labels|tojson }};
+    const topicCatalog = {{ (topics or [])|tojson }};
 
     function capacityLabel(item) {
       if (item.capacity == null || item.capacity === "") return "—";
@@ -583,6 +542,29 @@
       return value;
     }
 
+    function upsertTopicOption(topic) {
+      const select = document.getElementById("category");
+      if (!select || !topic) return "";
+      const slug = String(topic.slug || topic.id || "").trim();
+      const name = String(topic.name || slug).trim();
+      if (!slug || !name) return "";
+      const existing = Array.from(select.options).find((option) => {
+        const value = (option.value || "").trim().toLowerCase();
+        return value === slug.toLowerCase() || value === name.toLowerCase() || option.textContent.trim().toLowerCase() === name.toLowerCase();
+      });
+      if (existing) {
+        existing.value = slug;
+        existing.textContent = name;
+        return slug;
+      }
+      const option = document.createElement("option");
+      option.value = slug;
+      option.textContent = name;
+      const other = Array.from(select.options).find((item) => item.value === "other");
+      select.insertBefore(option, other || null);
+      return slug;
+    }
+
     function syncCustomTopicField() {
       const select = document.getElementById("category");
       const custom = document.getElementById("custom-topic-input");
@@ -590,28 +572,42 @@
       const isOther = select.value === "other";
       custom.style.display = isOther ? "block" : "none";
       custom.required = isOther;
-      if (!isOther) {
-        custom.value = "";
-      }
+      if (!isOther) custom.value = "";
     }
 
     function applyTopicToForm(category, topic) {
       const select = document.getElementById("category");
       const custom = document.getElementById("custom-topic-input");
       if (!select || !custom) return;
-      const known = new Set(["architecture", "ai", "community", "product"]);
-      const value = String(category || "").trim().toLowerCase();
-      if (known.has(value)) {
-        select.value = value;
-        custom.value = "";
-        custom.style.display = "none";
-        custom.required = false;
+      const value = String(category || topic || "").trim();
+      const match = Array.from(select.options).find((option) => {
+        const optionValue = (option.value || "").trim().toLowerCase();
+        const optionLabel = option.textContent.trim().toLowerCase();
+        const needle = value.toLowerCase();
+        return optionValue === needle || optionLabel === needle;
+      });
+      if (match && match.value !== "other") {
+        select.value = match.value;
+        syncCustomTopicField();
         return;
       }
       select.value = "other";
-      custom.style.display = "block";
-      custom.required = true;
+      syncCustomTopicField();
       custom.value = String(topic || category || "").trim();
+    }
+
+    async function refreshTopicCatalog() {
+      try {
+        const response = await fetch("/api/speaker/topics", {
+          credentials: "same-origin",
+          headers: { Accept: "application/json" },
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) return;
+        (data.topics || []).forEach((item) => upsertTopicOption(item));
+      } catch (_error) {
+        /* Keep the server-rendered catalog if the refresh fails. */
+      }
     }
 
     function fillProposalDraft(draft) {
@@ -699,6 +695,7 @@
         proposalCloseTimer = null;
       }
       if (draft) fillProposalDraft(draft);
+      refreshTopicCatalog();
       proposalModal.classList.remove("hidden");
       proposalModal.classList.add("flex");
       proposalModal.setAttribute("aria-hidden", "false");
@@ -861,8 +858,10 @@
       statusEl.hidden = false;
       statusEl.classList.remove("hidden", "status-leaving");
       statusEl.className = styles[kind] || styles.info;
+      statusEl.setAttribute("role", "status");
+      statusEl.dataset.statusKind = kind || "info";
       statusEl.textContent = message;
-      if (typeof window.armStatusDismiss === "function") window.armStatusDismiss(statusEl);
+      if (typeof window.armStatusDismiss === "function") window.armStatusDismiss(statusEl, { kind: kind || "info" });
     }
 
     function statusBadge(label) {
@@ -902,37 +901,8 @@
         if (typeof window.openEventDetail === "function") window.openEventDetail(item);
       });
       actions.append(details);
-      const live = item.status === "approved" || item.status === "active";
-      if (live) {
-        const cancelButton = document.createElement("button");
-        cancelButton.type = "button";
-        cancelButton.className = BTN_CANCEL;
-        cancelButton.textContent = "Cancel Event";
-        cancelButton.addEventListener("click", () => cancelEvent(item));
-        actions.append(cancelButton);
-      }
       return actions;
     }
-
-    async function cancelEvent(event) {
-      if (!window.confirm(`Cancel "${event.title || "this event"}"? Ticket holders will be notified of a full refund.`)) {
-        return;
-      }
-      if (typeof window.closeEventDetail === "function") window.closeEventDetail();
-      const response = await fetch(`/api/speaker/events/${event.id}/cancel`, {
-        method: "POST",
-        headers: { Accept: "application/json", "Content-Type": "application/json" },
-        body: JSON.stringify({}),
-      });
-      const data = await readBody(response);
-      if (!response.ok) {
-        showStatus(data.error || "Could not cancel the event.", "error");
-        return;
-      }
-      showStatus(`Cancelled "${event.title}". Ticket holders were notified of a full refund.`, "success");
-      await loadPortal();
-    }
-    window.EVENT_DETAIL_CAN_CANCEL = cancelEvent;
 
     function paintChatBadge(count) {
       const unread = Number(count) || 0;
@@ -1155,20 +1125,16 @@
         speakerCell.textContent = speakerNameFor(item);
 
         const dateCell = document.createElement("td");
-        dateCell.className = "whitespace-nowrap px-4 py-3.5 text-sm tabular-nums text-stone-700";
+        dateCell.className = "w-[8.75rem] min-w-[8.75rem] whitespace-nowrap px-5 py-3.5 text-sm tabular-nums text-stone-700";
         dateCell.textContent = item.date || "—";
 
         const timeCell = document.createElement("td");
-        timeCell.className = "whitespace-nowrap px-4 py-3.5 text-sm tabular-nums text-stone-700";
+        timeCell.className = "w-[11.5rem] min-w-[11.5rem] whitespace-nowrap px-5 py-3.5 text-sm tabular-nums text-stone-700";
         timeCell.textContent = eventTime(item);
 
         const hallCell = document.createElement("td");
         hallCell.className = "whitespace-nowrap px-4 py-3.5 text-sm text-stone-700";
         hallCell.textContent = item.hall_label || capacityLabel(item);
-
-        const seatsCell = document.createElement("td");
-        seatsCell.className = "whitespace-nowrap px-4 py-3.5 text-sm text-stone-700";
-        seatsCell.textContent = item.seats_label || `${item.open_seats ?? item.remaining_seats ?? 0} open / ${item.sold_seats ?? item.seats_booked ?? 0} sold`;
 
         const statusCell = document.createElement("td");
         statusCell.className = "whitespace-nowrap px-4 py-3.5";
@@ -1178,7 +1144,14 @@
         actionCell.className = "min-w-[13.5rem] whitespace-nowrap px-4 py-3.5";
         actionCell.append(eventActionButtons(item));
 
-        row.append(titleCell, speakerCell, dateCell, timeCell, hallCell, seatsCell, statusCell, actionCell);
+        row.append(titleCell, speakerCell, dateCell, timeCell, hallCell);
+        if (showSeatCounts) {
+          const seatsCell = document.createElement("td");
+          seatsCell.className = "whitespace-nowrap px-4 py-3.5 text-sm text-stone-700";
+          seatsCell.textContent = item.seats_label || `${item.open_seats ?? item.remaining_seats ?? 0} open / ${item.sold_seats ?? item.seats_booked ?? 0} sold`;
+          row.append(seatsCell);
+        }
+        row.append(statusCell, actionCell);
         eventsBody.append(row);
 
         const card = document.createElement("article");
@@ -1197,7 +1170,10 @@
         cardTitle.textContent = item.title || "";
         const meta = document.createElement("p");
         meta.className = "mt-1 text-sm text-stone-500";
-        meta.textContent = `${item.date || ""} · ${eventTime(item)} · ${item.hall_label || capacityLabel(item)} · ${item.seats_label || `${item.open_seats ?? item.remaining_seats ?? 0} open / ${item.sold_seats ?? item.seats_booked ?? 0} sold`}`;
+        const seatsMeta = showSeatCounts
+          ? ` · ${item.seats_label || `${item.open_seats ?? item.remaining_seats ?? 0} open / ${item.sold_seats ?? item.seats_booked ?? 0} sold`}`
+          : "";
+        meta.textContent = `${item.date || ""} · ${eventTime(item)} · ${item.hall_label || capacityLabel(item)}${seatsMeta}`;
         const cardActions = document.createElement("div");
         cardActions.className = "mt-3";
         cardActions.append(eventActionButtons(item));
@@ -1227,7 +1203,7 @@
         applyEnter(row, index);
 
         const titleCell = document.createElement("td");
-        titleCell.className = "px-3 py-3";
+        titleCell.className = "px-4 py-3.5";
         const title = document.createElement("div");
         title.className = "text-sm font-semibold text-stone-900";
         title.textContent = item.title || item.topic || "";
@@ -1237,23 +1213,23 @@
         titleCell.append(title, description);
 
         const topicCell = document.createElement("td");
-        topicCell.className = "px-3 py-3 text-sm text-stone-700";
+        topicCell.className = "whitespace-nowrap px-4 py-3.5 text-sm text-stone-700";
         topicCell.textContent = topicLabel(item);
 
         const dateCell = document.createElement("td");
-        dateCell.className = "px-3 py-3 text-sm text-stone-700";
+        dateCell.className = "w-[8.75rem] min-w-[8.75rem] whitespace-nowrap px-5 py-3.5 text-sm tabular-nums text-stone-700";
         dateCell.textContent = item.date || "—";
 
         const timeCell = document.createElement("td");
-        timeCell.className = "px-3 py-3 text-sm text-stone-700";
+        timeCell.className = "w-[11.5rem] min-w-[11.5rem] whitespace-nowrap px-5 py-3.5 text-sm tabular-nums text-stone-700";
         timeCell.textContent = eventTime(item);
 
         const hallCell = document.createElement("td");
-        hallCell.className = "px-3 py-3 text-sm text-stone-700";
+        hallCell.className = "whitespace-nowrap px-4 py-3.5 text-sm text-stone-700";
         hallCell.textContent = item.hall_label || capacityLabel(item);
 
         const statusCell = document.createElement("td");
-        statusCell.className = "px-3 py-3";
+        statusCell.className = "whitespace-nowrap px-4 py-3.5";
         statusCell.append(statusBadge(item.display_status || item.status));
         statusCell.append(requestActions(item));
 
@@ -1314,7 +1290,7 @@
       applyEnter(row, index);
 
       const titleCell = document.createElement("td");
-      titleCell.className = "px-3 py-3";
+      titleCell.className = "px-4 py-3.5";
       const title = document.createElement("div");
       title.className = "text-sm font-semibold text-stone-900";
       title.textContent = item.title || "";
@@ -1332,23 +1308,23 @@
       }
 
       const topicCell = document.createElement("td");
-      topicCell.className = "px-3 py-3 text-sm text-stone-700";
+      topicCell.className = "whitespace-nowrap px-4 py-3.5 text-sm text-stone-700";
       topicCell.textContent = topicLabel(item);
 
       const dateCell = document.createElement("td");
-      dateCell.className = "px-3 py-3 text-sm text-stone-700";
+      dateCell.className = "w-[8.75rem] min-w-[8.75rem] whitespace-nowrap px-5 py-3.5 text-sm tabular-nums text-stone-700";
       dateCell.textContent = item.date || "—";
 
       const timeCell = document.createElement("td");
-      timeCell.className = "px-3 py-3 text-sm text-stone-700";
+      timeCell.className = "w-[11.5rem] min-w-[11.5rem] whitespace-nowrap px-5 py-3.5 text-sm tabular-nums text-stone-700";
       timeCell.textContent = eventTime(item);
 
       const hallCell = document.createElement("td");
-      hallCell.className = "px-3 py-3 text-sm text-stone-700";
+      hallCell.className = "whitespace-nowrap px-4 py-3.5 text-sm text-stone-700";
       hallCell.textContent = item.hall_label || capacityLabel(item);
 
       const statusCell = document.createElement("td");
-      statusCell.className = "px-3 py-3";
+      statusCell.className = "whitespace-nowrap px-4 py-3.5";
       statusCell.append(statusBadge(submissionStatusLabel(item)));
       if (!rejected) statusCell.append(confirmationActions(item));
       row.append(titleCell, topicCell, dateCell, timeCell, hallCell, statusCell);
@@ -1449,104 +1425,6 @@
       visibleRejected.forEach((item, index) => {
         paintSubmissionItem(item, index, { tableBody: rejectedBody, cardList: rejectedCards, rejected: true });
       });
-    }
-
-    const ideasEmpty = document.getElementById("ideas-empty");
-    const ideasGrid = document.getElementById("ideas-grid");
-    const ideasStatus = document.getElementById("ideas-status");
-    const refreshIdeasButton = document.getElementById("refresh-ideas");
-    const ideasSearchForm = document.getElementById("ideas-search-form");
-    const ideasQueryInput = document.getElementById("ideas-query");
-    const ideasSearchSubmit = document.getElementById("ideas-search-submit");
-    const refreshIdeasSpinner = document.getElementById("refresh-ideas-spinner");
-
-    function currentIdeasQuery() {
-      return (ideasQueryInput?.value || "").trim();
-    }
-
-    function convertIdeaToProposal(idea) {
-      openProposalModal({
-        title: idea.title || "",
-        abstract: idea.abstract || "",
-        category: idea.category || "ai",
-        topic: idea.topic || "",
-      });
-      showStatus(`"${idea.title || "This idea"}" is ready in the proposal form. Add a date, time, and hall, then submit.`, "info");
-    }
-
-    function renderIdeas(items) {
-      const ideas = Array.isArray(items) ? items : [];
-      ideasGrid.replaceChildren();
-      ideasEmpty.hidden = ideas.length > 0;
-      ideasEmpty.textContent = ideas.length ? "" : "No talk concepts yet. Generate new ideas to fill the board.";
-      ideas.forEach((idea, index) => {
-        const card = document.createElement("article");
-        card.className = "animate-fade-up flex h-full flex-col rounded-2xl border border-amber-100 bg-white/90 p-5 shadow-lg shadow-amber-900/5 backdrop-blur-sm transition duration-300 hover:-translate-y-1.5 hover:shadow-xl hover:shadow-orange-900/10";
-        card.setAttribute("data-idea-card", "true");
-        applyEnter(card, index);
-        const topic = document.createElement("p");
-        topic.className = "inline-flex w-fit rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-amber-900";
-        topic.textContent = idea.topic || topicLabel(idea);
-        const title = document.createElement("h3");
-        title.className = "mt-3 font-display text-base font-bold tracking-tight text-stone-900";
-        title.textContent = idea.title || "Untitled idea";
-        const abstract = document.createElement("p");
-        abstract.className = "mt-2 flex-1 text-sm leading-6 text-stone-600";
-        abstract.textContent = idea.abstract || "";
-        const convert = document.createElement("button");
-        convert.type = "button";
-        convert.className = "mt-4 inline-flex items-center justify-center rounded-full bg-gradient-to-r from-clay-600 to-amber-700 px-4 py-2 text-xs font-semibold text-white shadow-md shadow-orange-900/15 transition hover:-translate-y-0.5 hover:shadow-lg";
-        convert.textContent = "Convert to Proposal";
-        convert.addEventListener("click", () => convertIdeaToProposal(idea));
-        card.append(topic, title, abstract, convert);
-        ideasGrid.append(card);
-      });
-    }
-
-    async function loadIdeas({ announce = false, query = undefined, surprise = false } = {}) {
-      const topic = surprise ? "" : (query === undefined ? currentIdeasQuery() : String(query || "").trim());
-      if (surprise && ideasQueryInput) ideasQueryInput.value = "";
-      refreshIdeasButton.disabled = true;
-      ideasSearchSubmit.disabled = true;
-      refreshIdeasSpinner.classList.remove("hidden");
-      try {
-        const response = await fetch("/api/speaker/innovation-ideas", {
-          method: "POST",
-          headers: { Accept: "application/json", "Content-Type": "application/json" },
-          body: JSON.stringify({ query: topic, limit: 6 }),
-        });
-        const body = await readBody(response);
-        if (!response.ok) {
-          ideasEmpty.hidden = false;
-          ideasEmpty.textContent = body.error || "Could not load innovation ideas.";
-          ideasGrid.replaceChildren();
-          if (announce) showStatus(body.error || "Could not load innovation ideas.", "error");
-          return;
-        }
-        renderIdeas(body.ideas);
-        if (body.message) {
-          ideasStatus.hidden = false;
-          ideasStatus.textContent = body.message;
-        } else {
-          ideasStatus.hidden = true;
-          ideasStatus.textContent = "";
-        }
-        if (announce) {
-          const topicLabel = body.query || topic;
-          const success = topicLabel
-            ? `Generated talk concepts for “${topicLabel}”.`
-            : "Generated a fresh board of talk concepts.";
-          showStatus(body.fallback ? (body.message || "Showing curated innovation ideas.") : success, body.fallback ? "info" : "success");
-        }
-      } catch (_error) {
-        ideasEmpty.hidden = false;
-        ideasEmpty.textContent = "Could not reach the innovation ideas API.";
-        if (announce) showStatus("Could not reach the innovation ideas API.", "error");
-      } finally {
-        refreshIdeasButton.disabled = false;
-        ideasSearchSubmit.disabled = false;
-        refreshIdeasSpinner.classList.add("hidden");
-      }
     }
 
     async function loadPortal() {
@@ -1669,12 +1547,8 @@
     });
 
     document.getElementById("category").addEventListener("change", syncCustomTopicField);
+    (topicCatalog || []).forEach((item) => upsertTopicOption(item));
     syncCustomTopicField();
-    document.getElementById("refresh-ideas").addEventListener("click", () => loadIdeas({ announce: true, surprise: true }));
-    ideasSearchForm.addEventListener("submit", (event) => {
-      event.preventDefault();
-      loadIdeas({ announce: true, query: currentIdeasQuery() });
-    });
     function bindSessionTimes(startId, endId) {
       const startEl = document.getElementById(startId);
       const endEl = document.getElementById(endId);
@@ -1694,7 +1568,6 @@
     }
     bindSessionTimes("start_time", "end_time");
     loadPortal();
-    loadIdeas();
   </script>
 </body>
 </html>

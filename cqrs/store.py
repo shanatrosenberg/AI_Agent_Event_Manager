@@ -430,19 +430,25 @@ class EventStore:
                 return event
         return None
 
+    def get_booking(self, booking_id: str) -> Booking | None:
+        value = str(booking_id or "").strip()
+        if not value:
+            return None
+        return db.session.get(Booking, value)
+
     def save_booking(self, booking: Booking) -> None:
         db.session.add(booking)
         self._commit()
 
+    def get_confirmed_booking(self, attendee_id: str, event_id: str) -> Booking | None:
+        return Booking.query.filter_by(
+            attendee_id=attendee_id,
+            event_id=event_id,
+            status="confirmed",
+        ).first()
+
     def has_booking(self, attendee_id: str, event_id: str) -> bool:
-        return (
-            Booking.query.filter_by(
-                attendee_id=attendee_id,
-                event_id=event_id,
-                status="confirmed",
-            ).first()
-            is not None
-        )
+        return self.get_confirmed_booking(attendee_id, event_id) is not None
 
     def list_bookings_for_attendee(self, attendee_id: str) -> list[Booking]:
         return (

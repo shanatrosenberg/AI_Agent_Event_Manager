@@ -66,12 +66,11 @@ def test_speaker_login_and_dashboard(client):
     assert b'id="rejected-submissions-block"' in response.data
     assert b'id="rejected-body"' in response.data
     assert b"Organizer Requests" in response.data
-    assert b"AI Innovation Ideas Hub" in response.data
-    assert b'id="panel-ideas"' in response.data
-    assert b'id="ideas-grid"' in response.data
-    assert b'id="ideas-search-form"' in response.data
-    assert b'id="ideas-query"' in response.data
-    assert b'id="refresh-ideas"' in response.data
+    assert b"AI Innovation Ideas Hub" not in response.data
+    assert b'id="panel-ideas"' not in response.data
+    assert b'id="ideas-grid"' not in response.data
+    assert b'id="ideas-search-form"' not in response.data
+    assert b'id="refresh-ideas"' not in response.data
     assert b'id="speaker-tabs"' in response.data
     assert b'id="panel-events"' in response.data
     assert b'id="events-table-wrap"' in response.data
@@ -82,14 +81,22 @@ def test_speaker_login_and_dashboard(client):
     assert b">Speaker</th>" in response.data
     assert b">Date</th>" in response.data
     assert b">Time</th>" in response.data
+    assert b"w-[8.75rem]" in response.data
+    assert b"w-[11.5rem]" in response.data
+    assert b"min-w-[68rem]" in response.data
     assert b">Hall</th>" in response.data
     assert b"Conference Room (50 seats)" in response.data
     assert b"Grand Hall (100 seats)" in response.data
     assert b"Main Auditorium (300 seats)" in response.data
-    assert b">Open/Sold Seats</th>" in response.data
+    assert b'data-user-role="speaker"' in response.data
+    assert b"const showSeatCounts = viewerRole === \"organizer\"" in response.data
+    assert b">Open/Sold Seats</th>" not in response.data
     assert b">Status</th>" in response.data
     assert b"More Details" in response.data
-    assert b"Cancel Event" in response.data
+    assert b"Request Cancellation" not in response.data
+    assert b'textContent = "Cancel Event"' not in response.data
+    assert b"/cancel-request" not in response.data
+    assert b"requestCancellation" not in response.data
     assert b"Lecture summary" in response.data
     assert b"Hall specifications" not in response.data
     assert b"Tickets already purchased" not in response.data
@@ -104,7 +111,7 @@ def test_speaker_login_and_dashboard(client):
     assert b'id="chat-reply-input"' in response.data
     assert b'id="chat-alert-popup"' in response.data
     assert b'id="speaker-messages"' in response.data
-    assert b"/api/speaker/events/" in response.data
+    assert b"/api/speaker/portal" in response.data
     assert b'id="event-detail-modal"' in response.data
     assert 'id="event-detail-modal" class="fixed inset-0 z-50 hidden' in response.get_data(as_text=True)
     assert b'id="panel-submissions"' in response.data
@@ -120,7 +127,7 @@ def test_speaker_login_and_dashboard(client):
     assert b'id="requests-body"' in response.data
     assert b'id="requests-cards"' in response.data
     html = response.get_data(as_text=True)
-    assert html.index('data-tab="events"') < html.index('data-tab="submissions"') < html.index('data-tab="ideas"') < html.index('data-tab="requests"')
+    assert html.index('data-tab="events"') < html.index('data-tab="submissions"') < html.index('data-tab="requests"')
     assert b'id="open-proposal-modal"' in response.data
     assert html.index('id="panel-submissions"') < html.index('id="open-proposal-modal"') < html.index('id="panel-requests"')
     assert b'id="proposal-modal"' in response.data
@@ -139,14 +146,22 @@ def test_speaker_login_and_dashboard(client):
     assert b'value="other"' in response.data
     assert b'id="custom-topic-input"' in response.data
     assert b'name="custom_topic"' in response.data
+    assert b'id="add-topic-button"' not in response.data
+    assert b"/api/speaker/topics" in response.data
+    assert b"Add topic" not in response.data
+    assert b"one-off label" in response.data
     assert b'id="date"' in response.data
     assert b'data-date-picker' in response.data
     assert b'date-picker__trigger' in response.data
     assert b"btn-busy" in response.data
     assert b"armStatusDismiss" in response.data
     assert b"STATUS_DISMISS_MS" in response.data
+    assert b"SUCCESS_HOLD_MS" in response.data
     assert b'id="start_time"' in response.data
     assert b'id="end_time"' in response.data
+    assert b'data-time-picker' in response.data
+    assert b'time-picker__trigger' in response.data
+    assert b'data-time-slot' in response.data
     assert b'value="09:30"' in response.data
     assert b'value="15:30"' in response.data
     assert b"90 min" in response.data
@@ -203,6 +218,47 @@ def test_submit_talk_saves_custom_topic(client):
     assert body["category"] == "Observability"
     stored = TalkSubmission.query.filter_by(id=body["id"]).one()
     assert stored.category == "Observability"
+    from models.topic import Topic
+
+    assert Topic.query.filter(Topic.slug == "observability").first() is None
+
+
+def test_speaker_cannot_add_topic_to_catalog(client):
+    _register_speaker(client)
+    _login_speaker(client)
+    created = client.post("/api/speaker/topics", json={"name": "Edge Computing"})
+    assert created.status_code == 403
+    assert "organizer" in created.get_json()["error"].lower()
+
+    listed = client.get("/api/speaker/topics")
+    assert listed.status_code == 200
+    assert all(item["name"] != "Edge Computing" for item in listed.get_json()["topics"])
+
+
+def test_organizer_added_topic_syncs_to_speaker_and_attendee(client):
+    _login_admin(client)
+    created = client.post("/api/organizer/topics", json={"name": "Edge Computing"})
+    assert created.status_code == 201
+    assert created.get_json()["topic"]["slug"] == "edge-computing"
+    client.post("/logout")
+
+    public = client.get("/api/attendee/topics")
+    assert public.status_code == 200
+    assert "Edge Computing" in public.get_json()["topics"]
+
+    browse = client.get("/events")
+    assert "Edge Computing" in browse.get_data(as_text=True)
+    assert 'id="filter-topic"' in browse.get_data(as_text=True)
+
+    _register_speaker(client)
+    _login_speaker(client)
+    dashboard = client.get("/speaker")
+    assert b"Edge Computing" in dashboard.data
+    assert b'value="edge-computing"' in dashboard.data
+
+    listed = client.get("/api/speaker/topics")
+    assert listed.status_code == 200
+    assert any(item["name"] == "Edge Computing" for item in listed.get_json()["topics"])
 
 
 def test_submit_talk_requires_custom_topic_when_other(client):
@@ -431,7 +487,7 @@ def test_speaker_html_login_renders(client):
     response = client.get("/speaker/login")
     assert response.status_code == 200
     assert b"Speaker sign in" in response.data
-    assert b"Your profile" in response.data
+    assert b"User Name" in response.data
     assert b"Maya Cohen" in response.data
     assert b'name="user_id"' in response.data
     assert b"<select" in response.data

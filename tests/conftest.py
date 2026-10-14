@@ -18,8 +18,10 @@ def app():
     with application.app_context():
         db.create_all()
         from services.auth import ensure_admin_organizer
+        from services.topics import ensure_topics_schema
 
         ensure_admin_organizer()
+        ensure_topics_schema()
         yield application
         db.session.remove()
         db.drop_all()

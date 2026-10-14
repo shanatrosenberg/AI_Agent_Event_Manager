@@ -26,6 +26,7 @@ from services.auth import (
 )
 from cqrs.store import ensure_event_store_schema
 from services.seating import ensure_booking_seat_schema
+from services.waitlist import ensure_waitlist_schema
 
 
 def reset_database() -> dict[str, int]:
@@ -45,6 +46,7 @@ def reset_database() -> dict[str, int]:
     ensure_talk_portal_schema()
     ensure_event_store_schema()
     ensure_booking_seat_schema()
+    ensure_waitlist_schema()
     ensure_admin_organizer()
     db.session.commit()
     return removed

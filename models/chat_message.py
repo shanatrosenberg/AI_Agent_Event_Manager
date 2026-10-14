@@ -50,7 +50,14 @@ class ChatMessage(db.Model):
             "sender_id": self.sender_id,
             "sender_role": self.sender_role,
             "from_label": from_label,
-            "subject": self.subject or ("Event cancelled" if self.kind == "event_cancelled" else "Message"),
+            "subject": self.subject
+            or (
+                "Event cancelled"
+                if self.kind == "event_cancelled"
+                else "Seats available"
+                if self.kind == "waitlist_offer"
+                else "Message"
+            ),
             "parent_id": self.parent_id,
             "event_id": self.event_id,
             "kind": self.kind,

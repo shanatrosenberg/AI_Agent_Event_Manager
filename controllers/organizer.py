@@ -49,6 +49,7 @@ from models.talk_request import AWAITING_STATUSES, CONFIRMED_STATUSES
 from controllers.search import run_semantic_search
 from services.auth import admin_organizer_id, current_user
 from services.chat import list_messages_for, list_thread, mark_messages_read, send_reply, unread_count_for
+from services.topics import list_topic_payloads, upsert_topic
 
 organizer_bp = Blueprint("organizer", __name__, url_prefix="/api/organizer")
 
@@ -214,6 +215,23 @@ def search_proposals():
     return run_semantic_search()
 
 
+@organizer_bp.route("/topics", methods=["GET", "POST"])
+def organizer_topics():
+    organizer_id = _organizer_id()
+    if not organizer_id:
+        return _validation_error("organizer_id is required (sign in as admin, or send X-Organizer-Id in tests)")
+    if request.method == "GET":
+        return jsonify({"topics": list_topic_payloads()}), 200
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        return _validation_error("JSON body is required")
+    name = str(payload.get("name") or payload.get("topic") or payload.get("category") or "").strip()
+    topic = upsert_topic(name)
+    if topic is None:
+        return _validation_error("Enter a topic name")
+    return jsonify({"topic": topic.to_dict(), "topics": list_topic_payloads()}), 201
+
+
 @organizer_bp.route("/speakers", methods=["GET"])
 def list_speakers():
     speakers = list_speakers_handler.handle(ListSpeakersQuery())
@@ -275,8 +293,15 @@ def create_request():
     date = str(payload.get("date") or "").strip()
     start_time = str(payload.get("start_time") or payload.get("start") or "").strip()
     end_time = str(payload.get("end_time") or payload.get("end") or "").strip()
+    if topic.lower() in {"other", "other...", "add new topic..."}:
+        topic = str(payload.get("custom_topic") or payload.get("customTopic") or "").strip()
     if not speaker_id or not topic:
         return _validation_error("speaker_id and topic are required")
+    saved_topic = upsert_topic(topic)
+    if saved_topic is not None:
+        topic = saved_topic.name
+        if not category or category.lower() in {"invitation", "other", "other..."}:
+            category = saved_topic.slug
     if not date or not start_time or not end_time or payload.get("capacity") in (None, ""):
         return _validation_error("date, start_time, end_time, and capacity are required")
     try:

@@ -21,6 +21,12 @@ from cqrs.commands import (
     LoginHandler,
     RegisterAccountCommand,
     RegisterAccountHandler,
+    CancelAttendeeRegistrationCommand,
+    CancelAttendeeRegistrationHandler,
+    ClaimWaitlistSeatsCommand,
+    ClaimWaitlistSeatsHandler,
+    JoinWaitlistCommand,
+    JoinWaitlistHandler,
     RegisterAttendeeCommand,
     RegisterAttendeeHandler,
     RejectTalkCommand,
@@ -108,6 +114,9 @@ list_event_log_handler = ListEventLogHandler(event_store)
 project_talks_handler = ProjectTalksHandler(event_store)
 list_active_events_handler = ListActiveEventsHandler(event_store)
 register_attendee_handler = RegisterAttendeeHandler(event_store)
+cancel_attendee_registration_handler = CancelAttendeeRegistrationHandler(event_store)
+join_waitlist_handler = JoinWaitlistHandler(event_store)
+claim_waitlist_seats_handler = ClaimWaitlistSeatsHandler(event_store, register_attendee_handler)
 register_account_handler = RegisterAccountHandler(event_store)
 login_handler = LoginHandler(event_store)
 semantic_search_handler = SemanticSearchHandler()
@@ -141,6 +150,12 @@ __all__ = [
     "ListSpeakerSubmissionsQuery",
     "ListSpeakersHandler",
     "ListSpeakersQuery",
+    "CancelAttendeeRegistrationCommand",
+    "CancelAttendeeRegistrationHandler",
+    "ClaimWaitlistSeatsCommand",
+    "ClaimWaitlistSeatsHandler",
+    "JoinWaitlistCommand",
+    "JoinWaitlistHandler",
     "RegisterAttendeeCommand",
     "RegisterAttendeeHandler",
     "RequestTalkCommand",
@@ -207,6 +222,9 @@ __all__ = [
     "organizer_stats_handler",
     "list_event_log_handler",
     "project_talks_handler",
+    "cancel_attendee_registration_handler",
+    "claim_waitlist_seats_handler",
+    "join_waitlist_handler",
     "register_attendee_handler",
     "reject_talk_handler",
     "request_talk_handler",

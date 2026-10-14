@@ -42,18 +42,74 @@
     <p class="text-xs font-semibold uppercase tracking-[0.22em] text-clay-600">Your registrations</p>
     <h1 class="font-display mt-3 max-w-3xl text-4xl font-extrabold tracking-tight text-stone-900 sm:text-5xl">My Tickets</h1>
     <p class="mt-4 max-w-2xl text-base leading-relaxed text-stone-600">
-      Talks you have reserved, with ticket counts and the seat numbers held for each session.
+      Upcoming sessions you have booked. Each card lists your seats so you can cancel one ticket at a time.
     </p>
     {% if attendee_name %}
     <p class="mt-4 text-sm font-medium text-stone-500">Signed in as {{ attendee_name }}.</p>
     {% endif %}
+    <p class="mt-3 max-w-2xl text-sm text-stone-500">
+      You can cancel individual tickets up to 48 hours before the session starts. After that window, the seats are held.
+    </p>
+
+    <div
+      id="status"
+      role="status"
+      aria-live="polite"
+      hidden
+      class="mt-6 rounded-2xl border px-4 py-3 text-sm font-medium"
+    ></div>
 
     {% if messages %}
-    <section id="ticket-messages" class="mt-8 space-y-3" aria-label="Cancellation notices">
+    <section id="ticket-messages" class="mt-8 space-y-3" aria-label="Notices">
       {% for note in messages %}
+      {% if note.kind == "waitlist_offer" %}
+      <article class="rounded-2xl border border-emerald-200 bg-emerald-50/90 px-5 py-4 text-sm text-emerald-950" data-waitlist-offer data-event-id="{{ note.event_id }}" data-max-claim="{{ note.max_claim or 1 }}">
+        <p class="text-[11px] font-semibold uppercase tracking-wide text-emerald-800">Seats available</p>
+        <p class="mt-1 leading-relaxed">{{ note.body }}</p>
+        {% if note.can_claim %}
+        <div class="mt-4 flex flex-wrap items-center gap-3">
+          <div class="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white px-2 py-1">
+            <button type="button" class="claim-minus inline-flex h-8 w-8 items-center justify-center rounded-full text-lg font-semibold text-clay-700" aria-label="Fewer seats">−</button>
+            <input class="claim-seats w-10 border-0 bg-transparent text-center text-sm font-semibold" type="text" inputmode="numeric" readonly value="{{ 1 if (note.max_claim or 1) else 0 }}">
+            <button type="button" class="claim-plus inline-flex h-8 w-8 items-center justify-center rounded-full text-lg font-semibold text-clay-700" aria-label="More seats">+</button>
+          </div>
+          <button type="button" class="claim-seats-btn inline-flex items-center justify-center rounded-full bg-clay-600 px-4 py-2 text-sm font-semibold text-white" data-event-id="{{ note.event_id }}">Claim seats</button>
+        </div>
+        <p class="mt-2 text-xs text-emerald-800">Up to {{ note.max_claim }} of the {{ note.remaining_seats }} open seat{% if note.remaining_seats != 1 %}s{% endif %} — first click wins.</p>
+        {% else %}
+        <p class="mt-3 text-xs font-medium text-emerald-800">Those seats were already claimed. We'll notify you again if another place opens.</p>
+        {% endif %}
+      </article>
+      {% else %}
       <article class="rounded-2xl border border-rose-200 bg-rose-50/80 px-5 py-4 text-sm text-rose-900">
         <p class="text-[11px] font-semibold uppercase tracking-wide text-rose-700">Cancellation notice</p>
         <p class="mt-1 leading-relaxed">{{ note.body }}</p>
+      </article>
+      {% endif %}
+      {% endfor %}
+    </section>
+    {% endif %}
+
+    {% if waitlist %}
+    <section id="waitlist-grid" class="mt-8 space-y-3" aria-label="Waitlist">
+      <h2 class="font-display text-2xl font-bold tracking-tight text-stone-900">Waitlist</h2>
+      {% for item in waitlist %}
+      <article class="rounded-2xl border border-amber-200 bg-white/80 px-5 py-4" data-waitlist-id="{{ item.id }}" data-event-id="{{ item.event_id }}">
+        <p class="text-[11px] font-semibold uppercase tracking-wide text-clay-600">{{ "Ready to claim" if item.can_claim else "Waiting" }}</p>
+        <p class="mt-1 text-sm font-semibold text-stone-800">{{ item.title }}</p>
+        <p class="mt-1 text-sm text-stone-500">Requested {{ item.seats_requested }} seat{% if item.seats_requested != 1 %}s{% endif %}{% if item.date %} · {{ item.date }}{% if item.start_time %} | {{ item.start_time }}{% endif %}{% endif %}</p>
+        {% if item.can_claim %}
+        <div class="mt-4 flex flex-wrap items-center gap-3">
+          <div class="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-sand-50 px-2 py-1">
+            <button type="button" class="claim-minus inline-flex h-8 w-8 items-center justify-center rounded-full text-lg font-semibold text-clay-700" aria-label="Fewer seats">−</button>
+            <input class="claim-seats w-10 border-0 bg-transparent text-center text-sm font-semibold" type="text" inputmode="numeric" readonly value="{{ item.max_claim }}">
+            <button type="button" class="claim-plus inline-flex h-8 w-8 items-center justify-center rounded-full text-lg font-semibold text-clay-700" aria-label="More seats">+</button>
+          </div>
+          <button type="button" class="claim-seats-btn inline-flex items-center justify-center rounded-full bg-clay-600 px-4 py-2 text-sm font-semibold text-white" data-event-id="{{ item.event_id }}" data-max-claim="{{ item.max_claim }}">Claim seats</button>
+        </div>
+        {% else %}
+        <p class="mt-2 text-xs text-stone-500">We'll notify you here as soon as a cancellation frees a seat.</p>
+        {% endif %}
       </article>
       {% endfor %}
     </section>
@@ -62,35 +118,232 @@
     {% if tickets %}
     <section id="tickets-grid" class="mt-10 grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
       {% for event in tickets %}
-      <article data-booking-id="{{ event.booking_id }}" data-event-id="{{ event.id }}" data-topic="{{ event.topic }}" class="event-card event-card--photo event-card--open">
+      <article data-booking-id="{{ event.booking_id }}" data-event-id="{{ event.id }}" data-topic="{{ event.topic }}" data-cancellable="{{ 'true' if event.cancellable else 'false' }}" data-event-title="{{ event.title }}" class="event-card event-card--photo event-card--open">
         <div class="event-card__media" aria-hidden="true">
           <img src="{{ event.cover_image or event_cover_url(event.topic, event.title, seed=event.id) }}" alt="" loading="lazy">
         </div>
         <div class="event-card__overlay" aria-hidden="true"></div>
         <div class="flex flex-wrap items-center gap-2">
           <span class="inline-flex rounded-full bg-white/20 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white ring-1 ring-white/35 backdrop-blur-md">{{ event.topic }}</span>
-          <span class="inline-flex rounded-full bg-clay-600 px-2.5 py-1 text-[11px] font-bold text-white ring-2 ring-white/50">{{ event.tickets }} ticket{% if event.tickets != 1 %}s{% endif %}</span>
+          <span class="ticket-count inline-flex rounded-full bg-clay-600 px-2.5 py-1 text-[11px] font-bold text-white ring-2 ring-white/50">{{ event.tickets }} ticket{% if event.tickets != 1 %}s{% endif %}</span>
         </div>
-        {% if event.seat_ids %}
-        <p class="mt-3 text-sm font-medium text-white/90">Seats {{ event.seat_ids|join(", ") }}</p>
-        {% endif %}
         <h2 class="font-display mt-4 text-2xl font-bold leading-tight tracking-tight text-white">{{ event.title }}</h2>
         <p class="mt-2 text-sm font-semibold text-amber-100">{{ event.speaker_name or event.speaker_id or "Guest speaker" }}</p>
         <p class="mt-2 text-sm text-stone-100">
           {{ event.date }}{% if event.start_time %} | {{ event.start_time }}{% endif %}
         </p>
         {% if event.description %}
-        <p class="mt-4 flex-1 text-sm leading-relaxed text-white/85">{{ event.description }}</p>
+        <p class="mt-4 text-sm leading-relaxed text-white/85">{{ event.description }}</p>
         {% endif %}
+        <div class="relative z-10 mt-4">
+          <p class="text-[11px] font-semibold uppercase tracking-wide text-amber-100/90">Your tickets</p>
+          {% if event.seat_ids %}
+          <ul class="ticket-seat-list mt-2 space-y-2">
+            {% for seat in event.seat_ids %}
+            <li data-seat-id="{{ seat }}" class="flex items-center justify-between gap-3 rounded-2xl border border-white/20 bg-white/10 px-3 py-2 backdrop-blur-md">
+              <span class="text-sm font-semibold text-white">Seat {{ seat }}</span>
+              {% if event.cancellable %}
+              <button
+                type="button"
+                class="cancel-seat-btn inline-flex items-center justify-center rounded-full border border-white/40 bg-white/15 px-3 py-1 text-xs font-semibold text-white transition hover:border-rose-300 hover:bg-rose-600"
+                data-booking-id="{{ event.booking_id }}"
+                data-seat-id="{{ seat }}"
+                data-event-title="{{ event.title }}"
+              >
+                Cancel ticket
+              </button>
+              {% else %}
+              <span class="text-[11px] font-medium text-white/70">Held</span>
+              {% endif %}
+            </li>
+            {% endfor %}
+          </ul>
+          {% else %}
+          <p class="mt-2 text-sm font-medium text-white/90">{{ event.tickets }} ticket{% if event.tickets != 1 %}s{% endif %} reserved</p>
+          {% endif %}
+          {% if event.remaining_seats and event.remaining_seats > 0 %}
+          <a
+            href="/events?buy={{ event.id }}"
+            class="mt-4 inline-flex items-center justify-center rounded-full bg-gradient-to-r from-clay-600 to-amber-700 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-orange-900/15"
+          >
+            Buy more tickets
+          </a>
+          {% endif %}
+          {% if event.cancellable %}
+          <button
+            type="button"
+            class="cancel-registration-btn mt-4 inline-flex items-center justify-center rounded-full border border-white/50 bg-white/15 px-4 py-2 text-sm font-semibold text-white backdrop-blur-md transition hover:border-rose-300 hover:bg-rose-600"
+            data-booking-id="{{ event.booking_id }}"
+            data-event-title="{{ event.title }}"
+          >
+            Cancel all seats
+          </button>
+          {% else %}
+          <p class="mt-3 text-xs font-medium leading-relaxed text-amber-100/95">{{ event.cancel_policy or "Cancellations are only allowed up to 48 hours before the event." }}</p>
+          {% endif %}
+        </div>
       </article>
       {% endfor %}
     </section>
-    {% else %}
+    <div id="tickets-empty" hidden class="mt-10 rounded-3xl border border-dashed border-amber-200 bg-white/70 px-6 py-16 text-center">
+      <p class="text-stone-500">You haven't registered for any events yet.</p>
+      <a href="{{ url_for('browse_events') }}" class="mt-5 inline-flex items-center justify-center rounded-full bg-clay-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-clay-700">Browse available talks</a>
+    </div>
+    {% elif not waitlist %}
     <div id="tickets-empty" class="mt-10 rounded-3xl border border-dashed border-amber-200 bg-white/70 px-6 py-16 text-center">
       <p class="text-stone-500">You haven't registered for any events yet.</p>
       <a href="{{ url_for('browse_events') }}" class="mt-5 inline-flex items-center justify-center rounded-full bg-clay-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-clay-700">Browse available talks</a>
     </div>
     {% endif %}
   </main>
+  <script>
+    const statusEl = document.getElementById("status");
+
+    function showStatus(message, kind) {
+      if (!statusEl) return;
+      statusEl.hidden = false;
+      statusEl.classList.remove("hidden", "status-leaving");
+      statusEl.textContent = message;
+      statusEl.className = kind === "success"
+        ? "mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800"
+        : "mt-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-800";
+      statusEl.dataset.statusKind = kind || "info";
+      if (typeof window.armStatusDismiss === "function") window.armStatusDismiss(statusEl, { kind: kind || "info" });
+    }
+
+    function revealEmptyState() {
+      const grid = document.getElementById("tickets-grid");
+      if (grid && !grid.querySelector("[data-booking-id]")) {
+        grid.remove();
+        const empty = document.getElementById("tickets-empty");
+        if (empty) empty.hidden = false;
+      }
+    }
+
+    function setTicketCount(card, count) {
+      const badge = card.querySelector(".ticket-count");
+      if (!badge) return;
+      badge.textContent = count === 1 ? "1 ticket" : `${count} tickets`;
+    }
+
+    function applyCancelResult(card, data, releasedLabel) {
+      const remaining = Array.isArray(data.seat_ids) ? data.seat_ids : [];
+      const gone = !remaining.length || data.status === "cancelled";
+      if (gone) {
+        card.remove();
+        revealEmptyState();
+        showStatus(`${releasedLabel} cancelled. ${releasedLabel.includes("seats") ? "They are" : "It is"} available again.`, "success");
+        return;
+      }
+      card.querySelectorAll("[data-seat-id]").forEach((row) => {
+        if (!remaining.includes(row.getAttribute("data-seat-id"))) row.remove();
+      });
+      setTicketCount(card, remaining.length);
+      showStatus(`${releasedLabel} cancelled. Your remaining seats are still reserved.`, "success");
+    }
+
+    async function cancelSeats(button, seatIds, confirmMessage, releasedLabel) {
+      const bookingId = button.getAttribute("data-booking-id");
+      if (!bookingId) return;
+      if (!window.confirm(confirmMessage)) return;
+      const body = seatIds && seatIds.length ? { seat_ids: seatIds } : {};
+      try {
+        const response = await fetch(`/api/attendee/tickets/${encodeURIComponent(bookingId)}/cancel`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          showStatus(data.error || "Cancellations are only allowed up to 48 hours before the event.", "error");
+          return;
+        }
+        const card = button.closest("[data-booking-id]");
+        if (card) applyCancelResult(card, data, releasedLabel);
+      } catch (error) {
+        showStatus("Could not cancel that ticket.", "error");
+      }
+    }
+
+    document.querySelectorAll(".cancel-seat-btn").forEach((button) => {
+      button.addEventListener("click", () => {
+        const seat = button.getAttribute("data-seat-id");
+        const title = button.getAttribute("data-event-title") || "this session";
+        cancelSeats(
+          button,
+          seat ? [seat] : [],
+          `Cancel seat ${seat} for "${title}"? That seat will be released.`,
+          `Seat ${seat}`
+        );
+      });
+    });
+
+    document.querySelectorAll(".cancel-registration-btn").forEach((button) => {
+      button.addEventListener("click", () => {
+        const title = button.getAttribute("data-event-title") || "this session";
+        cancelSeats(
+          button,
+          [],
+          `Cancel all remaining seats for "${title}"? Those seats will be released.`,
+          "Your seats"
+        );
+      });
+    });
+
+    function claimRoot(button) {
+      return button.closest("[data-waitlist-offer], [data-waitlist-id], [data-event-id]");
+    }
+
+    function claimMax(root) {
+      const fromRoot = parseInt(root && root.getAttribute("data-max-claim"), 10);
+      if (fromRoot > 0) return fromRoot;
+      const btn = root && root.querySelector(".claim-seats-btn");
+      return Math.max(1, parseInt(btn && btn.getAttribute("data-max-claim"), 10) || 1);
+    }
+
+    document.querySelectorAll(".claim-minus, .claim-plus").forEach((button) => {
+      button.addEventListener("click", () => {
+        const root = claimRoot(button);
+        const input = root && root.querySelector(".claim-seats");
+        if (!input) return;
+        const max = claimMax(root);
+        const current = Math.max(1, parseInt(input.value, 10) || 1);
+        const next = button.classList.contains("claim-plus") ? current + 1 : current - 1;
+        input.value = String(Math.min(max, Math.max(1, next)));
+      });
+    });
+
+    document.querySelectorAll(".claim-seats-btn").forEach((button) => {
+      button.addEventListener("click", async () => {
+        const eventId = button.getAttribute("data-event-id");
+        const root = claimRoot(button);
+        const input = root && root.querySelector(".claim-seats");
+        const seats = Math.max(1, parseInt(input && input.value, 10) || 1);
+        if (!eventId) return;
+        try {
+          const response = await fetch(`/api/attendee/waitlist/${encodeURIComponent(eventId)}/claim`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ seats }),
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) {
+            showStatus(data.error || "Those seats were already claimed.", "error");
+            return;
+          }
+          const reserved = (data.seat_ids || []).join(", ");
+          showStatus(
+            reserved
+              ? `Claimed seats ${reserved}. They're on My Tickets now.`
+              : `Claimed ${data.seats} seat${data.seats === 1 ? "" : "s"}.`,
+            "success"
+          );
+          window.setTimeout(() => { window.location.href = "/my-tickets"; }, 700);
+        } catch (error) {
+          showStatus("Could not claim those seats.", "error");
+        }
+      });
+    });
+  </script>
 </body>
 </html>

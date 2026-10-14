@@ -1,12 +1,18 @@
 from flask import Blueprint, jsonify, request, session
 
 from cqrs import (
+    CancelAttendeeRegistrationCommand,
+    ClaimWaitlistSeatsCommand,
+    JoinWaitlistCommand,
     ListActiveEventsQuery,
     ListApprovedEventsQuery,
     ListAttendeeTicketsQuery,
     LoginCommand,
     RegisterAccountCommand,
     RegisterAttendeeCommand,
+    cancel_attendee_registration_handler,
+    claim_waitlist_seats_handler,
+    join_waitlist_handler,
     list_active_events_handler,
     list_approved_events_handler,
     list_attendee_tickets_handler,
@@ -22,7 +28,16 @@ from services.auth import current_user, establish_session
 from services.chat import list_messages_for
 from services.embeddings import cosine_similarity, embed_text, proposal_document
 from services.event_covers import cover_image_url
+from services.scheduling import cancellation_window_payload
+from services.group_seating import suggest_group_seats
 from services.seating import normalize_seat_ids, seating_map_payload
+from services.waitlist import (
+    WAITLIST_MAX_SEATS,
+    attach_waitlist_state,
+    waitlist_cards,
+    waitlist_seat_cap,
+)
+from services.topics import catalog_topic_labels
 from services.vector_store import search_similar
 
 attendee_bp = Blueprint("attendee", __name__, url_prefix="/api/attendee")
@@ -64,6 +79,7 @@ def browse_event_cards(topic: str | None = None, speaker: str | None = None):
             item["topic"], item["title"], seed=event.id
         )
         cards.append(item)
+    attach_waitlist_state(cards, _attendee_id())
     topic_key = (topic or "").strip().lower()
     speaker_key = (speaker or "").strip().lower()
     if topic_key:
@@ -83,7 +99,14 @@ def browse_event_cards(topic: str | None = None, speaker: str | None = None):
 
 def browse_filter_options(cards: list[dict] | None = None) -> dict[str, list[dict]]:
     source = cards if cards is not None else browse_event_cards()
-    topics = sorted({(card.get("topic") or "Session").strip() for card in source if card.get("topic")})
+    by_key: dict[str, str] = {}
+    for label in catalog_topic_labels():
+        by_key[label.lower()] = label
+    for card in source:
+        topic = (card.get("topic") or "").strip()
+        if topic and topic.lower() not in by_key:
+            by_key[topic.lower()] = topic
+    topics = sorted(by_key.values(), key=str.lower)
     speakers = []
     seen = set()
     for card in source:
@@ -185,6 +208,7 @@ def attendee_ticket_cards(attendee_id: str) -> list[dict]:
         item["seat_ids"] = booking.seat_ids
         item["booking_id"] = booking.id
         item["booking_status"] = booking.status
+        item.update(cancellation_window_payload(event.date, event.start_time))
         cards.append(item)
     return cards
 
@@ -208,7 +232,13 @@ def _seat_snapshot(event_id: str) -> dict:
 
 
 def _booking_payload(booking) -> dict:
-    return {**booking.to_dict(), **_seat_snapshot(booking.event_id)}
+    added = list(getattr(booking, "added_seat_ids", None) or booking.seat_ids)
+    return {
+        **booking.to_dict(),
+        **_seat_snapshot(booking.event_id),
+        "added_seat_ids": added,
+        "additional": bool(getattr(booking, "additional", False)),
+    }
 
 
 def _parse_seat_request(payload: dict) -> tuple[int, list[str]]:
@@ -270,7 +300,24 @@ def event_seat_map(event_id: str):
     event = db.session.get(Event, str(event_id or "").strip())
     if event is None:
         return _validation_error("event not found", status=404)
-    return jsonify(seating_map_payload(event)), 200
+    return jsonify(seating_map_payload(event, _attendee_id())), 200
+
+
+@attendee_bp.route("/events/<event_id>/group-seats", methods=["POST"])
+def suggest_group_seat_block(event_id: str):
+    event = db.session.get(Event, str(event_id or "").strip())
+    if event is None:
+        return _validation_error("event not found", status=404)
+    payload = request.get_json(silent=True) or {}
+    if not isinstance(payload, dict):
+        payload = {}
+    suggestion = suggest_group_seats(event, payload.get("seats"))
+    if not suggestion.get("ok"):
+        return _validation_error(
+            suggestion.get("error") or "Could not suggest group seats",
+            status=int(suggestion.get("status") or 400),
+        )
+    return jsonify(suggestion), 200
 
 
 def _request_filters(body: dict | None = None) -> tuple[str, str]:
@@ -282,6 +329,12 @@ def _request_filters(body: dict | None = None) -> tuple[str, str]:
         request.args.get("speaker") or request.args.get("speaker_id") or payload.get("speaker") or payload.get("speaker_id") or ""
     ).strip()
     return topic, speaker
+
+
+@attendee_bp.route("/topics", methods=["GET"])
+def list_public_topics():
+    options = browse_filter_options()
+    return jsonify({"topics": options["topics"]}), 200
 
 
 @attendee_bp.route("/approved", methods=["GET"])
@@ -389,4 +442,104 @@ def buy_tickets():
         db.session.rollback()
         return _validation_error(exc.message, status=exc.status)
 
+    return jsonify(_booking_payload(booking)), 201
+
+
+@attendee_bp.route("/tickets/<booking_id>/cancel", methods=["POST"])
+def cancel_ticket(booking_id: str):
+    attendee_id = _attendee_id()
+    if not attendee_id:
+        return _validation_error("Sign in as an attendee to cancel a registration")
+
+    payload = request.get_json(silent=True) or {}
+    if not isinstance(payload, dict):
+        payload = {}
+    seat_ids = normalize_seat_ids(payload.get("seat_ids") or payload.get("seat_id"))
+
+    try:
+        booking = cancel_attendee_registration_handler.handle(
+            CancelAttendeeRegistrationCommand(
+                booking_id=str(booking_id or "").strip(),
+                attendee_id=str(attendee_id),
+                seat_ids=seat_ids or None,
+            )
+        )
+    except DomainError as exc:
+        db.session.rollback()
+        return _validation_error(exc.message, status=exc.status)
+
+    return jsonify(_booking_payload(booking)), 200
+
+
+def _parse_waitlist_seats(payload: dict, maximum: int) -> int:
+    raw = payload.get("seats") if isinstance(payload, dict) else 1
+    if raw in (None, ""):
+        return 1
+    try:
+        seats = int(raw)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("seats must be an integer") from exc
+    if seats < 1:
+        raise ValueError("seats must be at least 1")
+    return min(seats, max(1, maximum))
+
+
+@attendee_bp.route("/waitlist", methods=["GET"])
+def list_waitlist():
+    attendee_id = _attendee_id()
+    if not attendee_id:
+        return _validation_error("Sign in as an attendee to view the waitlist")
+    return jsonify({"waitlist": waitlist_cards(attendee_id)}), 200
+
+
+@attendee_bp.route("/waitlist", methods=["POST"])
+def join_waitlist():
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        return _validation_error("JSON body is required")
+    event_id = str(payload.get("event_id") or "").strip()
+    if not event_id:
+        return _validation_error("event_id cannot be empty")
+    attendee_id = _attendee_id(payload)
+    if not attendee_id:
+        return _validation_error("Sign in as an attendee to join the waitlist")
+    event = db.session.get(Event, event_id)
+    cap = waitlist_seat_cap(event.capacity if event is not None else WAITLIST_MAX_SEATS)
+    try:
+        seats = _parse_waitlist_seats(payload, cap)
+    except ValueError as exc:
+        return _validation_error(str(exc))
+    try:
+        entry = join_waitlist_handler.handle(
+            JoinWaitlistCommand(attendee_id=str(attendee_id), event_id=event_id, seats=seats)
+        )
+    except DomainError as exc:
+        db.session.rollback()
+        return _validation_error(exc.message, status=exc.status)
+    return jsonify(entry.to_dict()), 201
+
+
+@attendee_bp.route("/waitlist/<event_id>/claim", methods=["POST"])
+def claim_waitlist(event_id: str):
+    attendee_id = _attendee_id()
+    if not attendee_id:
+        return _validation_error("Sign in as an attendee to claim waitlist seats")
+    payload = request.get_json(silent=True) or {}
+    if not isinstance(payload, dict):
+        payload = {}
+    try:
+        seats = _parse_waitlist_seats(payload, WAITLIST_MAX_SEATS)
+    except ValueError as exc:
+        return _validation_error(str(exc))
+    try:
+        booking = claim_waitlist_seats_handler.handle(
+            ClaimWaitlistSeatsCommand(
+                attendee_id=str(attendee_id),
+                event_id=str(event_id or "").strip(),
+                seats=seats,
+            )
+        )
+    except DomainError as exc:
+        db.session.rollback()
+        return _validation_error(exc.message, status=exc.status)
     return jsonify(_booking_payload(booking)), 201

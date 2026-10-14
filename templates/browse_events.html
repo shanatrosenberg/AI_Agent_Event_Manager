@@ -8,7 +8,6 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   {% include 'partials/theme.html' %}
   <style>
-    #events-grid article[hidden] { display: none !important; }
     .hall-theater {
       position: relative;
       overflow: hidden;
@@ -168,6 +167,14 @@
       box-shadow: none;
       text-decoration: none;
     }
+    .hall-seat[data-state="owned"] {
+      background: linear-gradient(180deg, #34d399 0%, #059669 100%);
+      border-color: #6ee7b7;
+      color: #ecfdf5;
+      cursor: not-allowed;
+      opacity: 1;
+      box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.5), 0 0 14px rgba(16, 185, 129, 0.45);
+    }
     @keyframes seatPulse {
       0%, 100% { box-shadow: 0 0 0 1px rgba(251, 191, 36, 0.4), 0 0 10px rgba(245, 158, 11, 0.35); }
       50% { box-shadow: 0 0 0 2px rgba(253, 186, 116, 0.7), 0 0 18px rgba(245, 158, 11, 0.7); }
@@ -250,40 +257,19 @@
   </header>
 
   <main class="mx-auto max-w-6xl px-6 py-10 sm:py-14">
-    <p class="text-xs font-semibold uppercase tracking-[0.22em] text-clay-600">For attendees</p>
-    <h1 class="font-display mt-3 max-w-3xl text-4xl font-extrabold tracking-tight text-stone-900 sm:text-5xl">Find a talk that feels like an invitation.</h1>
-    <p class="mt-4 max-w-2xl text-base leading-relaxed text-stone-600">
-      Upcoming sessions, closest date first. Reserve a seat while the hall is still open.
-    </p>
-    {% if attendee_name %}
-    <p class="mt-4 text-sm font-medium text-stone-500">Signed in as {{ attendee_name }}.</p>
-    {% endif %}
+    <div class="max-w-3xl">
+      <p class="text-xs font-semibold uppercase tracking-[0.22em] text-clay-600">For attendees</p>
+      <h1 class="font-display mt-3 text-4xl font-extrabold tracking-tight text-stone-900 sm:text-5xl">Find a talk that feels like an invitation.</h1>
+      <p class="mt-5 text-base leading-relaxed text-stone-600">
+        Upcoming sessions, closest date first. Reserve a seat while the hall is still open.
+      </p>
+      {% if attendee_name %}
+      <p class="mt-4 text-sm font-medium text-stone-500">Signed in as {{ attendee_name }}.</p>
+      {% endif %}
+    </div>
 
-    <form id="talk-search-form" class="mt-8" role="search" action="{{ url_for('browse_events') }}" method="get">
-      <label for="talk-search" class="sr-only">Search talks</label>
-      <div class="flex flex-col gap-3 sm:flex-row">
-        <div class="relative flex-1">
-          <span class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-clay-600" aria-hidden="true">
-            <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8">
-              <circle cx="11" cy="11" r="7"></circle>
-              <path d="M20 20l-3.2-3.2"></path>
-            </svg>
-          </span>
-          <input
-            id="talk-search"
-            name="q"
-            type="search"
-            value="{{ search_query or '' }}"
-            autocomplete="off"
-            placeholder="Search talks by topic, speaker, or a few words…"
-            class="w-full rounded-full border border-amber-200 bg-white/90 py-3 pl-12 pr-4 text-sm text-stone-800 shadow-sm outline-none transition placeholder:text-stone-400 focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-100"
-          >
-        </div>
-        <button type="submit" id="talk-search-button" class="inline-flex items-center justify-center rounded-full bg-clay-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-clay-700">
-          Search
-        </button>
-      </div>
-      <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+    <form id="talk-search-form" class="mt-8" action="{{ url_for('browse_events') }}" method="get">
+      <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
         <div class="min-w-[12rem] flex-1">
           <label for="filter-topic" class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-stone-500">Filter by topic</label>
           <select id="filter-topic" name="topic" class="w-full rounded-full border border-amber-200 bg-white/90 px-4 py-2.5 text-sm text-stone-800 shadow-sm outline-none transition focus:border-amber-400 focus:ring-2 focus:ring-amber-100">
@@ -302,6 +288,9 @@
             {% endfor %}
           </select>
         </div>
+        <button type="submit" id="talk-search-button" class="inline-flex items-center justify-center rounded-full bg-clay-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-clay-700">
+          Search
+        </button>
         <button type="button" id="reset-filters" class="inline-flex items-center justify-center rounded-full border border-amber-200 bg-white px-5 py-2.5 text-sm font-semibold text-clay-700 shadow-sm transition hover:border-amber-300 hover:bg-sand-50">
           Reset Filters
         </button>
@@ -314,7 +303,7 @@
     {% if events %}
     <section id="events-grid" class="mt-10 grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
       {% for event in events %}
-      <article data-event-id="{{ event.id }}" data-topic="{{ event.topic }}" data-speaker-id="{{ event.speaker_id or '' }}" data-speaker-name="{{ event.speaker_name or event.speaker_id or '' }}" data-remaining="{{ event.remaining_seats }}" data-capacity="{{ event.capacity }}" data-hall-label="{{ event.hall_label or '' }}" data-title="{{ event.title }}" class="event-card event-card--photo {% if event.sold_out %}event-card--sold{% elif event.last_seats %}event-card--low{% else %}event-card--open{% endif %}">
+      <article data-event-id="{{ event.id }}" data-topic="{{ event.topic }}" data-speaker-id="{{ event.speaker_id or '' }}" data-speaker-name="{{ event.speaker_name or event.speaker_id or '' }}" data-remaining="{{ event.remaining_seats }}" data-capacity="{{ event.capacity }}" data-hall-label="{{ event.hall_label or '' }}" data-title="{{ event.title }}" data-already-booked="{{ 'true' if event.already_booked else 'false' }}" class="event-card event-card--photo {% if event.sold_out %}event-card--sold{% elif event.last_seats %}event-card--low{% else %}event-card--open{% endif %}">
         <div class="event-card__media" aria-hidden="true">
           <img src="{{ event.cover_image or event_cover_url(event.topic, event.title, seed=event.id) }}" alt="" loading="lazy">
         </div>
@@ -336,17 +325,26 @@
           {{ event.date }}{% if event.start_time %} | {{ event.start_time }}{% endif %}
         </p>
         <p class="mt-4 flex-1 text-sm leading-relaxed text-white/85">{{ event.description or "Join this session to hear the speaker share their work with the room." }}</p>
-        {% if not event.sold_out %}
+        {% if event.sold_out %}
         <div class="event-card__cta">
-          <button type="button" data-buy-tickets="{{ event.id }}" class="event-card__cta-btn">Buy Tickets</button>
+          {% if event.already_booked %}
+          <button type="button" class="event-card__cta-btn" disabled>You're registered</button>
+          {% elif event.waitlisted %}
+          <button type="button" class="event-card__cta-btn" disabled>On the waitlist</button>
+          {% else %}
+          <button type="button" data-join-waitlist="{{ event.id }}" data-title="{{ event.title }}" data-capacity="{{ event.capacity }}" class="event-card__cta-btn">Join Waitlist</button>
+          {% endif %}
+        </div>
+        {% else %}
+        <div class="event-card__cta">
+          <button type="button" data-buy-tickets="{{ event.id }}" class="event-card__cta-btn">{% if event.already_booked %}Buy more tickets{% else %}Buy Tickets{% endif %}</button>
         </div>
         {% endif %}
       </article>
       {% endfor %}
     </section>
-    <p id="search-empty" hidden class="mt-10 rounded-3xl border border-dashed border-amber-200 bg-white/70 px-6 py-16 text-center text-stone-500">No talks match those filters. Try another topic, speaker, or a few different words.</p>
-    {% elif selected_topic or selected_speaker or search_query %}
-    <p id="search-empty" class="mt-10 rounded-3xl border border-dashed border-amber-200 bg-white/70 px-6 py-16 text-center text-stone-500">No talks match those filters. Try another topic, speaker, or a few different words.</p>
+    {% elif selected_topic or selected_speaker %}
+    <p id="search-empty" class="mt-10 rounded-3xl border border-dashed border-amber-200 bg-white/70 px-6 py-16 text-center text-stone-500">No talks match those filters. Try another topic or speaker.</p>
     {% else %}
     <p id="browse-empty" class="mt-10 rounded-3xl border border-dashed border-amber-200 bg-white/70 px-6 py-16 text-center text-stone-500">No talks are on the public program yet.</p>
     {% endif %}
@@ -380,7 +378,7 @@
         </div>
         <div id="join-existing-fields" class="space-y-4">
           <div>
-            <label for="join-existing-user" class="block text-sm font-medium text-stone-700">User id</label>
+            <label for="join-existing-user" class="block text-sm font-medium text-stone-700">User Name</label>
             <input id="join-existing-user" autocomplete="username" class="mt-1.5 w-full rounded-xl border border-amber-200 bg-sand-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-100">
           </div>
           <div>
@@ -390,11 +388,7 @@
         </div>
         <div id="join-new-fields" class="hidden space-y-4">
           <div>
-            <label for="join-new-name" class="block text-sm font-medium text-stone-700">Display name</label>
-            <input id="join-new-name" autocomplete="name" class="mt-1.5 w-full rounded-xl border border-amber-200 bg-sand-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-100">
-          </div>
-          <div>
-            <label for="join-new-user" class="block text-sm font-medium text-stone-700">User id</label>
+            <label for="join-new-user" class="block text-sm font-medium text-stone-700">User Name</label>
             <input id="join-new-user" autocomplete="username" class="mt-1.5 w-full rounded-xl border border-amber-200 bg-sand-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-100">
           </div>
           <div>
@@ -436,6 +430,33 @@
         <div>
           <p class="block text-sm font-medium text-stone-700">Choose your seats</p>
           <p id="ticket-hall-label" class="mt-1 text-xs font-semibold uppercase tracking-wide text-clay-600"></p>
+          <div id="group-agent" class="mt-3 rounded-2xl border border-amber-100 bg-sand-50 px-4 py-3">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p class="text-sm font-semibold text-stone-800">Optional seating agent</p>
+                <p class="mt-1 text-xs leading-relaxed text-stone-500">Ask it to seat a group together. You can dismiss this and click seats one by one instead.</p>
+              </div>
+              <button type="button" id="dismiss-group-agent" class="text-xs font-semibold text-clay-700 underline-offset-2 hover:underline">I'll pick seats myself</button>
+            </div>
+            <div id="group-agent-controls" class="mt-3 flex flex-wrap items-center gap-3">
+              <div class="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-white px-2 py-1">
+                <button type="button" id="group-minus" class="inline-flex h-8 w-8 items-center justify-center rounded-full text-lg font-semibold text-clay-700" aria-label="Fewer group seats">−</button>
+                <input id="group-seats" type="text" inputmode="numeric" readonly value="2" class="w-10 border-0 bg-transparent text-center text-sm font-semibold text-stone-800">
+                <button type="button" id="group-plus" class="inline-flex h-8 w-8 items-center justify-center rounded-full text-lg font-semibold text-clay-700" aria-label="More group seats">+</button>
+              </div>
+              <button type="button" id="group-find-seats" class="inline-flex items-center justify-center rounded-full bg-clay-600 px-4 py-2 text-sm font-semibold text-white">Seat us together</button>
+            </div>
+            <div id="group-suggest" class="mt-3 hidden rounded-xl border border-amber-200 bg-white px-3 py-3 text-sm text-stone-700">
+              <p id="group-suggest-copy"></p>
+              <div id="group-suggest-actions" class="mt-3 hidden flex-wrap gap-2">
+                <button type="button" id="group-accept" class="inline-flex items-center justify-center rounded-full bg-clay-600 px-4 py-1.5 text-xs font-semibold text-white">Accept layout</button>
+                <button type="button" id="group-reject" class="inline-flex items-center justify-center rounded-full border border-amber-200 bg-white px-4 py-1.5 text-xs font-semibold text-stone-700">Pick seats myself</button>
+              </div>
+            </div>
+          </div>
+          <p id="group-agent-restore" class="mt-2 hidden">
+            <button type="button" id="show-group-agent" class="text-xs font-semibold text-clay-700 underline-offset-2 hover:underline">Use the seating agent</button>
+          </p>
           <div class="hall-theater mt-3">
             <div class="hall-stage">Stage</div>
             <div class="hall-map-shell">
@@ -446,6 +467,7 @@
               <div class="hall-legend">
                 <span><span class="hall-seat pointer-events-none" data-state="available">1</span> Available</span>
                 <span><span class="hall-seat pointer-events-none" data-state="selected">2</span> Selected</span>
+                <span><span class="hall-seat pointer-events-none" data-state="owned">4</span> Your tickets</span>
                 <span><span class="hall-seat pointer-events-none" data-state="taken">3</span> Reserved</span>
               </div>
             </div>
@@ -463,7 +485,7 @@
         </div>
         <div id="ticket-existing-fields" class="space-y-4">
           <div>
-            <label for="ticket-existing-user" class="block text-sm font-medium text-stone-700">USER NAME</label>
+            <label for="ticket-existing-user" class="block text-sm font-medium text-stone-700">User Name</label>
             <input id="ticket-existing-user" name="existing_user_id" autocomplete="username" class="mt-1.5 w-full rounded-xl border border-amber-200 bg-sand-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-100">
           </div>
           <div>
@@ -473,11 +495,7 @@
         </div>
         <div id="ticket-new-fields" class="hidden space-y-4">
           <div>
-            <label for="ticket-new-name" class="block text-sm font-medium text-stone-700">Display name</label>
-            <input id="ticket-new-name" name="name" autocomplete="name" class="mt-1.5 w-full rounded-xl border border-amber-200 bg-sand-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-100">
-          </div>
-          <div>
-            <label for="ticket-new-user" class="block text-sm font-medium text-stone-700">User id</label>
+            <label for="ticket-new-user" class="block text-sm font-medium text-stone-700">User Name</label>
             <input id="ticket-new-user" name="new_user_id" autocomplete="username" class="mt-1.5 w-full rounded-xl border border-amber-200 bg-sand-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-100">
           </div>
           <div>
@@ -500,6 +518,42 @@
     </div>
   </div>
 
+  <div id="waitlist-modal" class="fixed inset-0 z-50 hidden app-modal items-center justify-center overflow-hidden" aria-hidden="true">
+    <div id="waitlist-backdrop" class="absolute inset-0 bg-stone-900/40 opacity-0 backdrop-blur-md transition-opacity duration-300"></div>
+    <div
+      id="waitlist-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="waitlist-modal-title"
+      class="app-dialog relative w-full max-w-md scale-95 rounded-3xl border border-amber-100 bg-white/95 p-6 opacity-0 shadow-2xl shadow-orange-900/15 transition duration-300 sm:p-7"
+    >
+      <div class="app-modal-header flex items-start justify-between gap-3">
+        <div>
+          <h2 id="waitlist-modal-title" class="font-display text-lg font-bold tracking-tight">Join Waitlist</h2>
+          <p id="waitlist-modal-copy" class="mt-1 text-sm text-stone-500">This session is sold out. Request seats and we will notify you when a cancellation opens a place.</p>
+        </div>
+        <button type="button" id="close-waitlist-modal" class="app-modal-close inline-flex h-9 w-9 items-center justify-center rounded-full border border-amber-200 bg-white text-stone-500 shadow-sm transition hover:border-amber-300 hover:bg-sand-50 hover:text-stone-800" aria-label="Close waitlist form">
+          <span aria-hidden="true">✕</span>
+        </button>
+      </div>
+      <form id="waitlist-form" class="mt-6 space-y-4">
+        <input type="hidden" id="waitlist-event-id" value="">
+        <p class="text-sm font-medium text-stone-700">How many seats do you want?</p>
+        <div class="flex items-center justify-center gap-3">
+          <button type="button" id="waitlist-minus" class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-amber-200 bg-white text-lg font-semibold text-clay-700 shadow-sm" aria-label="Fewer seats">−</button>
+          <input id="waitlist-seats" type="text" inputmode="numeric" readonly value="1" class="w-16 rounded-xl border border-amber-200 bg-sand-50 px-2 py-2 text-center text-lg font-semibold text-stone-800">
+          <button type="button" id="waitlist-plus" class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-amber-200 bg-white text-lg font-semibold text-clay-700 shadow-sm" aria-label="More seats">+</button>
+        </div>
+        <p class="text-center text-xs text-stone-500">Up to <span id="waitlist-max-label">{{ waitlist_max_seats or 10 }}</span> seats, first-come, first-served when a place opens.</p>
+        <p id="waitlist-form-status" role="status" hidden class="rounded-2xl border px-4 py-3 text-sm font-medium"></p>
+        <div class="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
+          <button type="button" id="cancel-waitlist-modal" class="inline-flex items-center justify-center rounded-full border border-amber-200 bg-white px-5 py-2.5 text-sm font-semibold text-stone-700">Cancel</button>
+          <button type="submit" id="confirm-waitlist-button" class="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-clay-600 to-amber-700 px-5 py-2.5 text-sm font-semibold text-white">Join Waitlist</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script>
     const attendeeId = {{ attendee_id|tojson }};
     const HALL_LABELS = {{ hall_labels|tojson }};
@@ -511,19 +565,13 @@
     }
     const statusEl = document.getElementById("browse-status");
     const searchForm = document.getElementById("talk-search-form");
-    const searchInput = document.getElementById("talk-search");
     const searchMeta = document.getElementById("talk-search-meta");
-    const searchEmpty = document.getElementById("search-empty");
     const topicFilter = document.getElementById("filter-topic");
     const speakerFilter = document.getElementById("filter-speaker");
     const resetFilters = document.getElementById("reset-filters");
-    const eventCards = Array.from(document.querySelectorAll("#events-grid [data-event-id]"));
-    let searchTimer = null;
-    let searchSeq = 0;
 
     function currentFilters() {
       return {
-        query: (searchInput && searchInput.value ? searchInput.value : "").trim(),
         topic: topicFilter ? topicFilter.value.trim() : "",
         speaker: speakerFilter ? speakerFilter.value.trim() : "",
       };
@@ -531,97 +579,35 @@
 
     function filterUrl(filters) {
       const params = new URLSearchParams();
-      if (filters.query) params.set("q", filters.query);
       if (filters.topic) params.set("topic", filters.topic);
       if (filters.speaker) params.set("speaker", filters.speaker);
       const next = params.toString();
       return next ? `/events?${next}` : "/events";
     }
 
-    function setCardVisible(card, visible, order) {
-      card.hidden = !visible;
-      card.style.display = visible ? "" : "none";
-      if (order !== undefined) card.style.order = String(order);
-    }
-
-    function showMatchingCards(ids, filters) {
-      const rank = new Map((ids || []).map((id, index) => [id, index]));
-      let shown = 0;
-      eventCards.forEach((card) => {
-        const id = card.getAttribute("data-event-id");
-        const visible = rank.has(id);
-        setCardVisible(card, visible, visible ? rank.get(id) : 999);
-        if (visible) shown += 1;
-      });
-      if (searchEmpty) {
-        searchEmpty.hidden = shown !== 0;
-        searchEmpty.style.display = shown ? "none" : "";
-      }
-      if (searchMeta) {
-        const bits = [];
-        if (filters.query) bits.push(`“${filters.query}”`);
-        if (filters.topic) bits.push(filters.topic);
-        if (filters.speaker) {
-          const option = speakerFilter && speakerFilter.selectedOptions[0];
-          bits.push(option && option.textContent ? option.textContent.trim() : filters.speaker);
-        }
-        searchMeta.textContent = shown
-          ? `${shown} talk${shown === 1 ? "" : "s"}${bits.length ? ` matching ${bits.join(" · ")}` : ""}`
-          : "";
-      }
-    }
-
     function navigateWithFilters() {
       window.location.href = filterUrl(currentFilters());
     }
 
-    async function applySemanticSearch() {
-      const filters = currentFilters();
-      if (!filters.query) {
-        eventCards.forEach((card, index) => setCardVisible(card, true, index));
-        if (searchEmpty) {
-          searchEmpty.hidden = eventCards.length !== 0;
-          searchEmpty.style.display = eventCards.length ? "none" : "";
-        }
-        if (searchMeta) searchMeta.textContent = "";
-        return;
+    function describeFilters(filters) {
+      const bits = [];
+      if (filters.topic) bits.push(filters.topic);
+      if (filters.speaker) {
+        const option = speakerFilter && speakerFilter.selectedOptions[0];
+        bits.push(option && option.textContent ? option.textContent.trim() : filters.speaker);
       }
-      const seq = ++searchSeq;
-      if (searchMeta) searchMeta.textContent = "Searching talks…";
-      const params = new URLSearchParams();
-      params.set("q", filters.query);
-      params.set("limit", "24");
-      if (filters.topic) params.set("topic", filters.topic);
-      if (filters.speaker) params.set("speaker", filters.speaker);
-      try {
-        const response = await fetch(`/api/attendee/search?${params.toString()}`, {
-          headers: { Accept: "application/json" },
-        });
-        const data = await response.json().catch(() => ({}));
-        if (seq !== searchSeq) return;
-        if (!response.ok) {
-          if (searchMeta) searchMeta.textContent = data.error || "Could not search talks.";
-          return;
-        }
-        const allowed = new Set(eventCards.map((card) => card.getAttribute("data-event-id")));
-        const ids = (data.results || []).map((item) => item.id).filter((id) => allowed.has(id));
-        showMatchingCards(ids, filters);
-      } catch (_error) {
-        if (seq !== searchSeq) return;
-        if (searchMeta) searchMeta.textContent = "Could not reach semantic search.";
+      const shown = document.querySelectorAll("#events-grid [data-event-id]").length;
+      if (searchMeta) {
+        searchMeta.textContent = bits.length
+          ? `${shown} talk${shown === 1 ? "" : "s"} matching ${bits.join(" · ")}`
+          : "";
       }
     }
 
     if (searchForm) {
       searchForm.addEventListener("submit", (event) => {
         event.preventDefault();
-        applySemanticSearch();
-      });
-    }
-    if (searchInput) {
-      searchInput.addEventListener("input", () => {
-        window.clearTimeout(searchTimer);
-        searchTimer = window.setTimeout(() => applySemanticSearch(), 280);
+        navigateWithFilters();
       });
     }
     if (topicFilter) topicFilter.addEventListener("change", navigateWithFilters);
@@ -631,9 +617,7 @@
         window.location.href = "/events";
       });
     }
-    if (currentFilters().query) {
-      applySemanticSearch();
-    }
+    describeFilters(currentFilters());
     const ticketModal = document.getElementById("ticket-modal");
     const ticketBackdrop = document.getElementById("ticket-backdrop");
     const ticketDialog = document.getElementById("ticket-dialog");
@@ -649,6 +633,14 @@
     let customerType = "existing";
     let currentCard = null;
     let selectedSeats = [];
+    let pendingGroupSeats = [];
+    let ownedSeats = [];
+    const groupAgentEl = document.getElementById("group-agent");
+    const groupAgentRestore = document.getElementById("group-agent-restore");
+    const groupSeatsInput = document.getElementById("group-seats");
+    const groupSuggestEl = document.getElementById("group-suggest");
+    const groupSuggestCopy = document.getElementById("group-suggest-copy");
+    const groupSuggestActions = document.getElementById("group-suggest-actions");
 
     function showStatus(message, kind) {
       if (!statusEl) return;
@@ -658,7 +650,8 @@
       statusEl.className = kind === "success"
         ? "mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800"
         : "mt-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-800";
-      if (typeof window.armStatusDismiss === "function") window.armStatusDismiss(statusEl);
+      statusEl.dataset.statusKind = kind || "info";
+      if (typeof window.armStatusDismiss === "function") window.armStatusDismiss(statusEl, { kind: kind || "info" });
     }
 
     function showFormStatus(message, kind) {
@@ -667,8 +660,11 @@
       ticketFormStatus.textContent = message;
       ticketFormStatus.className = kind === "error"
         ? "rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-800"
-        : "rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800";
-      if (typeof window.armStatusDismiss === "function") window.armStatusDismiss(ticketFormStatus);
+        : kind === "success"
+          ? "rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800"
+          : "rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900";
+      ticketFormStatus.dataset.statusKind = kind === "error" ? "error" : kind === "success" ? "success" : "info";
+      if (typeof window.armStatusDismiss === "function") window.armStatusDismiss(ticketFormStatus, { kind: ticketFormStatus.dataset.statusKind });
     }
 
     function setCustomerTab(nextType) {
@@ -691,16 +687,136 @@
     function updateSeatHint(remaining) {
       const count = selectedSeats.length;
       const open = remaining == null ? "" : ` ${remaining} seats still open.`;
+      const held = ownedSeats.length
+        ? ` Your tickets ${ownedSeats.join(", ")} are highlighted in green.`
+        : "";
       if (count === 0) {
-        seatsHintEl.textContent = `Select open seats on the hall map.${open}`;
+        seatsHintEl.textContent = `Select open seats on the hall map.${held}${open}`;
       } else {
-        seatsHintEl.textContent = `${count} seat${count === 1 ? "" : "s"} selected: ${selectedSeats.join(", ")}.${open}`;
+        seatsHintEl.textContent = `${count} seat${count === 1 ? "" : "s"} selected: ${selectedSeats.join(", ")}.${held}${open}`;
       }
       seatsInput.value = String(count);
     }
 
+    function setGroupAgentVisible(visible) {
+      if (groupAgentEl) groupAgentEl.classList.toggle("hidden", !visible);
+      if (groupAgentRestore) groupAgentRestore.classList.toggle("hidden", visible);
+    }
+
+    function hideGroupSuggestion() {
+      pendingGroupSeats = [];
+      if (groupSuggestEl) groupSuggestEl.classList.add("hidden");
+      if (groupSuggestActions) groupSuggestActions.classList.add("hidden");
+      if (groupSuggestCopy) groupSuggestCopy.textContent = "";
+    }
+
+    function resetGroupAgent() {
+      hideGroupSuggestion();
+      if (groupSeatsInput) groupSeatsInput.value = "2";
+      setGroupAgentVisible(true);
+    }
+
+    function remainingForAgent() {
+      if (currentCard) return Math.max(0, Number(currentCard.getAttribute("data-remaining") || 0));
+      return 0;
+    }
+
+    function clampGroupSize(value) {
+      const remaining = remainingForAgent();
+      const max = remaining > 0 ? remaining : 99;
+      return Math.max(2, Math.min(max, Number(value) || 2));
+    }
+
+    function applySuggestedSeats(seatIds) {
+      const wanted = new Set(seatIds || []);
+      selectedSeats = [];
+      seatMapEl.querySelectorAll(".hall-seat").forEach((button) => {
+        const seatId = button.dataset.seatId;
+        if (button.dataset.state === "taken" || button.dataset.state === "owned" || button.disabled) return;
+        if (wanted.has(seatId)) {
+          selectedSeats.push(seatId);
+          button.dataset.state = "selected";
+          button.setAttribute("aria-pressed", "true");
+        } else {
+          button.dataset.state = "available";
+          button.setAttribute("aria-pressed", "false");
+        }
+      });
+      updateSeatHint();
+    }
+
+    function dismissGroupAgent() {
+      hideGroupSuggestion();
+      setGroupAgentVisible(false);
+    }
+
+    async function requestGroupSeats() {
+      const eventId = document.getElementById("ticket-event-id").value;
+      const seats = clampGroupSize(groupSeatsInput && groupSeatsInput.value);
+      if (groupSeatsInput) groupSeatsInput.value = String(seats);
+      hideGroupSuggestion();
+      if (!eventId) {
+        showFormStatus("Open a talk before asking the seating agent for a layout.", "error");
+        return;
+      }
+      try {
+        const response = await fetch(`/api/attendee/events/${encodeURIComponent(eventId)}/group-seats`, {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { Accept: "application/json", "Content-Type": "application/json" },
+          body: JSON.stringify({ seats }),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          showFormStatus(data.error || "There aren't enough places available for a group that size.", "error");
+          return;
+        }
+        const ids = Array.isArray(data.seat_ids) ? data.seat_ids : [];
+        if (data.needs_confirm) {
+          pendingGroupSeats = ids;
+          if (groupSuggestCopy) groupSuggestCopy.textContent = data.message || "A single block is not available. Accept this nearby split, or pick seats yourself.";
+          if (groupSuggestEl) groupSuggestEl.classList.remove("hidden");
+          if (groupSuggestActions) groupSuggestActions.classList.remove("hidden");
+          showFormStatus(data.message || "Review the suggested split before confirming.", "info");
+          return;
+        }
+        applySuggestedSeats(ids);
+        showFormStatus(data.message || `Selected ${ids.join(", ")} as a compact group.`, "success");
+      } catch (_error) {
+        showFormStatus("Could not reach the seating agent.", "error");
+      }
+    }
+
+    document.getElementById("group-minus")?.addEventListener("click", () => {
+      if (!groupSeatsInput) return;
+      groupSeatsInput.value = String(clampGroupSize(Number(groupSeatsInput.value) - 1));
+    });
+    document.getElementById("group-plus")?.addEventListener("click", () => {
+      if (!groupSeatsInput) return;
+      const next = Number(groupSeatsInput.value) + 1;
+      const remaining = remainingForAgent();
+      if (remaining > 0 && next > remaining) {
+        groupSeatsInput.value = String(remaining);
+        showFormStatus("There aren't enough places available for a group that size.", "error");
+        return;
+      }
+      groupSeatsInput.value = String(clampGroupSize(next));
+    });
+    document.getElementById("group-find-seats")?.addEventListener("click", requestGroupSeats);
+    document.getElementById("dismiss-group-agent")?.addEventListener("click", dismissGroupAgent);
+    document.getElementById("show-group-agent")?.addEventListener("click", () => setGroupAgentVisible(true));
+    document.getElementById("group-accept")?.addEventListener("click", () => {
+      applySuggestedSeats(pendingGroupSeats);
+      hideGroupSuggestion();
+      showFormStatus("Suggested nearby seats selected. Confirm when you are ready, or adjust them by hand.", "success");
+    });
+    document.getElementById("group-reject")?.addEventListener("click", () => {
+      hideGroupSuggestion();
+      setGroupAgentVisible(false);
+    });
+
     function toggleSeat(button) {
-      if (button.disabled || button.dataset.state === "taken") return;
+      if (button.disabled || button.dataset.state === "taken" || button.dataset.state === "owned") return;
       const seatId = button.dataset.seatId;
       const index = selectedSeats.indexOf(seatId);
       if (index >= 0) {
@@ -752,6 +868,7 @@
 
     function renderSeatMap(data) {
       selectedSeats = [];
+      ownedSeats = Array.isArray(data.owned) ? data.owned.slice() : [];
       seatMapEl.innerHTML = "";
       const remaining = data.available_count;
       hallLabelEl.textContent = hallDisplayName(data.capacity, data.hall_label);
@@ -793,11 +910,15 @@
           button.type = "button";
           button.className = "hall-seat";
           button.dataset.seatId = seat.id;
-          button.dataset.state = seat.available ? "available" : "taken";
-          button.disabled = !seat.available;
+          const owned = Boolean(seat.owned);
+          button.dataset.state = owned ? "owned" : seat.available ? "available" : "taken";
+          button.disabled = owned || !seat.available;
           button.textContent = String(seat.number);
           button.setAttribute("aria-pressed", "false");
-          button.setAttribute("aria-label", seat.available ? `Seat ${seat.id}` : `Seat ${seat.id} reserved`);
+          button.setAttribute(
+            "aria-label",
+            owned ? `Seat ${seat.id} already yours` : seat.available ? `Seat ${seat.id}` : `Seat ${seat.id} reserved`
+          );
           button.addEventListener("click", () => toggleSeat(button));
           rowEl.append(button);
         }
@@ -832,11 +953,15 @@
       currentCard = card;
       const remaining = Number(card.getAttribute("data-remaining") || 0);
       const eventId = card.getAttribute("data-event-id") || "";
+      const alreadyBooked = card.getAttribute("data-already-booked") === "true";
       document.getElementById("ticket-event-id").value = eventId;
       document.getElementById("ticket-event-title").textContent = card.getAttribute("data-title") || "Selected talk";
+      document.getElementById("ticket-modal-title").textContent = alreadyBooked ? "Buy more tickets" : "Buy Tickets";
       hallLabelEl.textContent = hallDisplayName(card.getAttribute("data-capacity"), card.getAttribute("data-hall-label"));
       selectedSeats = [];
+      ownedSeats = [];
       seatsInput.value = "0";
+      resetGroupAgent();
       updateSeatHint(remaining);
       ticketFormStatus.hidden = true;
       ticketModal.classList.remove("hidden");
@@ -882,11 +1007,15 @@
           badgeRow.append(badge);
         }
       }
+      card.setAttribute("data-already-booked", "true");
       const buyButton = card.querySelector("[data-buy-tickets]");
+      if (buyButton && open > 0) {
+        buyButton.textContent = "Buy more tickets";
+      }
       if (open <= 0 && buyButton) {
-        const wrap = buyButton.closest(".event-card__cta");
-        if (wrap) wrap.remove();
-        else buyButton.remove();
+        buyButton.textContent = "You're registered";
+        buyButton.disabled = true;
+        buyButton.removeAttribute("data-buy-tickets");
       }
     }
 
@@ -906,9 +1035,14 @@
     ticketForm.addEventListener("submit", async (event) => {
       event.preventDefault();
       const eventId = document.getElementById("ticket-event-id").value;
-      const seatIds = selectedSeatIds();
+      const seatIds = selectedSeatIds().filter((seat) => !ownedSeats.includes(seat));
       if (!eventId || seatIds.length < 1) {
-        showFormStatus("Select at least one open seat on the hall map.", "error");
+        showFormStatus(
+          ownedSeats.length
+            ? "Your green seats are already yours. Select new open seats to buy more tickets."
+            : "Select at least one open seat on the hall map.",
+          "error"
+        );
         return;
       }
       const payload = { event_id: eventId, seats: seatIds.length, seat_ids: seatIds };
@@ -918,7 +1052,6 @@
           payload.user_id = document.getElementById("ticket-existing-user").value.trim();
           payload.password = document.getElementById("ticket-existing-password").value;
         } else {
-          payload.name = document.getElementById("ticket-new-name").value.trim();
           payload.user_id = document.getElementById("ticket-new-user").value.trim();
           payload.password = document.getElementById("ticket-new-password").value;
         }
@@ -939,11 +1072,11 @@
         }
         if (currentCard) applySeatUpdate(currentCard, data.remaining_seats, data.capacity);
         closeTicketModal();
-        const reserved = (data.seat_ids || []).join(", ");
+        const reserved = (data.added_seat_ids || data.seat_ids || []).join(", ");
         showStatus(
           reserved
-            ? `Purchase confirmed. Seats ${reserved} reserved.`
-            : `Purchase confirmed. ${data.seats} ticket${data.seats === 1 ? "" : "s"} reserved.`,
+            ? `${data.additional ? "Additional tickets confirmed." : "Purchase confirmed."} Seats ${reserved} reserved.`
+            : `${data.additional ? "Additional tickets confirmed." : "Purchase confirmed."} ${data.seats} ticket${data.seats === 1 ? "" : "s"} reserved.`,
           "success"
         );
       } catch (_error) {
@@ -1034,7 +1167,6 @@
             body: JSON.stringify({
               locked_role: "attendee",
               role: "attendee",
-              name: document.getElementById("join-new-name").value.trim(),
               user_id: document.getElementById("join-new-user").value.trim(),
               password: document.getElementById("join-new-password").value,
             }),
@@ -1046,7 +1178,8 @@
           joinFormStatus.classList.remove("hidden", "status-leaving");
           joinFormStatus.textContent = data.error || "Could not sign you in as an attendee.";
           joinFormStatus.className = "rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-800";
-          if (typeof window.armStatusDismiss === "function") window.armStatusDismiss(joinFormStatus);
+          joinFormStatus.dataset.statusKind = "error";
+          if (typeof window.armStatusDismiss === "function") window.armStatusDismiss(joinFormStatus, { kind: "error" });
           joinConfirm.disabled = false;
           return;
         }
@@ -1059,13 +1192,132 @@
         joinFormStatus.classList.remove("hidden", "status-leaving");
         joinFormStatus.textContent = "Could not reach the attendee portal.";
         joinFormStatus.className = "rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-800";
-        if (typeof window.armStatusDismiss === "function") window.armStatusDismiss(joinFormStatus);
+        joinFormStatus.dataset.statusKind = "error";
+        if (typeof window.armStatusDismiss === "function") window.armStatusDismiss(joinFormStatus, { kind: "error" });
         joinConfirm.disabled = false;
       }
     });
 
     if (joinParams.get("join") === "1") {
       openJoinModal(joinParams.get("customer") || "new");
+    }
+    const buyEventId = joinParams.get("buy");
+    if (buyEventId) {
+      const buyCard = document.querySelector(`#events-grid [data-event-id="${buyEventId}"]`);
+      if (buyCard) openTicketModal(buyCard);
+    }
+
+    const waitlistModal = document.getElementById("waitlist-modal");
+    const waitlistBackdrop = document.getElementById("waitlist-backdrop");
+    const waitlistDialog = document.getElementById("waitlist-dialog");
+    const waitlistForm = document.getElementById("waitlist-form");
+    const waitlistFormStatus = document.getElementById("waitlist-form-status");
+    const waitlistSeatsInput = document.getElementById("waitlist-seats");
+    const waitlistMaxDefault = {{ waitlist_max_seats|default(10)|int }};
+    let waitlistMax = waitlistMaxDefault;
+    let pendingWaitlistEventId = sessionStorage.getItem("waitlistEventId") || "";
+
+    function waitlistCount() {
+      return Math.max(1, parseInt(waitlistSeatsInput.value, 10) || 1);
+    }
+
+    function setWaitlistCount(next) {
+      const value = Math.min(waitlistMax, Math.max(1, next));
+      waitlistSeatsInput.value = String(value);
+    }
+
+    function openWaitlistModal(eventId, title, capacity) {
+      if (!attendeeId) {
+        sessionStorage.setItem("waitlistEventId", eventId);
+        openJoinModal("existing");
+        return;
+      }
+      sessionStorage.removeItem("waitlistEventId");
+      document.getElementById("waitlist-event-id").value = eventId;
+      document.getElementById("waitlist-modal-copy").textContent =
+        `"${title || "This session"}" is sold out. Choose how many seats you want if a cancellation opens a place.`;
+      waitlistMax = Math.min(waitlistMaxDefault, Math.max(1, parseInt(capacity, 10) || waitlistMaxDefault));
+      document.getElementById("waitlist-max-label").textContent = String(waitlistMax);
+      setWaitlistCount(1);
+      waitlistFormStatus.hidden = true;
+      waitlistModal.classList.remove("hidden");
+      waitlistModal.classList.add("flex");
+      waitlistModal.setAttribute("aria-hidden", "false");
+      document.body.classList.add("overflow-hidden");
+      requestAnimationFrame(() => {
+        waitlistBackdrop.classList.remove("opacity-0");
+        waitlistBackdrop.classList.add("opacity-100");
+        waitlistDialog.classList.remove("opacity-0", "scale-95");
+        waitlistDialog.classList.add("opacity-100", "scale-100");
+      });
+    }
+
+    function closeWaitlistModal() {
+      waitlistBackdrop.classList.add("opacity-0");
+      waitlistBackdrop.classList.remove("opacity-100");
+      waitlistDialog.classList.add("opacity-0", "scale-95");
+      waitlistDialog.classList.remove("opacity-100", "scale-100");
+      window.setTimeout(() => {
+        waitlistModal.classList.add("hidden");
+        waitlistModal.classList.remove("flex");
+        waitlistModal.setAttribute("aria-hidden", "true");
+        document.body.classList.remove("overflow-hidden");
+      }, 200);
+    }
+
+    document.querySelectorAll("[data-join-waitlist]").forEach((button) => {
+      button.addEventListener("click", () => {
+        openWaitlistModal(
+          button.getAttribute("data-join-waitlist"),
+          button.getAttribute("data-title"),
+          button.getAttribute("data-capacity")
+        );
+      });
+    });
+    document.getElementById("waitlist-minus").addEventListener("click", () => setWaitlistCount(waitlistCount() - 1));
+    document.getElementById("waitlist-plus").addEventListener("click", () => setWaitlistCount(waitlistCount() + 1));
+    document.getElementById("close-waitlist-modal").addEventListener("click", closeWaitlistModal);
+    document.getElementById("cancel-waitlist-modal").addEventListener("click", closeWaitlistModal);
+    waitlistBackdrop.addEventListener("click", closeWaitlistModal);
+
+    waitlistForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const eventId = document.getElementById("waitlist-event-id").value;
+      const seats = waitlistCount();
+      try {
+        const response = await fetch("/api/attendee/waitlist", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { Accept: "application/json", "Content-Type": "application/json" },
+          body: JSON.stringify({ event_id: eventId, seats }),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          waitlistFormStatus.hidden = false;
+          waitlistFormStatus.textContent = data.error || "Could not join the waitlist.";
+          waitlistFormStatus.className = "rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-800";
+          return;
+        }
+        closeWaitlistModal();
+        const card = document.querySelector(`[data-event-id="${eventId}"]`);
+        const cta = card && card.querySelector("[data-join-waitlist]");
+        if (cta) {
+          cta.textContent = "On the waitlist";
+          cta.disabled = true;
+          cta.removeAttribute("data-join-waitlist");
+        }
+        showStatus(`You're on the waitlist for ${seats} seat${seats === 1 ? "" : "s"}. We'll notify you if a place opens.`, "success");
+      } catch (_error) {
+        waitlistFormStatus.hidden = false;
+        waitlistFormStatus.textContent = "Could not reach the waitlist.";
+        waitlistFormStatus.className = "rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-800";
+      }
+    });
+
+    if (attendeeId && pendingWaitlistEventId) {
+      const pendingBtn = document.querySelector(`[data-join-waitlist="${pendingWaitlistEventId}"]`);
+      if (pendingBtn) openWaitlistModal(pendingWaitlistEventId, pendingBtn.getAttribute("data-title"), pendingBtn.getAttribute("data-capacity"));
+      else sessionStorage.removeItem("waitlistEventId");
     }
   </script>
 </body>

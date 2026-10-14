@@ -9,7 +9,9 @@
   {% include 'partials/theme.html' %}
   <style>
     .overlap-cloud-anchor {
-      filter: drop-shadow(0 18px 28px rgba(120, 53, 15, 0.12));
+      position: fixed;
+      z-index: 80;
+      overflow: visible;
     }
     .overlap-cloud-anchor::before {
       content: "";
@@ -24,12 +26,18 @@
       transform: rotate(45deg);
       z-index: 1;
     }
+    .overlap-cloud-anchor--above::before {
+      top: auto;
+      bottom: 2px;
+      transform: rotate(225deg);
+    }
     .overlap-cloud {
-      max-height: 200px;
+      max-height: 12rem;
       overflow-x: hidden;
       overflow-y: auto;
-      padding: 0.875rem 0.875rem 1.15rem;
       overscroll-behavior: contain;
+      padding: 0.875rem 0.75rem 0.85rem;
+      box-shadow: 0 18px 28px rgba(120, 53, 15, 0.16);
       scrollbar-width: thin;
       scrollbar-color: #d6b27a transparent;
     }
@@ -45,9 +53,6 @@
     }
     .overlap-cloud::-webkit-scrollbar-thumb:hover {
       background: #c9a46a;
-    }
-    .overlap-cloud [data-overlapping-talks] {
-      padding-bottom: 0.35rem;
     }
     .event-log-table-wrap {
       max-height: 520px;
@@ -96,7 +101,7 @@
     </div>
   </header>
 
-  <main class="mx-auto max-w-7xl px-6 py-10 sm:py-14" data-organizer-id="{{ organizer_id }}">
+  <main class="mx-auto max-w-7xl px-6 py-10 sm:py-14" data-user-role="organizer" data-organizer-id="{{ organizer_id }}">
     <p class="text-xs font-semibold uppercase tracking-[0.22em] text-clay-700">Event Organizer</p>
     <h1 class="font-display mt-3 text-3xl font-extrabold tracking-tight text-stone-900 sm:text-4xl">Manage your program</h1>
 
@@ -209,8 +214,8 @@
               <tr class="text-xs font-semibold uppercase tracking-wide text-stone-400">
                 <th scope="col" class="px-4 py-3 font-semibold">Event</th>
                 <th scope="col" class="whitespace-nowrap px-4 py-3 font-semibold">Speaker</th>
-                <th scope="col" class="w-[7.5rem] whitespace-nowrap px-4 py-3 font-semibold">Date</th>
-                <th scope="col" class="w-[9.5rem] whitespace-nowrap px-4 py-3 font-semibold">Time</th>
+                <th scope="col" class="w-[8.75rem] min-w-[8.75rem] whitespace-nowrap px-5 py-3 font-semibold">Date</th>
+                <th scope="col" class="w-[11.5rem] min-w-[11.5rem] whitespace-nowrap px-5 py-3 font-semibold">Time</th>
                 <th scope="col" class="whitespace-nowrap px-4 py-3 font-semibold">Hall</th>
                 <th scope="col" class="whitespace-nowrap px-4 py-3 font-semibold">Open/Sold Seats</th>
                 <th scope="col" class="whitespace-nowrap px-4 py-3 font-semibold">Status</th>
@@ -350,7 +355,29 @@
         </div>
         <div>
           <label for="invite_topic" class="block text-sm font-medium text-stone-700">Topic</label>
-          <input id="invite_topic" required maxlength="255" placeholder="CQRS in production" class="mt-1.5 w-full rounded-xl border border-amber-200 bg-sand-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-100">
+          <select id="invite_topic" required class="mt-1.5 w-full rounded-xl border border-amber-200 bg-sand-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-100">
+            <option value="">Select a topic</option>
+            {% for topic in (topics or []) %}
+            <option value="{{ topic.name }}">{{ topic.name }}</option>
+            {% endfor %}
+            <option value="other">+ Add new topic</option>
+          </select>
+          <div id="invite-custom-topic-row" hidden class="mt-2 space-y-1.5">
+            <div class="flex flex-col gap-2 sm:flex-row">
+              <input
+                type="text"
+                id="invite-custom-topic"
+                maxlength="128"
+                placeholder="Add a new topic if it is not listed"
+                autocomplete="off"
+                class="w-full rounded-xl border border-amber-200 bg-sand-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-100"
+              >
+              <button type="button" id="add-invite-topic-button" class="inline-flex shrink-0 items-center justify-center rounded-full border border-amber-200 bg-white px-4 py-2.5 text-sm font-semibold text-clay-700 shadow-sm transition hover:border-amber-300 hover:bg-sand-50">
+                Add topic
+              </button>
+            </div>
+            <p class="text-xs text-stone-400">New topics are saved immediately and appear in lecturer proposals and attendee filters.</p>
+          </div>
         </div>
         <div>
           <label for="invite_details" class="block text-sm font-medium text-stone-700">Details</label>
@@ -443,12 +470,15 @@
     const cardList = document.getElementById("events-cards");
     const TAB_ACTIVE = "organizer-tab inline-flex items-center justify-center rounded-full bg-gradient-to-r from-clay-600 to-amber-700 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-orange-900/20 transition duration-300";
     const TAB_INACTIVE = "organizer-tab inline-flex items-center justify-center rounded-full px-4 py-2.5 text-sm font-semibold text-stone-600 transition duration-300 hover:bg-white/80 hover:text-clay-700";
-    const TAB_ALIASES = { approved: "events", "approved-events": "events", "my-events": "events", mine: "events", invite: "request", submissions: "proposals", pending: "proposals", create: "proposals", confirmation: "proposals", confirm: "proposals", awaiting: "proposals", disapproved: "trash", recycle: "trash", recycling: "trash", "recycling-bin": "trash", log: "audit", "event-log": "audit", eventsourcing: "audit", "event-sourcing": "audit" };
+    const TAB_ALIASES = { approved: "events", "approved-events": "events", "my-events": "events", mine: "events", invite: "request", submissions: "proposals", pending: "proposals", create: "proposals", confirmation: "proposals", confirm: "proposals", awaiting: "proposals", topics: "request", categories: "request", category: "request", disapproved: "trash", recycle: "trash", recycling: "trash", "recycling-bin": "trash", log: "audit", "event-log": "audit", eventsourcing: "audit", "event-sourcing": "audit" };
+    const topicCatalog = {{ (topics or [])|tojson }};
     const BTN_PRIMARY = "inline-flex items-center justify-center rounded-full bg-clay-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm shadow-orange-900/15 transition hover:bg-clay-700";
     const BTN_GHOST = "inline-flex items-center justify-center rounded-full border border-amber-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-stone-700 transition hover:border-amber-300 hover:text-clay-700";
     const BTN_DANGER = "inline-flex items-center justify-center rounded-full border border-rose-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-rose-700 transition hover:border-rose-300 hover:bg-rose-50";
     const BTN_CANCEL = "inline-flex items-center justify-center rounded-full bg-rose-700 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-rose-800";
     const HALL_LABELS = {{ hall_labels|tojson }};
+    const viewerRole = (document.querySelector("main")?.dataset.userRole || "").trim();
+    const showSeatCounts = viewerRole !== "speaker";
 
     function hallDisplayName(capacity) {
       if (capacity == null || capacity === "") return "—";
@@ -539,6 +569,87 @@
       return (document.querySelector("main")?.dataset.organizerId || "").trim();
     }
 
+    function upsertInviteTopicOption(topic) {
+      const select = document.getElementById("invite_topic");
+      if (!select || !topic) return "";
+      const name = String(topic.name || topic.slug || "").trim();
+      if (!name || name.toLowerCase() === "other") return "";
+      const existing = Array.from(select.options).find((option) => {
+        const value = (option.value || "").trim().toLowerCase();
+        const label = option.textContent.trim().toLowerCase();
+        return value === name.toLowerCase() || label === name.toLowerCase();
+      });
+      if (existing) {
+        existing.value = name;
+        existing.textContent = name;
+        return name;
+      }
+      const option = document.createElement("option");
+      option.value = name;
+      option.textContent = name;
+      const other = Array.from(select.options).find((item) => item.value === "other");
+      select.insertBefore(option, other || null);
+      return name;
+    }
+
+    function selectedInviteTopic() {
+      const select = document.getElementById("invite_topic");
+      const custom = document.getElementById("invite-custom-topic");
+      const value = (select?.value || "").trim();
+      if (!value || value === "other") return (custom?.value || "").trim();
+      return (select.selectedOptions?.[0]?.textContent || value).trim();
+    }
+
+    function syncInviteCustomTopic() {
+      const select = document.getElementById("invite_topic");
+      const custom = document.getElementById("invite-custom-topic");
+      const row = document.getElementById("invite-custom-topic-row");
+      if (!select || !custom) return;
+      const isOther = select.value === "other";
+      if (row) row.hidden = !isOther;
+      custom.required = isOther;
+      if (!isOther) custom.value = "";
+    }
+
+    async function refreshInviteTopics() {
+      (topicCatalog || []).forEach((item) => upsertInviteTopicOption(item));
+      try {
+        const response = await fetch("/api/organizer/topics", { headers: { Accept: "application/json" } });
+        const data = await readBody(response);
+        if (!response.ok) return;
+        (data.topics || []).forEach((item) => upsertInviteTopicOption(item));
+      } catch (_error) {
+        /* Keep the server-rendered catalog if the refresh fails. */
+      }
+    }
+
+    async function addInviteTopic() {
+      const custom = document.getElementById("invite-custom-topic");
+      const select = document.getElementById("invite_topic");
+      const name = (custom?.value || "").trim();
+      if (!name) {
+        showStatus("Enter a topic name to add it.", "error");
+        custom?.focus();
+        return;
+      }
+      const response = await fetch("/api/organizer/topics", {
+        method: "POST",
+        headers: { Accept: "application/json", "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      const data = await readBody(response);
+      if (!response.ok) {
+        showStatus(data.error || "Could not add that topic.", "error");
+        return;
+      }
+      (data.topics || []).forEach((item) => upsertInviteTopicOption(item));
+      const saved = upsertInviteTopicOption(data.topic || { name });
+      if (select && saved) select.value = saved;
+      if (custom) custom.value = "";
+      syncInviteCustomTopic();
+      showStatus(`Added topic “${data.topic?.name || name}”. Lecturers and attendee filters will show it immediately.`, "success");
+    }
+
     function showStatus(message, kind) {
       const styles = {
         success: "mt-6 rounded-2xl border border-emerald-200 bg-emerald-50/90 px-4 py-3 text-sm font-medium text-emerald-800 shadow-sm backdrop-blur-sm",
@@ -548,8 +659,10 @@
       statusEl.hidden = false;
       statusEl.classList.remove("hidden", "status-leaving");
       statusEl.className = styles[kind] || styles.info;
+      statusEl.setAttribute("role", "status");
+      statusEl.dataset.statusKind = kind || "info";
       statusEl.textContent = message;
-      if (typeof window.armStatusDismiss === "function") window.armStatusDismiss(statusEl);
+      if (typeof window.armStatusDismiss === "function") window.armStatusDismiss(statusEl, { kind: kind || "info" });
     }
 
     function applyEnter(el, index) {
@@ -627,20 +740,16 @@
         speakerCell.textContent = event.speaker_name || event.speaker_id || "—";
 
         const dateCell = document.createElement("td");
-        dateCell.className = "whitespace-nowrap px-4 py-3.5 text-sm tabular-nums text-stone-700";
+        dateCell.className = "w-[8.75rem] min-w-[8.75rem] whitespace-nowrap px-5 py-3.5 text-sm tabular-nums text-stone-700";
         dateCell.textContent = event.date || "";
 
         const timeCell = document.createElement("td");
-        timeCell.className = "whitespace-nowrap px-4 py-3.5 text-sm tabular-nums text-stone-700";
+        timeCell.className = "w-[11.5rem] min-w-[11.5rem] whitespace-nowrap px-5 py-3.5 text-sm tabular-nums text-stone-700";
         timeCell.textContent = eventTime(event);
 
         const hallCell = document.createElement("td");
         hallCell.className = "whitespace-nowrap px-4 py-3.5 text-sm text-stone-700";
         hallCell.textContent = event.hall_label || hallDisplayName(event.capacity);
-
-        const seatsCell = document.createElement("td");
-        seatsCell.className = "whitespace-nowrap px-4 py-3.5 text-sm text-stone-700";
-        seatsCell.textContent = event.seats_label || `${event.open_seats ?? event.remaining_seats ?? 0} open / ${event.sold_seats ?? event.seats_booked ?? 0} sold`;
 
         const statusCell = document.createElement("td");
         statusCell.className = "whitespace-nowrap px-4 py-3.5";
@@ -650,7 +759,14 @@
         editCell.className = "min-w-[13.5rem] whitespace-nowrap px-4 py-3.5";
         editCell.append(eventActionButtons(event));
 
-        row.append(titleCell, speakerCell, dateCell, timeCell, hallCell, seatsCell, statusCell, editCell);
+        row.append(titleCell, speakerCell, dateCell, timeCell, hallCell);
+        if (showSeatCounts) {
+          const seatsCell = document.createElement("td");
+          seatsCell.className = "whitespace-nowrap px-4 py-3.5 text-sm text-stone-700";
+          seatsCell.textContent = event.seats_label || `${event.open_seats ?? event.remaining_seats ?? 0} open / ${event.sold_seats ?? event.seats_booked ?? 0} sold`;
+          row.append(seatsCell);
+        }
+        row.append(statusCell, editCell);
         tableBody.append(row);
 
         const card = document.createElement("article");
@@ -675,7 +791,10 @@
         cardTitle.textContent = event.title || "";
         const meta = document.createElement("p");
         meta.className = "mt-1 text-sm text-stone-500";
-        meta.textContent = `${event.date || ""} · ${eventTime(event)} · ${event.hall_label || ""} · ${event.seats_label || `${event.open_seats ?? event.remaining_seats ?? 0} open / ${event.sold_seats ?? event.seats_booked ?? 0} sold`}`;
+        const seatsMeta = showSeatCounts
+          ? ` · ${event.seats_label || `${event.open_seats ?? event.remaining_seats ?? 0} open / ${event.sold_seats ?? event.seats_booked ?? 0} sold`}`
+          : "";
+        meta.textContent = `${event.date || ""} · ${eventTime(event)} · ${event.hall_label || ""}${seatsMeta}`;
         const cardActions = eventActionButtons(event);
         cardActions.className = "mt-3 flex flex-nowrap items-center gap-3";
         card.append(cardTitle, meta, cardActions);
@@ -837,11 +956,14 @@
         inviteDialog.classList.remove("opacity-0", "scale-95");
         inviteDialog.classList.add("opacity-100", "scale-100");
       });
+      refreshInviteTopics();
+      syncInviteCustomTopic();
       window.setTimeout(() => inviteSpeaker?.focus(), 180);
     }
 
     function closeInviteModal() {
       inviteForm.reset();
+      syncInviteCustomTopic();
       inviteBackdrop.classList.add("opacity-0");
       inviteBackdrop.classList.remove("opacity-100");
       inviteDialog.classList.add("opacity-0", "scale-95");
@@ -855,6 +977,14 @@
       }, 200);
     }
 
+    document.getElementById("invite_topic")?.addEventListener("change", syncInviteCustomTopic);
+    document.getElementById("add-invite-topic-button")?.addEventListener("click", addInviteTopic);
+    document.getElementById("invite-custom-topic")?.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        addInviteTopic();
+      }
+    });
     document.getElementById("open-invite-modal").addEventListener("click", openInviteModal);
     document.getElementById("close-invite-modal").addEventListener("click", closeInviteModal);
     document.getElementById("cancel-invite-modal").addEventListener("click", closeInviteModal);
@@ -949,7 +1079,7 @@
 
     function overlapHoverChip(notable, badgeLabel) {
       const wrap = document.createElement("div");
-      wrap.className = "relative mt-3 inline-flex";
+      wrap.className = "relative z-20 mt-3 inline-flex overflow-visible";
       wrap.setAttribute("data-overlap-chip", "true");
       const trigger = document.createElement("button");
       trigger.type = "button";
@@ -959,16 +1089,16 @@
       const triggerLabel = badgeLabel === "High Innovation" ? "Related talks" : "Repeats / Overlaps Found";
       trigger.textContent = `${triggerLabel} · ${notable.length}`;
       const cloud = document.createElement("div");
-      cloud.className = "overlap-cloud-anchor invisible pointer-events-none absolute left-0 top-full z-50 w-80 max-w-[min(20rem,calc(100vw-3rem))] pt-2 opacity-0 transition duration-150";
+      cloud.className = "overlap-cloud-anchor invisible pointer-events-none w-80 max-w-[min(20rem,calc(100vw-1.5rem))] pt-2 opacity-0 transition duration-150";
       cloud.setAttribute("role", "tooltip");
       cloud.setAttribute("data-overlap-cloud", "true");
       const panel = document.createElement("div");
-      panel.className = "overlap-cloud relative rounded-2xl border border-amber-100 bg-white";
+      panel.className = "overlap-cloud relative max-h-48 overflow-y-auto overscroll-contain rounded-2xl border border-amber-100 bg-white";
       const cloudTitle = document.createElement("p");
       cloudTitle.className = "text-[11px] font-semibold uppercase tracking-wide text-stone-400";
       cloudTitle.textContent = badgeLabel === "High Innovation" ? "Closest existing talks" : "Repeats / overlaps with";
       const list = document.createElement("ul");
-      list.className = "mt-2 space-y-1.5 text-sm leading-5 text-stone-700";
+      list.className = "mt-2 space-y-1.5 pr-1 text-sm leading-5 text-stone-700";
       list.setAttribute("data-overlapping-talks", "true");
       notable.forEach((hit) => {
         const li = document.createElement("li");
@@ -984,21 +1114,65 @@
       });
       panel.append(cloudTitle, list);
       cloud.append(panel);
+      let hideTimer = 0;
+      const hostCard = () => wrap.closest("article");
+      const placeOverlapCloud = () => {
+        const rect = trigger.getBoundingClientRect();
+        const width = Math.min(320, window.innerWidth - 24);
+        const left = Math.min(Math.max(12, rect.left), window.innerWidth - width - 12);
+        const spaceBelow = window.innerHeight - rect.bottom - 16;
+        const spaceAbove = rect.top - 16;
+        const placeBelow = spaceBelow >= 128 || spaceBelow >= spaceAbove;
+        const cap = Math.max(96, Math.min(192, (placeBelow ? spaceBelow : spaceAbove) - 12));
+        panel.style.maxHeight = `${cap}px`;
+        cloud.classList.toggle("overlap-cloud-anchor--above", !placeBelow);
+        cloud.classList.toggle("pt-2", placeBelow);
+        cloud.classList.toggle("pb-2", !placeBelow);
+        cloud.style.width = `${width}px`;
+        cloud.style.left = `${left}px`;
+        if (placeBelow) {
+          cloud.style.top = `${rect.bottom}px`;
+        } else {
+          cloud.style.top = `${Math.max(12, rect.top - cloud.offsetHeight)}px`;
+        }
+      };
       const show = () => {
+        window.clearTimeout(hideTimer);
+        if (!cloud.isConnected || cloud.parentElement !== document.body) {
+          document.body.appendChild(cloud);
+        }
         cloud.classList.remove("invisible", "opacity-0", "pointer-events-none");
         cloud.classList.add("visible", "opacity-100");
         trigger.setAttribute("aria-expanded", "true");
+        hostCard()?.classList.add("relative", "z-40");
+        placeOverlapCloud();
+        window.requestAnimationFrame(placeOverlapCloud);
       };
       const hide = () => {
+        window.clearTimeout(hideTimer);
         cloud.classList.add("invisible", "opacity-0", "pointer-events-none");
         cloud.classList.remove("visible", "opacity-100");
         trigger.setAttribute("aria-expanded", "false");
+        hostCard()?.classList.remove("z-40");
+        if (cloud.parentElement === document.body) wrap.appendChild(cloud);
+      };
+      const scheduleHide = () => {
+        window.clearTimeout(hideTimer);
+        hideTimer = window.setTimeout(hide, 160);
       };
       wrap.addEventListener("mouseenter", show);
-      wrap.addEventListener("mouseleave", hide);
+      wrap.addEventListener("mouseleave", scheduleHide);
+      cloud.addEventListener("mouseenter", show);
+      cloud.addEventListener("mouseleave", scheduleHide);
       wrap.addEventListener("focusin", show);
       wrap.addEventListener("focusout", (event) => {
-        if (!wrap.contains(event.relatedTarget)) hide();
+        if (!wrap.contains(event.relatedTarget) && !cloud.contains(event.relatedTarget)) scheduleHide();
+      });
+      window.addEventListener("scroll", () => {
+        if (trigger.getAttribute("aria-expanded") === "true") placeOverlapCloud();
+      }, true);
+      window.addEventListener("resize", () => {
+        if (trigger.getAttribute("aria-expanded") === "true") placeOverlapCloud();
       });
       wrap.append(trigger, cloud);
       return wrap;
@@ -1031,7 +1205,7 @@
     function assessmentPanel(item) {
       const assessment = item.ai_assessment || {};
       const box = document.createElement("div");
-      box.className = "mt-4 rounded-2xl border border-amber-100 bg-sand-50/90 p-4";
+      box.className = "mt-4 overflow-visible rounded-2xl border border-amber-100 bg-sand-50/90 p-4";
       box.setAttribute("data-ai-assessment", "true");
       const heading = document.createElement("p");
       heading.className = "text-xs font-semibold uppercase tracking-wide text-stone-400";
@@ -1472,7 +1646,7 @@
     inviteForm.addEventListener("submit", async (event) => {
       event.preventDefault();
       const speakerId = inviteSpeaker.value.trim();
-      const topic = document.getElementById("invite_topic").value.trim();
+      const topic = selectedInviteTopic();
       const details = document.getElementById("invite_details").value.trim();
       const date = document.getElementById("invite_date").value;
       const startTime = document.getElementById("invite_start_time").value;
@@ -1494,7 +1668,8 @@
           speaker_id: speakerId,
           topic,
           details,
-          category: "invitation",
+          custom_topic: document.getElementById("invite-custom-topic")?.value.trim() || "",
+          category: topic,
           date,
           start_time: startTime,
           end_time: endTime,
@@ -1763,6 +1938,8 @@
       if (isOrgChatOpen()) closeOrgChat();
     });
 
+    refreshInviteTopics();
+    syncInviteCustomTopic();
     loadSpeakers();
     loadEvents({ announce: false });
     loadTalkWorkflow();

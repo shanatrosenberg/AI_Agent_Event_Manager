@@ -8,6 +8,8 @@ from models.speaker import Speaker
 from models.stored_event import StoredEvent
 from models.submission import TalkSubmission
 from models.talk_request import TalkRequest
+from models.topic import Topic
+from models.waitlist import WaitlistEntry
 
 __all__ = [
     "Attendee",
@@ -20,4 +22,6 @@ __all__ = [
     "TalkEmbedding",
     "TalkRequest",
     "TalkSubmission",
+    "Topic",
+    "WaitlistEntry",
 ]

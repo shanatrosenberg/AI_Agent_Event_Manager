@@ -134,11 +134,15 @@ def test_organizer_dashboard_allows_signed_in_admin(client):
     assert b'date-picker__trigger' in response.data
     assert b"btn-busy" in response.data
     assert b"STATUS_DISMISS_MS" in response.data
+    assert b"SUCCESS_HOLD_MS" in response.data
     assert b"6000" in response.data
     assert b"armStatusDismiss" in response.data
     assert b"status-leaving" in response.data
     assert b'id="invite_start_time"' in response.data
     assert b'id="invite_end_time"' in response.data
+    assert b'data-time-picker' in response.data
+    assert b'time-picker__trigger' in response.data
+    assert b'data-time-slot' in response.data
     assert b'value="09:00"' in response.data
     assert b'value="09:30"' in response.data
     assert b'value="15:30"' in response.data
@@ -153,16 +157,32 @@ def test_organizer_dashboard_allows_signed_in_admin(client):
     assert b"Select a speaker" in response.data
     assert "${name} (${id})" not in response.get_data(as_text=True)
     assert "option.value = speaker.id" in response.get_data(as_text=True)
-    assert b"CQRS in production" in response.data
+    assert b"Select a topic" in response.data
+    assert b"Architecture" in response.data
+    assert b'id="invite-custom-topic"' in response.data
+    assert b'id="invite-custom-topic-row"' in response.data
+    assert b'id="add-invite-topic-button"' in response.data
+    assert b"+ Add new topic" in response.data
     assert b'id="create-event-form"' not in response.data
     assert b"Create Event" not in response.data
     assert b"Request Speaker" in response.data
+    assert b'data-tab="topics"' not in response.data
+    assert b'id="panel-topics"' not in response.data
+    assert b'id="add-topic-form"' not in response.data
+    assert b"/api/organizer/topics" in response.data
     assert b"Pending Proposals" in response.data
     assert b"Manage Proposals" in response.data
+    assert b"Repeats / Overlaps Found" in response.data
+    assert b"data-overlapping-talks" in response.data
+    assert b"max-h-48" in response.data
+    assert b"overflow-y-auto" in response.data
+    assert b"document.body.appendChild(cloud)" in response.data
+    assert b"overlap-cloud-anchor" in response.data
     assert b"Verified via Tavily" not in response.data
     assert b"tavilyPanel" not in response.data
     assert b"data-tavily-badge" not in response.data
     assert b"My Events" in response.data
+    assert b'data-user-role="organizer"' in response.data
     assert b">Open/Sold Seats</th>" in response.data
     assert b"More Details" in response.data
     assert b"Cancel Event" in response.data
@@ -200,6 +220,7 @@ def test_html_login_renders_admin_form(client):
     response = client.get("/login")
     assert response.status_code == 200
     assert b"Admin sign in" in response.data
+    assert b"User Name" in response.data
     assert b'name="password"' in response.data
     assert b'name="user_id"' in response.data
 

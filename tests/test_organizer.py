@@ -139,3 +139,25 @@ def test_list_events_is_scoped_to_organizer(client, created_event):
     assert admin.get_json()[0]["id"] == created_event["id"]
     assert other.status_code == 200
     assert other.get_json() == []
+
+
+def test_organizer_can_add_and_list_catalog_topics(client):
+    created = client.post(
+        "/api/organizer/topics",
+        json={"name": "Edge Computing"},
+        headers=_admin_headers(),
+    )
+    assert created.status_code == 201
+    body = created.get_json()
+    assert body["topic"]["slug"] == "edge-computing"
+    assert body["topic"]["name"] == "Edge Computing"
+
+    listed = client.get("/api/organizer/topics", headers=_admin_headers())
+    assert listed.status_code == 200
+    names = {item["name"] for item in listed.get_json()["topics"]}
+    assert {"AI", "Architecture", "Community", "Product", "Edge Computing"} <= names
+
+
+def test_organizer_topics_require_identity(client):
+    response = client.get("/api/organizer/topics")
+    assert response.status_code == 400

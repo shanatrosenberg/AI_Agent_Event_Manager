@@ -1,21 +1,78 @@
 {% set start_id = start_id|default('start_time') %}
 {% set end_id = end_id|default('end_time') %}
+{% set ns = namespace(group='') %}
 <div class="grid gap-4 sm:grid-cols-2">
-  <div>
-    <label for="{{ start_id }}" class="block text-sm font-medium text-stone-700">Start time</label>
-    <select id="{{ start_id }}" name="{{ start_id }}" required data-session-start class="mt-1.5 w-full appearance-none rounded-xl border border-amber-200 bg-sand-50 bg-[length:1rem] bg-[right_0.85rem_center] bg-no-repeat px-3.5 py-2.5 text-sm font-semibold tabular-nums text-stone-800 shadow-sm outline-none transition focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-100" style="background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23b45309'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='1.8' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E&quot;);">
-      <option value="">Select a start time</option>
-      {% for slot in start_time_slots %}
-      <option value="{{ slot }}">{{ slot }}</option>
-      {% endfor %}
-    </select>
+  <div class="time-picker" data-time-picker>
+    <label for="{{ start_id }}-trigger" class="block text-sm font-medium text-stone-700">Start time</label>
+    <input type="hidden" id="{{ start_id }}" name="{{ start_id }}" required value="" data-session-start data-time-value>
+    <button
+      type="button"
+      id="{{ start_id }}-trigger"
+      class="time-picker__trigger mt-1.5"
+      aria-haspopup="listbox"
+      aria-expanded="false"
+      aria-controls="{{ start_id }}-menu"
+      data-no-spinner
+    >
+      <span class="time-picker__icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8">
+          <circle cx="12" cy="12" r="8.25"></circle>
+          <path d="M12 8v4.4l2.8 1.7"></path>
+        </svg>
+      </span>
+      <span class="time-picker__label" data-time-label>Select a start time</span>
+      <span class="time-picker__caret" aria-hidden="true">
+        <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"></path>
+        </svg>
+      </span>
+    </button>
+    <div id="{{ start_id }}-menu" class="time-picker__pop hidden" role="listbox" aria-label="Start time" hidden>
+      <div class="time-picker__chrome">
+        <div class="time-picker__header">
+          <span class="time-picker__icon time-picker__icon--sm" aria-hidden="true">
+            <svg viewBox="0 0 24 24" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.8">
+              <circle cx="12" cy="12" r="8.25"></circle>
+              <path d="M12 8v4.4l2.8 1.7"></path>
+            </svg>
+          </span>
+          <div>
+            <p class="time-picker__title">Start time</p>
+            <p class="time-picker__hint">Hours and half-hours · 90-minute session</p>
+          </div>
+        </div>
+        <div class="time-picker__grid">
+          {% for slot in start_time_slots %}
+            {% set hour = slot[:2]|int %}
+            {% if hour < 12 %}
+              {% set group = 'Morning' %}
+            {% elif hour < 17 %}
+              {% set group = 'Afternoon' %}
+            {% else %}
+              {% set group = 'Evening' %}
+            {% endif %}
+            {% if group != ns.group %}
+              {% set ns.group = group %}
+              <p class="time-picker__group">{{ group }}</p>
+            {% endif %}
+            <button type="button" class="time-picker__slot" role="option" value="{{ slot }}" data-time-slot="{{ slot }}" aria-selected="false" data-no-spinner>{{ slot }}</button>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
     <p class="mt-1 text-xs text-stone-400">Hours and half-hours only</p>
   </div>
-  <div>
+  <div class="time-picker time-picker--readonly">
     <label for="{{ end_id }}" class="block text-sm font-medium text-stone-700">End time</label>
-    <div class="mt-1.5 flex h-[42px] items-center justify-between gap-3 rounded-xl border border-amber-100 bg-gradient-to-r from-sand-50 to-amber-50/90 px-3.5 shadow-inner shadow-amber-900/5">
-      <span class="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-400">90 min</span>
-      <input id="{{ end_id }}" name="{{ end_id }}" type="text" readonly required tabindex="-1" data-session-end placeholder="—" aria-live="polite" class="w-24 cursor-default bg-transparent text-right text-sm font-bold tabular-nums text-clay-700 outline-none placeholder:font-medium placeholder:text-stone-300">
+    <div class="time-picker__trigger time-picker__trigger--readonly mt-1.5" aria-hidden="false">
+      <span class="time-picker__icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8">
+          <circle cx="12" cy="12" r="8.25"></circle>
+          <path d="M12 8v4.4l2.8 1.7"></path>
+        </svg>
+      </span>
+      <input id="{{ end_id }}" name="{{ end_id }}" type="text" readonly required tabindex="-1" data-session-end placeholder="—" aria-live="polite" class="time-picker__end-value">
+      <span class="time-picker__badge">90 min</span>
     </div>
     <p class="mt-1 text-xs text-stone-400">Set automatically from the start time</p>
   </div>

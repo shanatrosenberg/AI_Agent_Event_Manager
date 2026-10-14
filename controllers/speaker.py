@@ -1,6 +1,5 @@
 from flask import Blueprint, current_app, jsonify, request, session
 from cqrs import (
-    CancelEventCommand,
     ConfirmTalkCommand,
     ListSpeakerEventsQuery,
     ListSpeakerRequestsQuery,
@@ -8,7 +7,6 @@ from cqrs import (
     RespondToTalkRequestCommand,
     RestoreTalkCommand,
     SubmitTalkCommand,
-    cancel_event_handler,
     confirm_talk_handler,
     event_store,
     list_speaker_events_handler,
@@ -29,7 +27,7 @@ from services.chat import (
     send_reply,
     unread_count_for,
 )
-from services.idea_hub import generate_talk_ideas, normalize_topic_query
+from services.topics import list_topic_payloads
 
 speaker_bp = Blueprint("speaker", __name__, url_prefix="/api/speaker")
 
@@ -121,41 +119,6 @@ def enhance_abstract_view():
     return jsonify(body), 200
 
 
-@speaker_bp.route("/innovation-ideas", methods=["GET", "POST"])
-def innovation_ideas():
-    speaker_id = _speaker_id()
-    if not speaker_id:
-        return _validation_error("Sign in as a speaker to browse innovation ideas", status=401)
-    payload = request.get_json(silent=True) if request.method == "POST" else None
-    raw_limit = None
-    raw_query = None
-    if isinstance(payload, dict):
-        raw_limit = payload.get("limit")
-        raw_query = payload.get("query") or payload.get("topic") or payload.get("q")
-    if raw_query in (None, ""):
-        raw_query = request.args.get("query") or request.args.get("topic") or request.args.get("q")
-    raw_limit = request.args.get("limit") if raw_limit in (None, "") else raw_limit
-    try:
-        limit = int(raw_limit or 6)
-    except (TypeError, ValueError):
-        limit = 6
-    query = normalize_topic_query(raw_query)
-    result = generate_talk_ideas(limit=limit, query=query or None)
-    if result.error:
-        return jsonify({"error": result.error}), result.status_code
-    body = {
-        **_speaker_profile(speaker_id),
-        "ideas": result.ideas,
-        "model": result.model,
-        "source": result.source,
-        "query": query,
-    }
-    if result.fallback:
-        body["fallback"] = True
-        body["message"] = result.message
-    return jsonify(body), 200
-
-
 def submit_talk_view():
     payload = request.get_json(silent=True)
     if not isinstance(payload, dict):
@@ -202,6 +165,17 @@ def submit_talk_view():
         db.session.rollback()
         return _validation_error(exc.message, status=exc.status)
     return jsonify(submission.to_dict()), 201
+
+
+@speaker_bp.route("/topics", methods=["GET", "POST"])
+def speaker_topics():
+    """Lecturers can list catalog topics. Only the organizer can add new ones."""
+    speaker_id = _speaker_id()
+    if not speaker_id:
+        return _validation_error("Sign in as a speaker to view topics", status=401)
+    if request.method == "POST":
+        return _validation_error("Only the organizer can add catalog topics", status=403)
+    return jsonify({"topics": list_topic_payloads()}), 200
 
 
 @speaker_bp.route("/me", methods=["GET"])
@@ -326,18 +300,9 @@ def get_my_event(event_id: str):
 
 
 @speaker_bp.route("/events/<event_id>/cancel", methods=["POST"])
+@speaker_bp.route("/events/<event_id>/cancel-request", methods=["POST"])
 def cancel_my_event(event_id: str):
-    speaker_id = _speaker_id()
-    if not speaker_id:
-        return _validation_error("Sign in as a speaker to cancel an event")
-    try:
-        event = cancel_event_handler.handle(
-            CancelEventCommand(event_id=str(event_id).strip(), speaker_id=str(speaker_id))
-        )
-    except DomainError as exc:
-        db.session.rollback()
-        return _validation_error(exc.message, status=exc.status)
-    return jsonify(event_store.event_program_payload(event)), 200
+    return _validation_error("Lecturers cannot cancel events or request cancellation.", status=403)
 
 
 @speaker_bp.route("/submit", methods=["POST"])

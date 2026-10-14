@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from datetime import date as date_cls, datetime, timezone
+from datetime import date as date_cls, datetime, timedelta, timezone
 
 HALL_CAPACITIES = (50, 100, 300)
 HALL_LABELS = {
@@ -20,6 +20,9 @@ SLOT_MINUTES = 30
 SESSION_DURATION_MINUTES = 90
 FIRST_START_MINUTES = 8 * 60
 LAST_START_MINUTES = 22 * 60
+CANCELLATION_WINDOW_HOURS = 48
+CANCELLATION_WINDOW = timedelta(hours=CANCELLATION_WINDOW_HOURS)
+CANCELLATION_POLICY = "Cancellations are only allowed up to 48 hours before the event."
 
 
 def hall_label(capacity: int | None) -> str:
@@ -98,6 +101,58 @@ def parse_event_date(value: str) -> date_cls | None:
 
 def utc_now() -> datetime:
     return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
+def session_start_datetime(date_value: str, start_time: str | None = None) -> datetime | None:
+    day = parse_event_date(date_value)
+    if day is None:
+        return None
+    hour, minute = 0, 0
+    if start_time:
+        try:
+            clock = parse_clock(start_time, "start_time")
+        except ValueError:
+            return None
+        hour, minute = (int(part) for part in clock.split(":", 1))
+    return datetime(day.year, day.month, day.day, hour, minute)
+
+
+def hours_until_session_start(
+    date_value: str,
+    start_time: str | None = None,
+    now: datetime | None = None,
+) -> float | None:
+    start = session_start_datetime(date_value, start_time)
+    if start is None:
+        return None
+    current = now or utc_now()
+    return (start - current).total_seconds() / 3600
+
+
+def registration_cancellable(
+    date_value: str,
+    start_time: str | None = None,
+    now: datetime | None = None,
+) -> bool:
+    start = session_start_datetime(date_value, start_time)
+    if start is None:
+        return False
+    current = now or utc_now()
+    return start - current >= CANCELLATION_WINDOW
+
+
+def cancellation_window_payload(
+    date_value: str,
+    start_time: str | None = None,
+    now: datetime | None = None,
+) -> dict[str, object]:
+    hours = hours_until_session_start(date_value, start_time, now)
+    return {
+        "cancellable": hours is not None and hours >= CANCELLATION_WINDOW_HOURS,
+        "hours_until_start": None if hours is None else round(hours, 2),
+        "cancel_policy": CANCELLATION_POLICY,
+        "cancel_window_hours": CANCELLATION_WINDOW_HOURS,
+    }
 
 
 def has_occurred(date_value: str, end_time: str | None = None, now: datetime | None = None) -> bool:
